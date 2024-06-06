@@ -113,8 +113,7 @@ int main() {
                         fds.erase(fds.begin() + i);
                         --i; // Adjust index after removal
                     } else {
-
-                        newRequests.addToBuffer(buffer);
+                        newRequests.addToBuffer(buffer); // Add buffer to _buffer, until read() has finished with reading.
                         // Prepare response to be sent
                         std::cout << "Received message: " << buffer << std::endl;
                         clients[fds[i].fd].writeBuffer = message;
@@ -126,8 +125,8 @@ int main() {
            
 
             else if (fds[i].revents & POLLOUT) {
-                // std::cout << "\nFinal request: \n" << "###" << newRequests.getBuffer() << "###" << std::endl;
-                newRequests.parseBuffer();
+                newRequests.parseBuffer(); // Reading from the buffer has finished and will now parse buffer into the headMap
+
                 Client &client = clients[fds[i].fd];
                 if (client.writePos < client.writeBuffer.size()) {
                     int bytesSent = send(client.fd, client.writeBuffer.c_str() + client.writePos, client.writeBuffer.size() - client.writePos, 0);

@@ -8,8 +8,8 @@
 class Requests
 {
 private:
-    std::string                         buffer;
-    std::map<std::string, std::string>  headerMap;
+    std::string                         _buffer;
+    std::map<std::string, std::string>  _headerMap;
 
 
 public:
