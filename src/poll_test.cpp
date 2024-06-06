@@ -9,17 +9,19 @@
 #include <unordered_map>
 
 #include <signal.h>
-#include "includes/Requests.hpp"
+#include "../includes/Client.hpp"
+#include "../includes/Server.hpp"
+
 
 #define PORT 4040
 #define MAX_CLIENTS 10
 #define BUFFER_SIZE 1024
 
-struct Client {
-    int fd;
-    std::string writeBuffer;
-    size_t writePos = 0;
-};
+// struct Client {
+//     int fd;
+//     std::string writeBuffer;
+//     size_t writePos = 0;
+// };
 
 void    sig_handler(sig_atomic_t s)
 {
@@ -30,13 +32,13 @@ void    sig_handler(sig_atomic_t s)
 int main() {
     
     int opt = 1;
-    Requests newRequests;
     struct sockaddr_in address;
     int addrLen = sizeof(address);
     int serverSocket, newSocket;
     const char* message = "HTTP/1.1 200 OK\r\nContent-Length: 12\r\nContent-Type: text/plain\r\n\r\nHello World!";
     std::vector<struct pollfd> fds;
-    std::unordered_map<int, Client> clients;
+    Server  server;
+    
 
     signal (SIGINT, sig_handler);
     // Creating socket file descriptor
@@ -99,7 +101,8 @@ int main() {
                         fds.push_back(client_fd);
 
                         // Initialize client write buffer
-                        clients[newSocket] = Client{newSocket};
+                        // clients[newSocket] = Client{newSocket};
+                        server.addClient(newSocket);
                     }
                 } else {
                     // Handle data from a client socket
@@ -109,15 +112,18 @@ int main() {
                         // Client disconnected
                         std::cout << "Client disconnected, socket fd is " << fds[i].fd << std::endl;
                         close(fds[i].fd);
-                        clients.erase(fds[i].fd);
+                        // clients.erase(fds[i].fd);
+                        server.removeClient(fds[i].fd);
                         fds.erase(fds.begin() + i);
                         --i; // Adjust index after removal
                     } else {
-                        newRequests.addToBuffer(buffer); // Add buffer to _buffer, until read() has finished with reading.
+                        server.getClient(fds[i].fd).addToBuffer(buffer); // Add buffer to _buffer, until read() has finished with reading.
                         // Prepare response to be sent
                         std::cout << "Received message: " << buffer << std::endl;
-                        clients[fds[i].fd].writeBuffer = message;
-                        clients[fds[i].fd].writePos = 0;
+                        // clients[fds[i].fd].writeBuffer = message;
+                        server.getClient(fds[i].fd).setWriteBuffer(message);
+                        // clients[fds[i].fd].writePos = 0;
+                        server.getClient(fds[i].fd).setWritePos(0);
                         fds[i].events = POLLIN | POLLOUT; // Monitor for both read and write events
                     }
                 }
@@ -125,24 +131,29 @@ int main() {
            
 
             else if (fds[i].revents & POLLOUT) {
-                newRequests.parseBuffer(); // Reading from the buffer has finished and will now parse buffer into the headMap
-
-                Client &client = clients[fds[i].fd];
-                if (client.writePos < client.writeBuffer.size()) {
-                    int bytesSent = send(client.fd, client.writeBuffer.c_str() + client.writePos, client.writeBuffer.size() - client.writePos, 0);
+                // newConnection.parseBuffer(); // Reading from the buffer has finished and will now parse buffer into the headMap
+                server.getClient(fds[i].fd).parseBuffer();
+                // newConnection.printHeaderMap(); // Printing parsed header map
+                server.getClient(fds[i].fd).printHeaderMap();
+                Client client = server.getClient(fds[i].fd);
+                if (client.getWritePos() < client.getWriteBuffer().size()) {
+                    int bytesSent = send(client.getFd(), client.getWriteBuffer().c_str() + client.getWritePos(), client.getWriteBuffer().size() - client.getWritePos(), 0);
                     if (bytesSent < 0) {
                         std::cerr << "Send failed: " << strerror(errno) << std::endl;
-                        close(client.fd);
-                        clients.erase(client.fd);
+                        // close(client.fd);
+                        close(client.getFd());
+                        // clients.erase(client.fd);
+                        server.removeClient(client.getFd());
                         fds.erase(fds.begin() + i);
                         --i; // Adjust index after removal
                     } else {
-                        client.writePos += bytesSent;
+                        // client.writePos += bytesSent;
+                        client.setWritePos(client.getWritePos() + bytesSent);
                     }
                 }
 
                 // If all data has been sent, stop monitoring for writability
-                if (client.writePos >= client.writeBuffer.size()) {
+                if (client.getWritePos() >= client.getWriteBuffer().size()) {
                     fds[i].events = POLLIN;
                 }
 

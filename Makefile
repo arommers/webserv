@@ -6,8 +6,9 @@ SRC_DIR := ./
 OBJ_DIR := obj
 DIR_DUP = mkdir -p $(@D)
 SRC := \
-	poll_test.cpp \
-	requestParser/Requests.cpp \
+	src/poll_test.cpp \
+	src/Client.cpp \
+	src/Server.cpp \
 
 SRC := $(SRC:%=$(SRC_DIR)/%)
 OBJ := $(SRC:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)

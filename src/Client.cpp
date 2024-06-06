@@ -1,24 +1,59 @@
-#include "../includes/Requests.hpp"
+#include "../includes/Client.hpp"
 
-Requests::Requests()
-{  
+Client::Client()
+{ 
 }
 
-Requests::~Requests()
+Client::~Client()
 {
 }
 
-void    Requests::addToBuffer( std::string bufferNew )
+Client::Client( int fd )
+{
+    _fd = fd;
+}
+
+void    Client::addToBuffer( std::string bufferNew )
 {
     _buffer += bufferNew;
 }
 
-std::string    Requests::getBuffer( void )
+std::string    Client::getBuffer( void )
 {
     return (_buffer);
 }
 
-void    Requests::parseBuffer ( void )
+void Client::setFd ( int fd )
+{
+    _fd = fd;
+}
+
+int Client::getFd()
+{
+    return (_fd);
+}
+
+size_t      Client::getWritePos()
+{
+    return (_writePos);
+}
+
+void        Client::setWritePos( size_t pos )
+{
+    _writePos = pos;
+}
+
+std::string Client::getWriteBuffer()
+{
+    return (_writeBuffer);
+}
+
+void        Client::setWriteBuffer( std::string buffer )
+{
+    _writeBuffer = buffer;
+}
+
+void    Client::parseBuffer ( void )
 {
     std::string line, key, value;
 
@@ -43,13 +78,15 @@ void    Requests::parseBuffer ( void )
             }
         }
     }
+}
 
+void    Client::printHeaderMap( void )
+{
     // Printing header map
     std::cout << "------- Content of header map -------\n";
     for (const auto& pair : _headerMap)
     {
         std::cout << pair.first << ":" << pair.second << std::endl;
-    }
-
+    }   
 }
 
