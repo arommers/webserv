@@ -9,7 +9,7 @@ class Requests
 {
 private:
     std::string                         buffer;
-    std::map<std::string, std::string>  mp;
+    std::map<std::string, std::string>  headerMap;
 
 
 public:

@@ -1,8 +1,7 @@
 #include "../includes/Requests.hpp"
 
 Requests::Requests()
-{
-    mp["GET"] = "1";
+{  
 }
 
 Requests::~Requests()
@@ -21,15 +20,30 @@ std::string    Requests::getBuffer( void )
 
 void    Requests::parseBuffer ( void )
 {
-    std::istringstream  stream(buffer);
-    std::string         line;
+    std::string line, key, value;
 
-
-
-    while (std::getline(stream, line))
+    std::istringstream stream(buffer);
+    if (std::getline(stream, line))
+    {
+        std::istringstream lineStream(line);
+        lineStream >> headerMap["Method"] >> headerMap["Path"] >> headerMap["Version"]; // Error Management missing if wrong request line format!
+    }
+    while (std::getline(stream, line, '\n'))
     {
         line.erase(line.length() - 1);
-        std::cout << "X" << line << "X" << std::endl;
+        std::istringstream lineStream(line);
+        if (std::getline(lineStream, key, ':'))
+        {
+            if (std::getline(lineStream, value))
+            {
+                value = value.substr(1);
+                headerMap[key] = value;
+            }
+        }
+    }
+    for (const auto& pair : headerMap)
+    {
+        std::cout << pair.first << ":::" << pair.second << "X" << std::endl;
     }
 
 }
