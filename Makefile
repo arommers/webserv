@@ -27,7 +27,7 @@ all: $(NAME)
 
 $(NAME): $(OBJ)
 	@$(CC) $(FLAG) $(OBJ) -o $(NAME) $(HEADERS)
-	@echo "$(BLOD) $(GREEN) Compilation $(NAME) done$(RSET)"
+	@echo "$(BOLD) $(GREEN) Compilation $(NAME) done$(RSET)"
 
 $(OBJ_DIR)/%.o: ./$(SRC_DIR)/%.cpp
 	@$(DIR_DUP)
@@ -35,11 +35,11 @@ $(OBJ_DIR)/%.o: ./$(SRC_DIR)/%.cpp
 
 clean:
 	@rm -rf $(OBJ_DIR)
-	@echo "$(BLOD) $(CYAN) Clean objects Done $(RSET)"
+	@echo "$(BOLD) $(CYAN) Clean objects Done $(RSET)"
 
 fclean: clean
 	@rm -rf $(NAME)
-	@echo "$(BLOD) $(CYAN) Clean $(NAME) done $(RSET)"
+	@echo "$(BOLD) $(CYAN) Clean $(NAME) done $(RSET)"
 
 re: fclean all
 
