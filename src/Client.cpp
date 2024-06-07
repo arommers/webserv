@@ -8,12 +8,12 @@ Client::Client( int fd ): _fd(fd) {}
 
 void    Client::addToBuffer( std::string bufferNew )
 {
-    _buffer += bufferNew;
+    _readBuffer += bufferNew;
 }
 
 std::string    Client::getBuffer( void )
 {
-    return (_buffer);
+    return (_readBuffer);
 }
 
 void Client::setFd ( int fd )

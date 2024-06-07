@@ -1,8 +1,9 @@
 #include "../includes/Server.hpp"
 
 Server::Server() {}
-
 Server::~Server() {}
+Server::Server(const Server &rhs) {}
+Server& Server::operator=(const Server& rhs) {}
 
 /*
     Some things to keep in mind
@@ -23,7 +24,7 @@ void    Server::createServerSocket()
     // Creating socket file descriptor
     if ((_serverSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
-        std::cerr << "Socket failed: " << strerror(errno) << std::endl;
+        std::cerr << RED << "Socket failed: " << strerror(errno) << RESET << std::endl;
         exit(EXIT_FAILURE);
     }
 
@@ -35,7 +36,7 @@ void    Server::createServerSocket()
     // Binding the socket to the address and the port
     if (bind(_serverSocket, reinterpret_cast<struct sockaddr*>(&_address), addrLen) < 0)
     {
-        std::cerr << "Bind failed: " << strerror(errno) << std::endl;
+        std::cerr << RED << "Bind failed: " << strerror(errno) << RESET << std::endl;
         close(_serverSocket);
         exit(EXIT_FAILURE);
     }
@@ -43,7 +44,7 @@ void    Server::createServerSocket()
     // Socket starts listening mode
     if (listen(_serverSocket, MAX_CLIENTS) < 0)
     {
-        std::cerr << "Listen failed: " << strerror(errno) << std::endl;
+        std::cerr << RED << "Listen failed: " << strerror(errno) << RESET << std::endl;
         close(_serverSocket);
         exit(EXIT_FAILURE);
     }
@@ -58,11 +59,11 @@ void    Server::createPollLoop()
 {
         while (true)
         {
-            int poll_count = poll(_pollFds.data(), _pollFds.size(), -1);
+            int pollSize = poll(_pollFds.data(), _pollFds.size(), -1);
 
-            if (poll_count == -1)
+            if (pollSize == -1)
             {
-                std::cerr << "Poll failed: " << strerror(errno) << std::endl;
+                std::cerr << RED << "Poll failed: " << strerror(errno) << RESET << std::endl;
                 close(_serverSocket);
                 exit(EXIT_FAILURE);
             }
@@ -89,20 +90,50 @@ void    Server::acceptConnection()
 
     // Accept new connection
     if ((newSocket = accept(_serverSocket, reinterpret_cast<struct sockaddr*>(&_address), reinterpret_cast<socklen_t*>(&addrLen))) < 0)
-        std::cerr << "Accept failed: " << strerror(errno) << std::endl;
+        std::cerr << RED << "Accept failed: " << strerror(errno) << RESET << std::endl;
     else
     {
-        std::cout << "New connection, socket fd is " << newSocket << ", ip is : " << inet_ntoa(_address.sin_addr) << ", port : " << ntohs(_address.sin_port) << std::endl;
+        std::cout << GREEN << "New connection, socket fd is " << newSocket << ", ip is : " << inet_ntoa(_address.sin_addr) << ", port : " << ntohs(_address.sin_port) << RESET << std::endl;
 
         // Add new client socket to the poll file descriptor set
         struct pollfd clientFd;
         clientFd.fd = newSocket;
-        clientFd.events = POLLIN;
+        clientFd.events = POLLIN & POLLOUT;
         _pollFds.push_back(clientFd);
 
         // Initialize client
         addClient(newSocket);
     }
+}
+
+void    Server::handleClientData(size_t index)
+{
+    char buffer[BUFFER_SIZE];
+    int bytesRead = read(_pollFds[index].fd, buffer, BUFFER_SIZE);
+
+    if (bytesRead <= 0)
+    {
+        if (bytesRead < 0)
+            std::cerr << RED << "Error reading from client socket: " << strerror(errno) << RESET << std::endl;
+        else
+            std::cout << YELLOW << "Client disconnected, socket fd is " << _pollFds[index].fd << RESET << std::endl;
+        // close(_pollFds[*index].fd);
+        // removeClient(_pollFds[*index].fd);
+        // _pollFds.erase(_pollFds.begin() + (*index));
+        // --(*index);
+    }
+    else
+    {
+        getClient(_pollFds[index].fd).addToBuffer(buffer);
+        // How to check if all the reading is done and where?
+
+    }
+
+}
+
+void    Server::sendClientData(size_t index)
+{
+    
 }
 
 
