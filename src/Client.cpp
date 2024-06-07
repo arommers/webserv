@@ -64,7 +64,7 @@ void    Client::parseBuffer ( void )
         std::istringstream lineStream(line);
         lineStream >> _headerMap["Method"] >> _headerMap["Path"] >> _headerMap["Version"]; // Error Management missing if wrong request line format!
     }
-    // Storing the rest of the incoming header in headMap
+    // Storing the rest of the incoming header in headerMap
     while (std::getline(stream, line, '\n'))
     {
         line.erase(line.length() - 1);

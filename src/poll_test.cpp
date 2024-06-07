@@ -8,7 +8,6 @@
 #include <vector>
 #include <unordered_map>
 
-#include <signal.h>
 #include "../includes/Client.hpp"
 #include "../includes/Server.hpp"
 
@@ -23,11 +22,6 @@
 //     size_t writePos = 0;
 // };
 
-void    sig_handler(sig_atomic_t s)
-{
-    std::cout << "\nExit signal caught\n";
-    exit(0);
-}
 
 int main() {
     
@@ -40,7 +34,6 @@ int main() {
     Server  server;
     
 
-    signal (SIGINT, sig_handler);
     // Creating socket file descriptor
     if ((serverSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         std::cerr << "Socket failed: " << strerror(errno) << std::endl;
@@ -135,7 +128,7 @@ int main() {
                 server.getClient(fds[i].fd).parseBuffer();
                 // newConnection.printHeaderMap(); // Printing parsed header map
                 server.getClient(fds[i].fd).printHeaderMap();
-                Client client = server.getClient(fds[i].fd);
+                Client& client = server.getClient(fds[i].fd);
                 if (client.getWritePos() < client.getWriteBuffer().size()) {
                     int bytesSent = send(client.getFd(), client.getWriteBuffer().c_str() + client.getWritePos(), client.getWriteBuffer().size() - client.getWritePos(), 0);
                     if (bytesSent < 0) {
