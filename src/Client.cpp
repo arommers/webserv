@@ -78,6 +78,7 @@ void    Client::parseBuffer ( void )
             }
         }
     }
+    errorCheckRequest();
 }
 
 void    Client::printHeaderMap( void )
@@ -90,3 +91,63 @@ void    Client::printHeaderMap( void )
     }   
 }
 
+std::map<std::string, std::string> Client::getHeaderMap( void )
+{
+    return (_headerMap);
+}
+
+
+void    Client::errorCheckRequest( void )
+{
+    if (!isValidMethod(_headerMap["Method"]) ||
+        !isValidPath(_headerMap["Path"]) ||
+        !isValidVersion(_headerMap["Version"]))
+    {
+        return ; // Return status code error and page with error!
+    }
+    
+}
+
+bool    Client::isValidMethod( std::string method )
+{
+    std::vector<std::string> validMethods = {"POST", "GET", "DELETE"};
+
+    if (method.empty())
+    {
+        _statusCode = 400;
+        return (false);
+    }
+    if (std::find(validMethods.begin(), validMethods.end(), method) != validMethods.end())
+    {
+        _statusCode = 405;
+        return (false);
+    }
+    return (true);
+}
+
+bool    Client::isValidPath( std::string path )
+{
+    if (path.empty())
+    {
+        _statusCode = 400;
+        return (false);
+    }
+    return (true);
+}
+
+bool    Client::isValidVersion( std::string version )
+{
+    std::regex versionRegex(R"(HTTP\/\d\.\d)");
+
+    if (version.empty())
+    {
+        _statusCode = 400;
+        return (false);
+    }
+    if (!std::regex_match(version, versionRegex))
+    {
+        _statusCode = 505;
+        return (false);
+    }
+    return (true);
+}

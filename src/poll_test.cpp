@@ -6,7 +6,6 @@
 #include <netinet/in.h>
 #include <poll.h>
 #include <vector>
-#include <unordered_map>
 
 #include "../includes/Client.hpp"
 #include "../includes/Server.hpp"
