@@ -46,6 +46,39 @@ void        Client::setWriteBuffer( std::string buffer )
     _writeBuffer = buffer;
 }
 
+bool    Client::requestComplete()
+{
+    size_t pos = _readBuffer.find("\r\n\r\n");
+
+    if (pos == std::string::npos)
+        return false;
+    
+    std::string headers = _readBuffer.substr(0, pos + 4);
+    size_t posContent = headers.find("Content-Length:");
+
+    if (posContent == std::string::npos)
+        return true;
+    
+    size_t contentEnd = headers.find("\r\n", posContent);
+    std::string content = headers.substr(posContent + 15, contentEnd - posContent - 15);
+    int contentLength = std::stoi(content);
+
+    size_t bodyBegin = pos + 4;
+    size_t bodyLength = bodyBegin + contentLength;
+
+    return _readBuffer.size() >= bodyLength;
+
+}
+
+std::string Client::getRequest()
+{
+    std::string request = _readBuffer;
+    _readBuffer.clear();
+
+    return request;
+}
+
+
 // void    Client::parseBuffer ( void )
 // {
 //     std::string line, key, value;

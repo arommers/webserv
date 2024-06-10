@@ -88,20 +88,17 @@ void    Server::acceptConnection()
     int newSocket;
     int addrLen = sizeof(_address);
 
-    // Accept new connection
     if ((newSocket = accept(_serverSocket, reinterpret_cast<struct sockaddr*>(&_address), reinterpret_cast<socklen_t*>(&addrLen))) < 0)
         std::cerr << RED << "Accept failed: " << strerror(errno) << RESET << std::endl;
     else
     {
         std::cout << GREEN << "New connection, socket fd is " << newSocket << ", ip is : " << inet_ntoa(_address.sin_addr) << ", port : " << ntohs(_address.sin_port) << RESET << std::endl;
 
-        // Add new client socket to the poll file descriptor set
         struct pollfd clientFd;
         clientFd.fd = newSocket;
         clientFd.events = POLLIN & POLLOUT;
         _pollFds.push_back(clientFd);
 
-        // Initialize client
         addClient(newSocket);
     }
 }
@@ -124,11 +121,17 @@ void    Server::handleClientData(size_t index)
     }
     else
     {
+        buffer[bytesRead] = '\0';
+        Client &client = getClient(_pollFds[index].fd);
+        client.addToBuffer(buffer);
+        
+        if (client.requestComplete())
+        {
+            std::string request = client.getRequest();
+            parseRequest(request); // <========== This is where the http request gets parsed
+        }
         getClient(_pollFds[index].fd).addToBuffer(buffer);
-        // How to check if all the reading is done and where?
-
     }
-
 }
 
 void    Server::sendClientData(size_t index)

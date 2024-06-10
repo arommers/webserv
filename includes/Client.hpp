@@ -31,4 +31,8 @@ class Client
         void        setWritePos( size_t pos );
         std::string getWriteBuffer();
         void        setWriteBuffer( std::string buffer );
+
+        bool        requestComplete();
+        std::string getRequest();
+
 };
