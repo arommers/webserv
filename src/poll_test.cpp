@@ -28,9 +28,10 @@ int main() {
     struct sockaddr_in address;
     int addrLen = sizeof(address);
     int serverSocket, newSocket;
-    const char* message = "HTTP/1.1 200 OK\r\nContent-Length: 12\r\nContent-Type: text/plain\r\n\r\nHello World!";
+    // const char* message = "HTTP/1.1 200 OK\r\nContent-Length: 12\r\nContent-Type: text/plain\r\n\r\nHello World!";
     std::vector<struct pollfd> fds;
     Server  server;
+    bool reading_finished = false;
     
 
     // Creating socket file descriptor
@@ -112,22 +113,22 @@ int main() {
                         server.getClient(fds[i].fd).addToBuffer(buffer); // Add buffer to _buffer, until read() has finished with reading.
                         // Prepare response to be sent
                         std::cout << "Received message: " << buffer << std::endl;
-                        // clients[fds[i].fd].writeBuffer = message;
-                        server.getClient(fds[i].fd).setWriteBuffer(message);
-                        // clients[fds[i].fd].writePos = 0;
+  
                         server.getClient(fds[i].fd).setWritePos(0);
                         fds[i].events = POLLIN | POLLOUT; // Monitor for both read and write events
                     }
                 }
-            }
-           
+            }  
 
             else if (fds[i].revents & POLLOUT) {
                 // newConnection.parseBuffer(); // Reading from the buffer has finished and will now parse buffer into the headMap
                 server.getClient(fds[i].fd).parseBuffer();
+                server.getClient(fds[i].fd).tempReponse();
                 // newConnection.printHeaderMap(); // Printing parsed header map
                 server.getClient(fds[i].fd).printHeaderMap();
                 Client& client = server.getClient(fds[i].fd);
+                server.getClient(fds[i].fd).setWriteBuffer(server.getClient(fds[i].fd).createResponse());
+
                 if (client.getWritePos() < client.getWriteBuffer().size()) {
                     int bytesSent = send(client.getFd(), client.getWriteBuffer().c_str() + client.getWritePos(), client.getWriteBuffer().size() - client.getWritePos(), 0);
                     if (bytesSent < 0) {
