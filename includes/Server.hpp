@@ -22,6 +22,7 @@ class Server
         //pending config parsing these are set
         const int PORT = 4040;
         const int MAX_CLIENTS = 10;
+        const int TIMEOUT = 10;
         const int BUFFER_SIZE = 1024;
 
         int                             _serverSocket;
@@ -37,10 +38,13 @@ class Server
         void    createServerSocket();
         void    createPollLoop();
         void    acceptConnection();
-        //      function for closing connections
+        void    closeConnection(size_t index);
+        void    shutdownServer();
         void    handleClientData(size_t index);
         void    sendClientData(size_t index);
-        void    addClient( int fd );
-        Client&  getClient( int fd );
-        void    removeClient( int fd );
+        void    addClient(int fd);
+        Client&  getClient(int fd);
+        void    removeClient(int fd);
+        void    checkTimeout(int time);
+
 };

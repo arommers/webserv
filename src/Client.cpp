@@ -78,7 +78,15 @@ std::string Client::getRequest()
     return request;
 }
 
+void    Client::updateTime()
+{
+    _time = std::time(nullptr);
+}
 
+std::time_t Client::getTime()
+{
+    return _time;
+}
 // void    Client::parseBuffer ( void )
 // {
 //     std::string line, key, value;

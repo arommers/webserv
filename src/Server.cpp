@@ -60,13 +60,14 @@ void    Server::createPollLoop()
         while (true)
         {
             int pollSize = poll(_pollFds.data(), _pollFds.size(), -1);
-
             if (pollSize == -1)
             {
                 std::cerr << RED << "Poll failed: " << strerror(errno) << RESET << std::endl;
                 close(_serverSocket);
                 exit(EXIT_FAILURE);
             }
+
+            checkTimeout(TIMEOUT);
 
             for (size_t i = 0; i < _pollFds.size(); ++i)
             {
@@ -103,6 +104,15 @@ void    Server::acceptConnection()
     }
 }
 
+void    Server::closeConnection(size_t index)
+{
+    int fd = _pollFds[index].fd;
+
+    close(fd);
+    _pollFds.erase(_pollFds.begin() + index);
+    removeClient(fd);
+}
+
 void    Server::handleClientData(size_t index)
 {
     char buffer[BUFFER_SIZE];
@@ -111,13 +121,15 @@ void    Server::handleClientData(size_t index)
     if (bytesRead <= 0)
     {
         if (bytesRead < 0)
+        {
             std::cerr << RED << "Error reading from client socket: " << strerror(errno) << RESET << std::endl;
+            closeConnection(index);
+        }
         else
-            std::cout << YELLOW << "Client disconnected, socket fd is " << _pollFds[index].fd << RESET << std::endl;
-        // close(_pollFds[*index].fd);
-        // removeClient(_pollFds[*index].fd);
-        // _pollFds.erase(_pollFds.begin() + (*index));
-        // --(*index);
+        {
+            std::cout << YELLOW << "Client disconnected, socket fd is: " << RESET << std::endl;
+            closeConnection(index);
+        }
     }
     else
     {
@@ -139,6 +151,30 @@ void    Server::sendClientData(size_t index)
     
 }
 
+void    Server::checkTimeout(int time)
+{
+    std::time_t currentTime = std::time(nullptr);
+
+    for (size_t i = 1; i < _pollFds.size(); ++i)
+    {
+        Client& client = getClient(_pollFds[i].fd);
+
+        if (difftime(currentTime, client.getTime()) > time)
+        {
+            std::cout << YELLOW << "Connection timeout, closing socket fd: " << _pollFds[i].fd << RESET << std::endl;
+            closeConnection(i);
+            --i;
+        }
+    }
+}
+
+void    Server::shutdownServer()
+{
+    while (_pollFds.size() > 1)
+        closeConnection(1);
+    if (_serverSocket != -1)
+    close(_serverSocket);
+}
 
 void Server::addClient(int fd)
 {
