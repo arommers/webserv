@@ -7,6 +7,7 @@
 #include <sys/socket.h>   // Provides declarations for the socket API functions (socket, bind, listen, access)
 #include <netinet/in.h>   // Constants and structures needed for internet domain addresses ( sockaddr_in AF_INET)
 #include <poll.h>         // Required for struct pollfd and poll
+#include <fcntl.h>
 #include <vector>
 #include <unordered_map>
 #include "../includes/Client.hpp"
@@ -47,4 +48,6 @@ class Server
         void    removeClient(int fd);
         void    checkTimeout(int time);
 
+        void    handleClientRequest();
+        int     checkFile(std::string &file);
 };

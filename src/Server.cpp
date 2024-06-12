@@ -141,14 +141,67 @@ void    Server::handleClientData(size_t index)
         {
             std::string request = client.getRequest();
             parseRequest(request); // <========== This is where the http request gets parsed
+            handleClientRequest(); // <========== open file and call build response
+            sendClientData(); // <=========== Send back the response. Not sure about the position in the code here
         }
         getClient(_pollFds[index].fd).addToBuffer(buffer);
     }
 }
 
+void    Server::handleClientRequest(Request &request)
+{
+    int         status;
+    std::string fileContent;
+
+    // Check method
+    // Call specific function based on the method
+    // For now this is just a simple get to read the contents of the file
+    status = checkFile(_request._filePath);
+    // if (status == -1)
+    //     return 404
+    // if status == -2
+    //     return 403
+    fileContent = readFile(_request._filePath);
+    buildResponse(fileContent);
+}
+
+
 void    Server::sendClientData(size_t index)
 {
     
+}
+
+int     Server::checkFile(std::string &file)
+{
+    if (access(file.c_str(), F_OK) != 0)
+        return -1;
+    if (access(file.c_str(), R_OK) != 0)
+        return -2;
+}
+
+std::string readFile(std::string &file)
+{
+    int         fileFd;      
+    size_t      bytesRead;
+    char        buffer[1024];
+    std::string fileContent;
+    
+    fileFd = open(file.c_str(), O_RDONLY);
+    if (fileFd < 0)
+    {
+        std::cerr << "failed to open file: " << file << ": " << strerror(errno) << std::endl;
+        return "";
+    }
+    while ((bytesRead = read(fileFd, buffer, sizeof(buffer))) > 0)
+        fileContent += std::string(buffer, bytesRead);
+    if (bytesRead < 0)
+    {
+        std::cerr << "failed to read file: " << file << ": " << strerror(errno) << std::endl;
+        close(fileFd);
+        return "";
+    }
+    close(fileFd);
+    return fileContent;
 }
 
 void    Server::checkTimeout(int time)

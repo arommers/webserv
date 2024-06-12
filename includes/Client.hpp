@@ -39,5 +39,4 @@ class Client
 
         std::time_t getTime();
         void        updateTime();
-
 };
