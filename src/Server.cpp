@@ -1,9 +1,11 @@
 #include "../includes/Server.hpp"
 
+// int _shutdownRequest = false;
+
 Server::Server() {}
 Server::~Server() {}
-Server::Server(const Server &rhs) {}
-Server& Server::operator=(const Server& rhs) {}
+// Server::Server(const Server &rhs) {}
+// Server& Server::operator=(const Server& rhs) {}
 
 /*
     Some things to keep in mind
@@ -49,6 +51,30 @@ void    Server::createServerSocket()
         exit(EXIT_FAILURE);
     }
 
+    // // Set socket options
+    // int yes = 1;
+    // if (setsockopt(_serverSocket, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
+    //     std::cerr << RED << "setsockopt failed: " << strerror(errno) << RESET << std::endl;
+    //     close(_serverSocket);
+    //     exit(EXIT_FAILURE);
+    // }
+
+    // // Set non-blocking mode for _serverSocket
+    // int flags = fcntl(_serverSocket, F_GETFL, 0);
+    // if (flags == -1)
+    // {
+    //     std::cerr << RED << "fcntl F_GETFL failed for server socket: " << strerror(errno) << RESET << std::endl;
+    //     close(_serverSocket);
+    //     exit(EXIT_FAILURE);
+    // }
+    // if (fcntl(_serverSocket, F_SETFL, flags | O_NONBLOCK) == -1)
+    // {
+    //     std::cerr << RED << "fcntl F_SETFL O_NONBLOCK failed for server socket: " << strerror(errno) << RESET << std::endl;
+    //     close(_serverSocket);
+    //     exit(EXIT_FAILURE);
+    // }
+
+
     // Add the server socket to the poll file descriptor set
     serverFd.fd = _serverSocket;
     serverFd.events = POLLIN;
@@ -57,13 +83,15 @@ void    Server::createServerSocket()
 
 void    Server::createPollLoop()
 {
+        // signal(SIGINT, signalHandler);
+        
         while (true)
         {
             int pollSize = poll(_pollFds.data(), _pollFds.size(), -1);
             if (pollSize == -1)
             {
                 std::cerr << RED << "Poll failed: " << strerror(errno) << RESET << std::endl;
-                close(_serverSocket);
+                shutdownServer();
                 exit(EXIT_FAILURE);
             }
 
@@ -81,25 +109,40 @@ void    Server::createPollLoop()
                 else if (_pollFds[i].revents & POLLOUT)
                     sendClientData(i);
         }
+        // shutdownServer()
     }
 }
 
 void    Server::acceptConnection()
 {
     int newSocket;
-    int addrLen = sizeof(_address);
+    struct sockaddr_in clientAddress;
+    int addrLen = sizeof(clientAddress);
 
-    if ((newSocket = accept(_serverSocket, reinterpret_cast<struct sockaddr*>(&_address), reinterpret_cast<socklen_t*>(&addrLen))) < 0)
+    if ((newSocket = accept(_serverSocket, reinterpret_cast<struct sockaddr*>(&clientAddress), reinterpret_cast<socklen_t*>(&addrLen))) < 0)
         std::cerr << RED << "Accept failed: " << strerror(errno) << RESET << std::endl;
     else
     {
+        // // Set non-blocking mode for client sockets
+        // int flags = fcntl(newSocket, F_GETFL, 0);
+        // if (flags == -1) {
+        //     std::cerr << RED << "fcntl F_GETFL failed for client socket: " << strerror(errno) << RESET << std::endl;
+        //     close(newSocket);
+        //     return;
+        // }
+        // if (fcntl(newSocket, F_SETFL, flags | O_NONBLOCK) == -1) {
+        //     std::cerr << RED << "fcntl F_SETFL O_NONBLOCK failed for client socket: " << strerror(errno) << RESET << std::endl;
+        //     close(newSocket);
+        //     return;
+        // }
+        
         std::cout << GREEN << "New connection, socket fd is " << newSocket << ", ip is : " << inet_ntoa(_address.sin_addr) << ", port : " << ntohs(_address.sin_port) << RESET << std::endl;
 
         struct pollfd clientFd;
         clientFd.fd = newSocket;
-        clientFd.events = POLLIN & POLLOUT;
+        clientFd.events = POLLIN | POLLOUT;
         _pollFds.push_back(clientFd);
-
+        
         addClient(newSocket);
     }
 }
@@ -123,7 +166,7 @@ void    Server::handleClientData(size_t index)
         if (bytesRead < 0)
         {
             std::cerr << RED << "Error reading from client socket: " << strerror(errno) << RESET << std::endl;
-            closeConnection(index);
+            // closeConnection(index);
         }
         else
         {
@@ -140,36 +183,102 @@ void    Server::handleClientData(size_t index)
         if (client.requestComplete())
         {
             std::string request = client.getRequest();
-            parseRequest(request); // <========== This is where the http request gets parsed
-            handleClientRequest(); // <========== open file and call build response
-            sendClientData(); // <=========== Send back the response. Not sure about the position in the code here
+            std::cout << GREEN <<"Complete Request Received:\n" << RESET <<request << std::endl;
+
+            //  *** chatgpt created functions and variables to test ***
+
+            std::string filename = parseRequest(request);
+            std::ifstream file(filename);
+            std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+            std::string response = buildResponse(content);
+            client.setWriteBuffer(response);
+
+            //***************************************************************
+             
+            // parseRequest(request); // <========== This is where the http request gets parsed
+            // handleClientRequest(); // <========== open file and call build response
+            // sendClientData(); // <=========== Send back the response. Not sure about the position in the code here
         }
-        getClient(_pollFds[index].fd).addToBuffer(buffer);
+        else
+            getClient(_pollFds[index].fd).addToBuffer(buffer);
     }
 }
 
-void    Server::handleClientRequest(Request &request)
+void Server::sendClientData(size_t index)
 {
-    int         status;
-    std::string fileContent;
+    int bytesSent;
+    Client &client = getClient(_pollFds[index].fd);
+    std::string writeBuffer = client.getWriteBuffer();
 
-    // Check method
-    // Call specific function based on the method
-    // For now this is just a simple get to read the contents of the file
-    status = checkFile(_request._filePath);
-    // if (status == -1)
-    //     return 404
-    // if status == -2
-    //     return 403
-    fileContent = readFile(_request._filePath);
-    buildResponse(fileContent);
+    if (!writeBuffer.empty())
+    {
+        bytesSent = send(_pollFds[index].fd, writeBuffer.c_str(), writeBuffer.size(), 0);
+        if (bytesSent < 0)
+        {
+            std::cerr << RED << "Error sending data to client: " << strerror(errno) << RESET << std::endl;
+            closeConnection(index);
+        }
+        else
+        {
+            client.setWriteBuffer(writeBuffer.substr(bytesSent));
+            if (client.getWriteBuffer().empty())
+            {
+                std::cout << GREEN << "Response sent to client: " << _pollFds[index].fd << RESET << std::endl;
+            }
+        }
+    }
 }
 
-
-void    Server::sendClientData(size_t index)
+std::string Server::parseRequest(const std::string& request)
 {
+    std::istringstream requestStream(request);
+    std::string method, path, version;
+    requestStream >> method >> path >> version;
+
+    if (method == "GET")
+    {
+        if (path == "/")
+            path = "/html/index.html";
+        return "." + path;
+    }
+
+    return "";
+}
+
+std::string Server::buildResponse(const std::string& content)
+{
+    std::ostringstream responseStream;
+    responseStream << "HTTP/1.1 200 OK\r\n";
+    responseStream << "Content-Length: " << content.size() << "\r\n";
+    responseStream << "Content-Type: text/html\r\n";
+    responseStream << "\r\n";
+    responseStream << content;
+    std::cout << YELLOW << responseStream.str() << RESET << std::endl;
+    return responseStream.str();
+}
+
+// void    Server::handleClientRequest(Request &request)
+// {
+//     int         status;
+//     std::string fileContent;
+
+//     // Check method
+//     // Call specific function based on the method
+//     // For now this is just a simple get to read the contents of the file
+//     status = checkFile(_request._filePath);
+//     // if (status == -1)
+//     //     return 404
+//     // if status == -2
+//     //     return 403
+//     fileContent = readFile(_request._filePath);
+//     buildResponse(fileContent);
+// }
+
+
+// void    Server::sendClientData(size_t index)
+// {
     
-}
+// }
 
 int     Server::checkFile(std::string &file)
 {
@@ -177,6 +286,7 @@ int     Server::checkFile(std::string &file)
         return -1;
     if (access(file.c_str(), R_OK) != 0)
         return -2;
+    return 0;
 }
 
 std::string readFile(std::string &file)
@@ -244,3 +354,8 @@ void Server::removeClient(int fd)
     _clients.erase(fd);
 }
 
+// void Server::signalHandler(int signal)
+// {
+//       std::cout << GREEN << "SIGINT received. Shutting down gracefully..." << RESET << std::endl;
+//     _shutdownRequest = true;
+// }

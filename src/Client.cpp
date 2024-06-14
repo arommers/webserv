@@ -6,6 +6,28 @@ Client::~Client() { }
 
 Client::Client( int fd ): _fd(fd) {}
 
+Client::Client(const Client& rhs)
+{
+    _fd = rhs._fd;
+    _readBuffer = rhs._readBuffer;
+    _writeBuffer = rhs._writeBuffer;
+    _writePos = rhs._writePos;
+    _time = rhs._time;
+}
+
+Client& Client::operator=(const Client& rhs)
+{
+    if (this != &rhs)
+    {
+        _fd = rhs._fd;
+        _readBuffer = rhs._readBuffer;
+        _writeBuffer = rhs._writeBuffer;
+        _writePos = rhs._writePos;
+        _time = rhs._time;
+    }
+    return *this;
+}
+
 void    Client::addToBuffer( std::string bufferNew )
 {
     _readBuffer += bufferNew;
@@ -67,7 +89,6 @@ bool    Client::requestComplete()
     size_t bodyLength = bodyBegin + contentLength;
 
     return _readBuffer.size() >= bodyLength;
-
 }
 
 std::string Client::getRequest()

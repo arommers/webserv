@@ -10,6 +10,8 @@
 #include <fcntl.h>
 #include <vector>
 #include <unordered_map>
+#include <csignal>
+#include <fstream>        // Temporary for testing  
 #include "../includes/Client.hpp"
 
 #define RESET   "\033[0m"
@@ -17,19 +19,23 @@
 #define GREEN   "\033[32m"
 #define YELLOW  "\033[33m"
 
+//pending config parsing these are set
+
+#define PORT 4040
+#define MAX_CLIENTS 10
+#define TIMEOUT 60
+#define BUFFER_SIZE 1024
+
+
+
 class Server
 {
     private:
-        //pending config parsing these are set
-        const int PORT = 4040;
-        const int MAX_CLIENTS = 10;
-        const int TIMEOUT = 10;
-        const int BUFFER_SIZE = 1024;
-
         int                             _serverSocket;
         struct sockaddr_in              _address;
         std::vector<struct pollfd>      _pollFds;
         std::unordered_map<int, Client> _clients;
+
     public:
         Server();
         Server(const Server &rhs);
@@ -50,4 +56,10 @@ class Server
 
         void    handleClientRequest();
         int     checkFile(std::string &file);
+
+        // temporary chatgpt created test functions
+        std::string parseRequest(const std::string& request);
+        std::string buildResponse(const std::string& content);
+
+        // static void signalHandler(int signal);
 };

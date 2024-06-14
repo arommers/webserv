@@ -6,7 +6,7 @@ SRC_DIR := ./
 OBJ_DIR := obj
 DIR_DUP = mkdir -p $(@D)
 SRC := \
-	src/poll_test.cpp \
+	src/main.cpp \
 	src/Client.cpp \
 	src/Server.cpp \
 

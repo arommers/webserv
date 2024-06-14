@@ -18,9 +18,9 @@ class Client
 
     public:
         Client();
-        Client( int fd );
+        Client(int fd);
         Client(const Client& rhs);
-        Client& operator=(const Client rhs);
+        Client& operator=(const Client& rhs);
         ~Client();
 
         void        addToBuffer( std::string bufferNew );
