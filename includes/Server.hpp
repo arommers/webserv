@@ -53,13 +53,19 @@ class Server
         Client&  getClient(int fd);
         void    removeClient(int fd);
         void    checkTimeout(int time);
+        int     getServerSocket();
 
         void    handleClientRequest();
         int     checkFile(std::string &file);
+        std::string readFile(std::string &file);
+
+
+        void   handleClientRequest(Client &client);
+
 
         // temporary chatgpt created test functions
-        std::string parseRequest(const std::string& request);
-        std::string buildResponse(const std::string& content);
+        // std::string parseRequest(const std::string& request);
+        // std::string buildResponse(const std::string& content);
 
         // static void signalHandler(int signal);
 };
