@@ -121,14 +121,11 @@ int main() {
             }  
 
             else if (fds[i].revents & POLLOUT) {
-                // newConnection.parseBuffer(); // Reading from the buffer has finished and will now parse buffer into the headMap
-                server.getClient(fds[i].fd).parseBuffer();
-                server.getClient(fds[i].fd).tempReponse();
-                // newConnection.printHeaderMap(); // Printing parsed header map
-                server.getClient(fds[i].fd).printHeaderMap();
                 Client& client = server.getClient(fds[i].fd);
-                server.getClient(fds[i].fd).setWriteBuffer(server.getClient(fds[i].fd).createResponse());
-
+                client.parseBuffer();
+                // client.printHeaderMap();
+                client.executeRequest();
+                client.setWriteBuffer(client.createResponse());
                 if (client.getWritePos() < client.getWriteBuffer().size()) {
                     int bytesSent = send(client.getFd(), client.getWriteBuffer().c_str() + client.getWritePos(), client.getWriteBuffer().size() - client.getWritePos(), 0);
                     if (bytesSent < 0) {

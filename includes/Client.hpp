@@ -6,7 +6,16 @@
 #include <map>
 #include <algorithm>
 #include <regex>
+#include <fstream>
 
+enum client
+{
+    CGET = 0,
+    CPOST = 1,
+    CDELETE = 2,
+    CISFILE = 3,
+    CISFOLDER = 4,
+};
 
 class Client
 {
@@ -32,6 +41,7 @@ public:
     void        addToBuffer( std::string bufferNew );
     std::string getBuffer( void );
     void        parseBuffer ( void );
+    void        executeRequest ( void );
     std::string createResponse ( void );
     void        tempReponse( void);
     void        printHeaderMap( void );
@@ -41,6 +51,10 @@ public:
     void        setWritePos( size_t pos );
     std::string getWriteBuffer();
     void        setWriteBuffer( std::string buffer );
+    void        setStatusCode( const int statusCode );
+    bool        checkCGI();
+    int         getMethod();
+    int         checkFileFolder();
     std::map<std::string, std::string>    getHeaderMap( void );
 
 

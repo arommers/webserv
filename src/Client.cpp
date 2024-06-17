@@ -64,6 +64,11 @@ void        Client::setWriteBuffer( std::string buffer )
     _writeBuffer = buffer;
 }
 
+void Client::setStatusCode( const int statusCode )
+{
+    _statusCode = statusCode;
+}
+
 void    Client::parseBuffer ( void )
 {
     std::string line, key, value;
@@ -175,7 +180,6 @@ std::string trimWhiteSpace(std::string& string)
 
 void Client::tempReponse( void)
 {
-    _statusCode = 400;
     std::string htmlContent = "<html>"
                             "<head><title>" + std::to_string(_statusCode) + " " + _ErrorMap.at(_statusCode) + "</title></head>"
                             "<body>"
@@ -187,14 +191,37 @@ void Client::tempReponse( void)
         _responseMap["Body"] = htmlContent;
         _responseMap["Content-Type"] = "text/html";
     }
-    else{
-        _responseMap["Body"] = "Hello Big World!";
-        _responseMap["Content-Type"] = "text/plain";
+    else
+        _responseMap["Content-Length"] = std::to_string(_responseMap["Body"].size());
+    // else{
+    //     _responseMap["Body"] = "Hello Big World!";
+    //     _responseMap["Content-Type"] = "text/plain";
 
-    }
+    // }
+    
 
-    _responseMap["Content-Length"] = std::to_string(_responseMap["Body"].size());
+}
 
+void Client::executeRequest ( void )
+{
+    if (!checkCGI() && checkFileFolder() == CISFILE)
+                {
+                    if (getMethod() == CGET)
+                    {
+                        std::ifstream file(_requestMap.at("Path").erase(0, 1));
+                        if (file)
+                        {
+                            std::stringstream buffer;
+                            buffer << file.rdbuf();
+                            _responseMap["Body"] = buffer.str();
+                            setStatusCode(200);
+                            _responseMap["Content-Type"] = "text/html";
+                            _responseMap["Content-Length"] = std::to_string(_responseMap["Body"].size());
+                        }
+                        else
+                            std::cout << "File doesn't exist\n";
+                    }
+                }
 }
 
 std::string Client::createResponse ( void )
@@ -203,13 +230,37 @@ std::string Client::createResponse ( void )
 
     responseMessage = _requestMap.at("Version") + " " + std::to_string(_statusCode) + " " + _ErrorMap.at(_statusCode) + "\n";
     responseMessage += "Content-Type: " + _responseMap.at("Content-Type") + "\n";
+
     if (_responseMap.count("Body")){
         responseMessage += "Content-Length: " + _responseMap.at("Content-Length") + "\r\n\r\n";
         responseMessage += _responseMap.at("Body");
     }
-
-    
-
-
     return responseMessage;
+}
+
+
+bool Client::checkCGI()
+{
+    // if (getHeaderMap()["Path"].size() >= Server::_locCGI.size())
+    // {
+    //     if (getHeaderMap()["Path"].substr(0, _locCGI.size()) == _locCGI)
+    //         return (true);
+    // }
+    return (false);
+}
+int Client::getMethod()
+{
+    if (getHeaderMap()["Method"] == "POST")
+        return (CPOST);
+    if (getHeaderMap()["Method"] == "GET")
+        return (CGET);
+    else
+        return (CDELETE);
+}
+int Client::checkFileFolder()
+{
+    if (getHeaderMap()["Path"].back() == '/')
+        return (CISFOLDER);
+    else
+        return (CISFILE);
 }

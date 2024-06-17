@@ -6,7 +6,8 @@
 #include <unordered_map>
 #include "../includes/Client.hpp"
 
-enum webserv
+
+enum server
 {
     GET = 0,
     POST = 1,
@@ -26,9 +27,7 @@ public:
     void    addClient( int fd );
     Client&  getClient( int fd );
     void    removeClient( int fd );
-    bool    checkCGI( int fd );
-    int     getMethod( int fd );
-    int     checkFileFolder( int fd );
+
 };
 
 

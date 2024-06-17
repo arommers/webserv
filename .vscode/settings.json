@@ -53,6 +53,11 @@
         "typeinfo": "cpp",
         "bitset": "cpp",
         "ctime": "cpp",
-        "regex": "cpp"
+        "regex": "cpp",
+        "chrono": "cpp",
+        "codecvt": "cpp",
+        "ratio": "cpp",
+        "fstream": "cpp",
+        "iomanip": "cpp"
     }
 }
