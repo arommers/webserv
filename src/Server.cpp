@@ -18,10 +18,15 @@ Server::~Server() {}
       Both part of the constructor
 */
 
+int     Server::getServerSocket()
+{
+    return (_serverSocket);
+}
 void    Server::createServerSocket()
 {
     int addrLen = sizeof(_address);
     struct pollfd serverFd;
+
 
     // Creating socket file descriptor
     if ((_serverSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
@@ -182,21 +187,22 @@ void    Server::handleClientData(size_t index)
         
         if (client.requestComplete())
         {
-            std::string request = client.getRequest();
-            std::cout << GREEN <<"Complete Request Received:\n" << RESET <<request << std::endl;
+            // std::string request = client.getRequest();
+            std::cout << GREEN <<"Complete Request Received:\n" << RESET <<client.getReadBuffer() << std::endl;
 
             //  *** chatgpt created functions and variables to test ***
 
-            std::string filename = parseRequest(request);
-            std::ifstream file(filename);
-            std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-            std::string response = buildResponse(content);
-            client.setWriteBuffer(response);
+            // std::string filename = parseRequest(request);
+            // std::ifstream file(filename);
+            // std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+            // std::string response = buildResponse(content);
+            // client.setWriteBuffer(response);
 
             //***************************************************************
              
+            client.parseBuffer();
             // parseRequest(request); // <========== This is where the http request gets parsed
-            // handleClientRequest(); // <========== open file and call build response
+            handleClientRequest(client); // <========== open file and call build response
             // sendClientData(); // <=========== Send back the response. Not sure about the position in the code here
         }
         else
@@ -229,50 +235,52 @@ void Server::sendClientData(size_t index)
     }
 }
 
-std::string Server::parseRequest(const std::string& request)
-{
-    std::istringstream requestStream(request);
-    std::string method, path, version;
-    requestStream >> method >> path >> version;
-
-    if (method == "GET")
-    {
-        if (path == "/")
-            path = "/html/index.html";
-        return "." + path;
-    }
-
-    return "";
-}
-
-std::string Server::buildResponse(const std::string& content)
-{
-    std::ostringstream responseStream;
-    responseStream << "HTTP/1.1 200 OK\r\n";
-    responseStream << "Content-Length: " << content.size() << "\r\n";
-    responseStream << "Content-Type: text/html\r\n";
-    responseStream << "\r\n";
-    responseStream << content;
-    std::cout << YELLOW << responseStream.str() << RESET << std::endl;
-    return responseStream.str();
-}
-
-// void    Server::handleClientRequest(Request &request)
+// std::string Server::parseRequest(const std::string& request)
 // {
-//     int         status;
-//     std::string fileContent;
+//     std::istringstream requestStream(request);
+//     std::string method, path, version;
+//     requestStream >> method >> path >> version;
 
-//     // Check method
-//     // Call specific function based on the method
-//     // For now this is just a simple get to read the contents of the file
-//     status = checkFile(_request._filePath);
-//     // if (status == -1)
-//     //     return 404
-//     // if status == -2
-//     //     return 403
-//     fileContent = readFile(_request._filePath);
-//     buildResponse(fileContent);
+//     if (method == "GET")
+//     {
+//         if (path == "/")
+//             path = "/html/index.html";
+//         return "." + path;
+//     }
+
+//     return "";
 // }
+
+// std::string Server::buildResponse(const std::string& content)
+// {
+//     std::ostringstream responseStream;
+//     responseStream << "HTTP/1.1 200 OK\r\n";
+//     responseStream << "Content-Length: " << content.size() << "\r\n";
+//     responseStream << "Content-Type: text/html\r\n";
+//     responseStream << "\r\n";
+//     responseStream << content;
+//     std::cout << YELLOW << responseStream.str() << RESET << std::endl;
+//     return responseStream.str();
+// }
+
+void    Server::handleClientRequest(Client &client)
+{
+    int         status;
+    std::string fileContent;
+
+    // Check method
+    // Call specific function based on the method
+    // For now this is just a simple get to read the contents of the file
+    // status = checkFile(client.getRequestMap().at("File"));
+    // if (status == -1)
+    //     return 404
+    // if status == -2
+    //     return 403
+
+    fileContent = readFile(client.getRequestMap().at("Path"));
+    client.setFileBuffer(fileContent);
+    client.createResponse();
+}
 
 
 // void    Server::sendClientData(size_t index)
@@ -289,12 +297,16 @@ int     Server::checkFile(std::string &file)
     return 0;
 }
 
-std::string readFile(std::string &file)
+std::string Server::readFile(std::string &file)
 {
     int         fileFd;      
     size_t      bytesRead;
     char        buffer[1024];
     std::string fileContent;
+    
+    file = "./html" + file;
+
+    
     
     fileFd = open(file.c_str(), O_RDONLY);
     if (fileFd < 0)
