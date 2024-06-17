@@ -44,7 +44,7 @@ public:
     void        executeRequest ( void );
     std::string createResponse ( void );
     void        tempReponse( void);
-    void        printHeaderMap( void );
+    void        printRequestMap( void );
     void        setFd( int fd );
     int         getFd();
     size_t      getWritePos();
@@ -55,7 +55,7 @@ public:
     bool        checkCGI();
     int         getMethod();
     int         checkFileFolder();
-    std::map<std::string, std::string>    getHeaderMap( void );
+    std::map<std::string, std::string>    getRequestMap( void );
 
 
 };

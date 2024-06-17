@@ -98,7 +98,7 @@ void    Client::parseBuffer ( void )
     errorCheckRequest();
 }
 
-void    Client::printHeaderMap( void )
+void    Client::printRequestMap( void )
 {
     // Printing header map
     std::cout << "------- Content of header map -------\n";
@@ -108,7 +108,7 @@ void    Client::printHeaderMap( void )
     }
 }
 
-std::map<std::string, std::string> Client::getHeaderMap( void )
+std::map<std::string, std::string> Client::getRequestMap( void )
 {
     return (_requestMap);
 }
@@ -250,16 +250,16 @@ bool Client::checkCGI()
 }
 int Client::getMethod()
 {
-    if (getHeaderMap()["Method"] == "POST")
+    if (getRequestMap()["Method"] == "POST")
         return (CPOST);
-    if (getHeaderMap()["Method"] == "GET")
+    if (getRequestMap()["Method"] == "GET")
         return (CGET);
     else
         return (CDELETE);
 }
 int Client::checkFileFolder()
 {
-    if (getHeaderMap()["Path"].back() == '/')
+    if (getRequestMap()["Path"].back() == '/')
         return (CISFOLDER);
     else
         return (CISFILE);
