@@ -74,7 +74,6 @@ void    Server::createServerSocket()
     //     exit(EXIT_FAILURE);
     // }
 
-
     // Add the server socket to the poll file descriptor set
     serverFd.fd = _serverSocket;
     serverFd.events = POLLIN;
