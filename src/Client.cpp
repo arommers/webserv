@@ -7,6 +7,7 @@ const std::map<int, std::string> Client::_ErrorMap = {
     {400, "Bad Formatting"},
     {401, "Unauthorized"},
     {404, "Not Found"},
+    {405, "Method Not Allowed"},
     {500, "Internal Server Error"},
     {503, "Service Unavailable"},
 };
@@ -196,6 +197,7 @@ bool    Client::isValidMethod( std::string method )
     }
     if (std::find(validMethods.begin(), validMethods.end(), method) != validMethods.end())
     {
+        std::cout << "Method: " << method  << "#" << std::endl;
         _statusCode = 405;
         return (false);
     }
@@ -262,15 +264,37 @@ void Client::tempReponse( void)
 
 }
 
+std::string Client::createErrorResponse( void )
+{
+    std::string errorResponse = "<html>"
+                            "<head><title>" + std::to_string(_statusCode) + " " + _ErrorMap.at(_statusCode) + "</title></head>"
+                            "<body>"
+                            "<h1>" + std::to_string(_statusCode) + " " + _ErrorMap.at(_statusCode) + "</h1>"
+                            "<p>The request could not be understood by the server due to malformed syntax.</p>"
+                            "</body>"
+                            "</html>\r\t\r\t";
+    _responseMap["Content-Length"] = std::to_string(errorResponse.size());
+    return (errorResponse);
+}
+
 void Client::createResponse ( void )
 {
     std::string responseMessage;
 
+    std::cout << "test!!!\n";
+    if (_statusCode == 0)
+        setStatusCode(200);
+      if (!statusErrorCheck())
+    {
+        responseMessage += "Content-Length: " + _responseMap.at("Content-Length") + "\r\n\r\n";
+        responseMessage += createErrorResponse();
+        _writeBuffer = responseMessage;
+        return ;
+    }
     _responseMap["Content-Type"] = "text/html";
-    setStatusCode(200);
     responseMessage = _requestMap.at("Version") + " " + std::to_string(_statusCode) + " " + _ErrorMap.at(_statusCode) + "\n";
     responseMessage += "Content-Type: " + _responseMap.at("Content-Type") + "\n";
-    std::cout << "Test: " << std::endl;
+  
 
     if (!_fileBuffer.empty()){
         _responseMap["Content-Length"] = std::to_string(_fileBuffer.size());
@@ -278,6 +302,18 @@ void Client::createResponse ( void )
         responseMessage += _fileBuffer;
     }
     _writeBuffer = responseMessage;
+}
+
+bool Client::statusErrorCheck()
+{
+    std::vector<int>     statusPass(200, 0);
+    for (int i = 0; i < statusPass.size(); i++){
+        if (_statusCode == statusPass[i]){
+            return true;
+        }
+    }
+    std::cout << _statusCode << std::endl;
+    return false;
 }
 
 

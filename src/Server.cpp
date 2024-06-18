@@ -201,7 +201,10 @@ void    Server::handleClientData(size_t index)
             //***************************************************************
              
             client.parseBuffer();
-            // parseRequest(request); // <========== This is where the http request gets parsed
+            if (!client.statusErrorCheck()){
+                client.createResponse();
+                return;
+            }
             handleClientRequest(client); // <========== open file and call build response
             // sendClientData(); // <=========== Send back the response. Not sure about the position in the code here
         }
@@ -235,34 +238,6 @@ void Server::sendClientData(size_t index)
     }
 }
 
-// std::string Server::parseRequest(const std::string& request)
-// {
-//     std::istringstream requestStream(request);
-//     std::string method, path, version;
-//     requestStream >> method >> path >> version;
-
-//     if (method == "GET")
-//     {
-//         if (path == "/")
-//             path = "/html/index.html";
-//         return "." + path;
-//     }
-
-//     return "";
-// }
-
-// std::string Server::buildResponse(const std::string& content)
-// {
-//     std::ostringstream responseStream;
-//     responseStream << "HTTP/1.1 200 OK\r\n";
-//     responseStream << "Content-Length: " << content.size() << "\r\n";
-//     responseStream << "Content-Type: text/html\r\n";
-//     responseStream << "\r\n";
-//     responseStream << content;
-//     std::cout << YELLOW << responseStream.str() << RESET << std::endl;
-//     return responseStream.str();
-// }
-
 void    Server::handleClientRequest(Client &client)
 {
     int         status;
@@ -278,6 +253,11 @@ void    Server::handleClientRequest(Client &client)
     //     return 403
 
     fileContent = readFile(client.getRequestMap().at("Path"));
+    if (fileContent.empty())
+        client.setStatusCode(404);
+    // if (!client.statusErrorCheck()){
+    //     return ;
+    // }
     client.setFileBuffer(fileContent);
     client.createResponse();
 }

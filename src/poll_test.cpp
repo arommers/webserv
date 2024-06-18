@@ -127,7 +127,7 @@ int main() {
                 // newConnection.parseBuffer(); // Reading from the buffer has finished and will now parse buffer into the headMap
                 server.getClient(fds[i].fd).parseBuffer();
                 // newConnection.printHeaderMap(); // Printing parsed header map
-                server.getClient(fds[i].fd).printHeaderMap();
+                server.getClient(fds[i].fd).printRequestMap();
                 Client& client = server.getClient(fds[i].fd);
                 if (client.getWritePos() < client.getWriteBuffer().size()) {
                     int bytesSent = send(client.getFd(), client.getWriteBuffer().c_str() + client.getWritePos(), client.getWriteBuffer().size() - client.getWritePos(), 0);

@@ -5,6 +5,7 @@
 #include <ctime>
 #include <map>
 #include <regex>
+#include <vector>
 
 class Client
 {
@@ -32,27 +33,28 @@ class Client
         Client& operator=(const Client& rhs); // Update!
         ~Client();
 
-        void        addToBuffer( std::string bufferNew );
-        std::string getReadBuffer();
-        void        parseBuffer ( void );
-        void        printRequestMap( void );
-        void        createResponse ( void );
-        void        tempReponse( void);
-        void        setFd( int fd );
-        int         getFd();
-        size_t      getWritePos();
-        void        setWritePos( size_t pos );
-        std::string getWriteBuffer();
-        void        setFileBuffer(std::string buffer);
-        void        setWriteBuffer( std::string buffer );
-        void       setStatusCode( const int statusCode );
-        std::map<std::string, std::string>    getRequestMap( void );
-
-        bool        requestComplete();
+        void                                    addToBuffer( std::string bufferNew );
+        std::string                             getReadBuffer();
+        void                                    parseBuffer ( void );
+        void                                    printRequestMap( void );
+        void                                    createResponse ( void );
+        void                                    tempReponse( void);
+        void                                    setFd( int fd );
+        int                                     getFd();
+        size_t                                  getWritePos();
+        void                                    setWritePos( size_t pos );
+        std::string                             getWriteBuffer();
+        void                                    setFileBuffer(std::string buffer);
+        void                                    setWriteBuffer( std::string buffer );
+        void                                    setStatusCode( const int statusCode );
+        std::map<std::string, std::string>      getRequestMap( void );
+        bool                                    requestComplete();
+        std::time_t                             getTime();
+        void                                    updateTime();
+        bool                                    statusErrorCheck();
+        std::string                             createErrorResponse( void );                      
         // std::string getRequest();
 
-        std::time_t getTime();
-        void        updateTime();
 };
 
 std::string trimWhiteSpace(std::string& string);
