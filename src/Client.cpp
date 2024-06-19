@@ -97,7 +97,7 @@ void Client::setState (const int state)
 
 void Client::setStatusCode( const int statusCode )
 {
-    std::vector<int>     statusCheck = {204, 400, 401, 404, 405, 500, 503};
+    std::vector<int>     statusCheck = {400, 401, 404, 405, 500, 503};
     if (std::find(statusCheck.begin(), statusCheck.end(), statusCode) != statusCheck.end()){
         setState(ERROR);
     }
