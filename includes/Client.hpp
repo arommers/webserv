@@ -7,10 +7,19 @@
 #include <regex>
 #include <vector>
 
+enum    clientState
+{
+    READY = 0, // Reading is finished and the request can be parsed
+    READING = 1, // Reading HTTP request
+    SENDING = 2, // Sending HTTP request
+    ERROR = 3 // Some error occured 
+};
+
 class Client
 {
     private:
         int                                     _fd;
+        int                                     _state;
         std::string                             _readBuffer;
         std::string                             _writeBuffer;
         std::string                             _fileBuffer;
@@ -22,9 +31,9 @@ class Client
         std::time_t                             _time = std::time(nullptr);                     
         
         void    errorCheckRequest( void );
-        bool    isValidMethod( std::string method );
-        bool    isValidPath( std::string path );
-        bool    isValidVersion( std::string version );
+        void    isValidMethod( std::string method );
+        void    isValidPath( std::string path );
+        void    isValidVersion( std::string version );
 
     public:
         Client();
@@ -38,9 +47,10 @@ class Client
         void                                    parseBuffer ( void );
         void                                    printRequestMap( void );
         void                                    createResponse ( void );
-        void                                    tempReponse( void);
         void                                    setFd( int fd );
         int                                     getFd();
+        int                                     getState();
+        void                                    setState ( const int state );
         size_t                                  getWritePos();
         void                                    setWritePos( size_t pos );
         std::string                             getWriteBuffer();
@@ -51,7 +61,7 @@ class Client
         bool                                    requestComplete();
         std::time_t                             getTime();
         void                                    updateTime();
-        bool                                    statusErrorCheck();
+        bool                                    statusErrorCheck(); //Still need it?
         std::string                             createErrorResponse( void );                      
         // std::string getRequest();
 

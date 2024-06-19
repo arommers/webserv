@@ -201,7 +201,7 @@ void    Server::handleClientData(size_t index)
             //***************************************************************
              
             client.parseBuffer();
-            if (!client.statusErrorCheck()){
+            if (client.getState() == ERROR){
                 client.createResponse();
                 return;
             }
@@ -251,14 +251,13 @@ void    Server::handleClientRequest(Client &client)
     //     return 404
     // if status == -2
     //     return 403
-
-    fileContent = readFile(client.getRequestMap().at("Path"));
-    if (fileContent.empty())
-        client.setStatusCode(404);
-    // if (!client.statusErrorCheck()){
-    //     return ;
-    // }
-    client.setFileBuffer(fileContent);
+    fileContent = readFile(client);
+    if (client.getState() == ERROR)
+    {
+        client.createResponse();
+        return ;
+    }
+     client.setFileBuffer(fileContent);
     client.createResponse();
 }
 
@@ -277,27 +276,34 @@ int     Server::checkFile(std::string &file)
     return 0;
 }
 
-std::string Server::readFile(std::string &file)
+std::string Server::readFile(Client &client)
 {
     int         fileFd;      
     size_t      bytesRead;
     char        buffer[1024];
     std::string fileContent;
-    
-    file = "./html" + file;
+    std::string file;
 
-    
-    
+    file =  client.getRequestMap().at("Path");
+    if (file == "/"){
+        file += "index.html";
+    }
+    file = "./html" + file;
     fileFd = open(file.c_str(), O_RDONLY);
     if (fileFd < 0)
     {
+        client.setStatusCode(404);
         std::cerr << "failed to open file: " << file << ": " << strerror(errno) << std::endl;
         return "";
     }
     while ((bytesRead = read(fileFd, buffer, sizeof(buffer))) > 0)
+    {
+        std::cout << buffer << std::endl;
         fileContent += std::string(buffer, bytesRead);
+    }
     if (bytesRead < 0)
     {
+        client.setStatusCode(404);
         std::cerr << "failed to read file: " << file << ": " << strerror(errno) << std::endl;
         close(fileFd);
         return "";

@@ -57,7 +57,7 @@ class Server
 
         void    handleClientRequest();
         int     checkFile(std::string &file);
-        std::string readFile(std::string &file);
+        std::string readFile(Client &client);
 
 
 

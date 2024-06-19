@@ -85,8 +85,22 @@ void        Client::setFileBuffer(std::string buffer)
     _fileBuffer = buffer;
 }
 
+int Client::getState()
+{
+    return (_state);
+}
+
+void Client::setState (const int state)
+{
+    _state = state;
+}
+
 void Client::setStatusCode( const int statusCode )
 {
+    std::vector<int>     statusCheck = {204, 400, 401, 404, 405, 500, 503};
+    if (std::find(statusCheck.begin(), statusCheck.end(), statusCode) != statusCheck.end()){
+        setState(ERROR);
+    }
     _statusCode = statusCode;
 }
 
@@ -157,7 +171,9 @@ void    Client::parseBuffer ( void )
                 _requestMap["Body"] = key;
         }
     }
-    errorCheckRequest();
+    isValidMethod(_requestMap["Method"]);
+    isValidPath(_requestMap["Path"]);
+    isValidVersion(_requestMap["Version"]); 
 }
 
 void    Client::printRequestMap( void )
@@ -175,60 +191,35 @@ std::map<std::string, std::string> Client::getRequestMap( void )
     return (_requestMap);
 }
 
-void    Client::errorCheckRequest( void )
-{
-    if (!isValidMethod(_requestMap["Method"]) ||
-        !isValidPath(_requestMap["Path"]) ||
-        !isValidVersion(_requestMap["Version"]))
-    {
-        return ; // Return status code error and page with error!
-    }
-    
-}
-
-bool    Client::isValidMethod( std::string method )
+void   Client::isValidMethod( std::string method )
 {
     std::vector<std::string> validMethods = {"POST", "GET", "DELETE"};
 
-    if (method.empty())
-    {
-        _statusCode = 400;
-        return (false);
+    if (method.empty()){
+        setStatusCode(400);
     }
-    if (std::find(validMethods.begin(), validMethods.end(), method) != validMethods.end())
-    {
-        std::cout << "Method: " << method  << "#" << std::endl;
-        _statusCode = 405;
-        return (false);
+    else if (std::find(validMethods.begin(), validMethods.end(), method) == validMethods.end()){
+        setStatusCode(405);
     }
-    return (true);
 }
 
-bool    Client::isValidPath( std::string path )
+void    Client::isValidPath( std::string path )
 {
-    if (path.empty())
-    {
-        _statusCode = 400;
-        return (false);
+    if (path.empty()){
+        setStatusCode(400);
     }
-    return (true);
 }
 
-bool    Client::isValidVersion( std::string version )
+void    Client::isValidVersion( std::string version )
 {
     std::regex versionRegex(R"(HTTP\/\d\.\d)");
 
-    if (version.empty())
-    {
-        _statusCode = 400;
-        return (false);
+    if (version.empty()){
+        setStatusCode(400);
     }
-    if (!std::regex_match(version, versionRegex))
-    {
-        _statusCode = 505;
-        return (false);
+    else if (!std::regex_match(version, versionRegex)){
+        setStatusCode(505);
     }
-    return (true);
 }
 
 
@@ -240,40 +231,24 @@ std::string trimWhiteSpace(std::string& string)
     return string.substr(start, end - start + 1);
 }
 
-void Client::tempReponse( void)
-{
-    std::string htmlContent = "<html>"
-                            "<head><title>" + std::to_string(_statusCode) + " " + _ErrorMap.at(_statusCode) + "</title></head>"
-                            "<body>"
-                            "<h1>" + std::to_string(_statusCode) + " " + _ErrorMap.at(_statusCode) + "</h1>"
-                            "<p>The request could not be understood by the server due to malformed syntax.</p>"
-                            "</body>"
-                            "</html>\r\t\r\t";
-    if (_statusCode != 200){
-        _responseMap["Body"] = htmlContent;
-        _responseMap["Content-Type"] = "text/html";
-    }
-    else
-        _responseMap["Content-Length"] = std::to_string(_responseMap["Body"].size());
-    // else{
-    //     _responseMap["Body"] = "Hello Big World!";
-    //     _responseMap["Content-Type"] = "text/plain";
-
-    // }
-    
-
-}
-
 std::string Client::createErrorResponse( void )
 {
-    std::string errorResponse = "<html>"
+    std::string errorResponse;
+    std::string errorPage = "<html>"
                             "<head><title>" + std::to_string(_statusCode) + " " + _ErrorMap.at(_statusCode) + "</title></head>"
                             "<body>"
                             "<h1>" + std::to_string(_statusCode) + " " + _ErrorMap.at(_statusCode) + "</h1>"
                             "<p>The request could not be understood by the server due to malformed syntax.</p>"
                             "</body>"
                             "</html>\r\t\r\t";
-    _responseMap["Content-Length"] = std::to_string(errorResponse.size());
+    _responseMap["Content-Type"] = "text/html";
+    if (!_requestMap.count("Version"))
+        _requestMap["Version"] = "HTTP/1.1";
+    errorResponse = _requestMap.at("Version") + " " + std::to_string(_statusCode) + " " + _ErrorMap.at(_statusCode) + "\r\n";
+    errorResponse += "Content-Type: " + _responseMap.at("Content-Type") + "\r\n";
+    errorResponse += "Content-Length: " + std::to_string(errorPage.size()) + "\r\n\r\n";
+    errorResponse += errorPage;
+    setState(READY);
     return (errorResponse);
 }
 
@@ -281,27 +256,25 @@ void Client::createResponse ( void )
 {
     std::string responseMessage;
 
-    std::cout << "test!!!\n";
     if (_statusCode == 0)
         setStatusCode(200);
-      if (!statusErrorCheck())
+    if (getState() == ERROR)
     {
-        responseMessage += "Content-Length: " + _responseMap.at("Content-Length") + "\r\n\r\n";
-        responseMessage += createErrorResponse();
+        _writeBuffer = createErrorResponse();
+    }
+    else {
+        _responseMap["Content-Type"] = "text/html";
+        responseMessage = _requestMap.at("Version") + " " + std::to_string(_statusCode) + " " + _ErrorMap.at(_statusCode) + "\r\n";
+        responseMessage += "Content-Type: " + _responseMap.at("Content-Type") + "\r\n";
+        if (!_fileBuffer.empty()){
+            responseMessage += "Content-Length: " + std::to_string(_fileBuffer.size()) + "\r\n\r\n";
+            responseMessage += _fileBuffer;
+        }
+        else{
+            responseMessage += "\r\n";
+        }
         _writeBuffer = responseMessage;
-        return ;
     }
-    _responseMap["Content-Type"] = "text/html";
-    responseMessage = _requestMap.at("Version") + " " + std::to_string(_statusCode) + " " + _ErrorMap.at(_statusCode) + "\n";
-    responseMessage += "Content-Type: " + _responseMap.at("Content-Type") + "\n";
-  
-
-    if (!_fileBuffer.empty()){
-        _responseMap["Content-Length"] = std::to_string(_fileBuffer.size());
-        responseMessage += "Content-Length: " + _responseMap.at("Content-Length") + "\r\n\r\n";
-        responseMessage += _fileBuffer;
-    }
-    _writeBuffer = responseMessage;
 }
 
 bool Client::statusErrorCheck()
