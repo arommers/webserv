@@ -61,7 +61,6 @@ class Client
         bool                                    requestComplete();
         std::time_t                             getTime();
         void                                    updateTime();
-        bool                                    statusErrorCheck(); //Still need it?
         std::string                             createErrorResponse( void );                      
         // std::string getRequest();
 

@@ -248,7 +248,6 @@ std::string Client::createErrorResponse( void )
     errorResponse += "Content-Type: " + _responseMap.at("Content-Type") + "\r\n";
     errorResponse += "Content-Length: " + std::to_string(errorPage.size()) + "\r\n\r\n";
     errorResponse += errorPage;
-    setState(READY);
     return (errorResponse);
 }
 
@@ -261,6 +260,7 @@ void Client::createResponse ( void )
     if (getState() == ERROR)
     {
         _writeBuffer = createErrorResponse();
+        setState(READY);
     }
     else {
         _responseMap["Content-Type"] = "text/html";
@@ -275,18 +275,6 @@ void Client::createResponse ( void )
         }
         _writeBuffer = responseMessage;
     }
-}
-
-bool Client::statusErrorCheck()
-{
-    std::vector<int>     statusPass(200, 0);
-    for (int i = 0; i < statusPass.size(); i++){
-        if (_statusCode == statusPass[i]){
-            return true;
-        }
-    }
-    std::cout << _statusCode << std::endl;
-    return false;
 }
 
 
