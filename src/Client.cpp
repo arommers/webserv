@@ -262,23 +262,88 @@ void Client::tempReponse( void)
 
 }
 
-void Client::createResponse ( void )
+void Client::createResponse()
 {
-    std::string responseMessage;
-
-    _responseMap["Content-Type"] = "text/html";
-    setStatusCode(200);
-    responseMessage = _requestMap.at("Version") + " " + std::to_string(_statusCode) + " " + _ErrorMap.at(_statusCode) + "\n";
-    responseMessage += "Content-Type: " + _responseMap.at("Content-Type") + "\n";
-    std::cout << "Test: " << std::endl;
-
-    if (!_fileBuffer.empty()){
+    prepareResponse();
+    if (!_fileBuffer.empty())
+    {
         _responseMap["Content-Length"] = std::to_string(_fileBuffer.size());
-        responseMessage += "Content-Length: " + _responseMap.at("Content-Length") + "\r\n\r\n";
-        responseMessage += _fileBuffer;
+        finishResponse();
     }
-    _writeBuffer = responseMessage;
+    else if (_fileFd != -1)
+        readNextChunk();
 }
 
+// void Client::createResponse ( void )
+// {
+//     std::string responseMessage;
 
+//     _responseMap["Content-Type"] = "text/html";
+//     setStatusCode(200);
+//     responseMessage = _requestMap.at("Version") + " " + std::to_string(_statusCode) + " " + _ErrorMap.at(_statusCode) + "\n";
+//     responseMessage += "Content-Type: " + _responseMap.at("Content-Type") + "\n";
+//     std::cout << "Test: " << std::endl;
 
+//     if (!_fileBuffer.empty()){
+//         _responseMap["Content-Length"] = std::to_string(_fileBuffer.size());
+//         responseMessage += "Content-Length: " + _responseMap.at("Content-Length") + "\r\n\r\n";
+//         responseMessage += _fileBuffer;
+//     }
+//     _writeBuffer = responseMessage;
+// }
+
+bool Client::readNextChunk()
+{
+    char    buffer[BUFFER_SIZE];
+    int     bytesRead = read(_fileFd, buffer, sizeof(buffer));
+    
+    if (bytesRead < 0)
+    {
+        std::cerr << "Failed to read file: " << strerror(errno) << std::endl;
+        close(_fileFd);
+        _fileFd = -1;
+        return false;
+    } else if (bytesRead == 0)
+    {
+        close(_fileFd);
+        _fileFd = -1;
+        finishResponse();
+        return true;
+    }
+    
+    _fileBuffer.append(buffer, bytesRead);
+    return false;
+}
+
+void Client::prepareResponse()
+{
+    _responseHeaders = _requestMap.at("Version") + " " + std::to_string(_statusCode) + " " + _ErrorMap.at(_statusCode) + "\r\n";
+    _responseHeaders += "Content-Type: " + _responseMap.at("Content-Type") + "\r\n";
+}
+
+void Client::finishResponse()
+{
+    _responseHeaders += "Content-Length: " + std::to_string(_fileBuffer.size()) + "\r\n\r\n";
+    _writeBuffer = _responseHeaders + _fileBuffer;
+    _responseReady = true;
+}
+
+bool Client::getResponseStatus()
+{
+    return _responseReady;
+}
+
+std::string Client::getFileBuffer()
+{
+    return _fileBuffer;
+}
+
+void    Client::setFileFd(int fd)
+{
+    _fileFd = fd;
+}
+
+int Client::getFileFd()
+{
+    return _fileFd;
+}

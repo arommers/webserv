@@ -7,16 +7,6 @@ Server::~Server() {}
 // Server::Server(const Server &rhs) {}
 // Server& Server::operator=(const Server& rhs) {}
 
-/*
-    Some things to keep in mind
-    - More server sockets might mean a complete change in socket handling(please no T_T)
-      this depends on config parsing
-    - creating the server socket(s) and running poll could be combined in one function.
-      something like "run server"
-    - Maybe a function that build the server based on the config parsing
-      Another that runs the server.
-      Both part of the constructor
-*/
 
 int     Server::getServerSocket()
 {
@@ -162,16 +152,13 @@ void    Server::closeConnection(size_t index)
 
 void    Server::handleClientData(size_t index)
 {
-    char buffer[BUFFER_SIZE];
-    int bytesRead = read(_pollFds[index].fd, buffer, BUFFER_SIZE);
+    char    buffer[BUFFER_SIZE];
+    int     bytesRead = read(_pollFds[index].fd, buffer, BUFFER_SIZE);
 
     if (bytesRead <= 0)
     {
         if (bytesRead < 0)
-        {
             std::cerr << RED << "Error reading from client socket: " << strerror(errno) << RESET << std::endl;
-            // closeConnection(index);
-        }
         else
         {
             std::cout << YELLOW << "Client disconnected, socket fd is: " << RESET << std::endl;
@@ -186,23 +173,10 @@ void    Server::handleClientData(size_t index)
         
         if (client.requestComplete())
         {
-            // std::string request = client.getRequest();
             std::cout << GREEN <<"Complete Request Received:\n" << RESET <<client.getReadBuffer() << std::endl;
-
-            //  *** chatgpt created functions and variables to test ***
-
-            // std::string filename = parseRequest(request);
-            // std::ifstream file(filename);
-            // std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-            // std::string response = buildResponse(content);
-            // client.setWriteBuffer(response);
-
-            //***************************************************************
-             
             client.parseBuffer();
-            // parseRequest(request); // <========== This is where the http request gets parsed
-            handleClientRequest(client); // <========== open file and call build response
-            // sendClientData(); // <=========== Send back the response. Not sure about the position in the code here
+            handleClientRequest(client);
+            
         }
         else
             getClient(_pollFds[index].fd).addToBuffer(buffer);
@@ -211,13 +185,13 @@ void    Server::handleClientData(size_t index)
 
 void Server::sendClientData(size_t index)
 {
-    int bytesSent;
-    Client &client = getClient(_pollFds[index].fd);
-    std::string writeBuffer = client.getWriteBuffer();
+    Client& client = getClient(_pollFds[index].fd);
 
-    if (!writeBuffer.empty())
+    if (client.getResponseStatus())
     {
-        bytesSent = send(_pollFds[index].fd, writeBuffer.c_str(), writeBuffer.size(), 0);
+        std::string writeBuffer = client.getWriteBuffer();
+
+        int bytesSent = send(_pollFds[index].fd, writeBuffer.c_str(), writeBuffer.size(), 0);
         if (bytesSent < 0)
         {
             std::cerr << RED << "Error sending data to client: " << strerror(errno) << RESET << std::endl;
@@ -229,63 +203,137 @@ void Server::sendClientData(size_t index)
             if (client.getWriteBuffer().empty())
             {
                 std::cout << GREEN << "Response sent to client: " << _pollFds[index].fd << RESET << std::endl;
+                if (client.getFileFd() == -1) {
+                    closeConnection(index);
+                }
             }
         }
     }
+    else if (client.getFileFd() != -1)
+    {
+        if (client.readNextChunk() && client.getFileBuffer().empty())
+            std::cout << GREEN << "File transfer completed for client: " << _pollFds[index].fd << RESET << std::endl;
+    }
 }
 
-// std::string Server::parseRequest(const std::string& request)
+// void Server::sendClientData(size_t index)
 // {
-//     std::istringstream requestStream(request);
-//     std::string method, path, version;
-//     requestStream >> method >> path >> version;
+//     int         bytesSent;
+//     Client      &client = getClient(_pollFds[index].fd);
+//     std::string writeBuffer = client.getWriteBuffer();
 
-//     if (method == "GET")
+//     if (!writeBuffer.empty())
 //     {
-//         if (path == "/")
-//             path = "/html/index.html";
-//         return "." + path;
+//         bytesSent = send(_pollFds[index].fd, writeBuffer.c_str(), writeBuffer.size(), 0);
+//         if (bytesSent < 0)
+//         {
+//             std::cerr << RED << "Error sending data to client: " << strerror(errno) << RESET << std::endl;
+//             closeConnection(index);
+//         }
+//         else
+//             client.setWriteBuffer(writeBuffer.substr(bytesSent));
 //     }
-
-//     return "";
+//     else if (client.getFileFd() != -1)
+//     {
+//         client.readNextChunk();
+        
+//         if(!client.getFileBuffer().empty())
+//         {
+//             client.setWriteBuffer(client.getFileBuffer());
+//             client.setFileBuffer("");
+//         }
+//         else
+//             std::cout << GREEN << "Response sent to client: " << _pollFds[index].fd << RESET << std::endl;
+//     }
 // }
 
-// std::string Server::buildResponse(const std::string& content)
+// void Server::sendClientData(size_t index)
 // {
-//     std::ostringstream responseStream;
-//     responseStream << "HTTP/1.1 200 OK\r\n";
-//     responseStream << "Content-Length: " << content.size() << "\r\n";
-//     responseStream << "Content-Type: text/html\r\n";
-//     responseStream << "\r\n";
-//     responseStream << content;
-//     std::cout << YELLOW << responseStream.str() << RESET << std::endl;
-//     return responseStream.str();
+//     int bytesSent;
+//     Client &client = getClient(_pollFds[index].fd);
+//     std::string writeBuffer = client.getWriteBuffer();
+
+//     if (!writeBuffer.empty())
+//     {
+//         bytesSent = send(_pollFds[index].fd, writeBuffer.c_str(), writeBuffer.size(), 0);
+//         if (bytesSent < 0)
+//         {
+//             std::cerr << RED << "Error sending data to client: " << strerror(errno) << RESET << std::endl;
+//             closeConnection(index);
+//         }
+//         else
+//         {
+//             client.setWriteBuffer(writeBuffer.substr(bytesSent));
+//             if (client.getWriteBuffer().empty())
+//             {
+//                 std::cout << GREEN << "Response sent to client: " << _pollFds[index].fd << RESET << std::endl;
+//             }
+//         }
+//     }
 // }
 
-void    Server::handleClientRequest(Client &client)
+void    Server::handleGetRequest(Client &client)
 {
-    int         status;
-    std::string fileContent;
+    std::string filePath = client.getRequestMap().at("Path");
+    readFile(filePath, client);
 
-    // Check method
-    // Call specific function based on the method
-    // For now this is just a simple get to read the contents of the file
-    // status = checkFile(client.getRequestMap().at("File"));
-    // if (status == -1)
-    //     return 404
-    // if status == -2
-    //     return 403
-
-    fileContent = readFile(client.getRequestMap().at("Path"));
-    client.setFileBuffer(fileContent);
+    client.setStatusCode(200);
     client.createResponse();
 }
 
-
-// void    Server::sendClientData(size_t index)
+// void    Server::handleGetRequest(Client &client)
 // {
-    
+//     std::string filePath = client.getRequestMap().at("Path");
+//     std::string fileContent = readFile(filePath);
+
+//     client.setFileBuffer(fileContent);
+//     client.setStatusCode(200);
+//     client.createResponse();
 // }
+
+// void    Server::handlePostRequest(Client &client)
+// {
+
+// }
+
+// void    Server::handleDeleteRequest(Client &client)
+// {
+
+// }
+
+void Server::handleClientRequest(Client &client)
+{
+    try
+    {
+        std::string method = client.getRequestMap().at("Method");
+
+        if (method == "GET")
+            handleGetRequest(client);
+        // else if (method == "POST")
+        //     handlePostRequest(client);
+        // else if (method == "DELETE")
+        //     handleDeleteRequest(client);
+    }
+    catch (const std::out_of_range& e)
+    {
+        std::cerr << "Method key not found in request map: " << e.what() << std::endl;
+        client.setStatusCode(400); // Bad Request
+        client.tempReponse();
+    } 
+    catch (const std::length_error& e)
+    {
+        std::cerr << "String length error: " << e.what() << std::endl;
+        client.setStatusCode(500); // Internal Server Error
+        client.tempReponse();
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << "General error: " << e.what() << std::endl;
+        client.setStatusCode(500); // Internal Server Error
+        client.tempReponse();
+    }
+}
+
 
 int     Server::checkFile(std::string &file)
 {
@@ -296,34 +344,52 @@ int     Server::checkFile(std::string &file)
     return 0;
 }
 
-std::string Server::readFile(std::string &file)
+std::string Server::readFile(std::string &file, Client &client)
 {
     int         fileFd;      
-    size_t      bytesRead;
-    char        buffer[1024];
-    std::string fileContent;
-    
-    file = "./html" + file;
+    int         bytesRead;
+    char        buffer[BUFFER_SIZE];
 
     
-    
+    file = "./html" + file + "index.html";
+
     fileFd = open(file.c_str(), O_RDONLY);
     if (fileFd < 0)
     {
         std::cerr << "failed to open file: " << file << ": " << strerror(errno) << std::endl;
         return "";
     }
-    while ((bytesRead = read(fileFd, buffer, sizeof(buffer))) > 0)
-        fileContent += std::string(buffer, bytesRead);
-    if (bytesRead < 0)
-    {
-        std::cerr << "failed to read file: " << file << ": " << strerror(errno) << std::endl;
-        close(fileFd);
-        return "";
-    }
-    close(fileFd);
-    return fileContent;
+    client.setFileFd(fileFd);
+    return "";
 }
+
+
+// std::string Server::readFile(std::string &file)
+// {
+//     int         fileFd;      
+//     int         bytesRead;
+//     char        buffer[1024];
+//     std::string fileContent;
+    
+//     file = "./html" + file + "index.html";
+
+//     fileFd = open(file.c_str(), O_RDONLY);
+//     if (fileFd < 0)
+//     {
+//         std::cerr << "failed to open file: " << file << ": " << strerror(errno) << std::endl;
+//         return "";
+//     }
+//     while ((bytesRead = read(fileFd, buffer, sizeof(buffer))) > 0)
+//         fileContent += std::string(buffer, bytesRead);
+//     if (bytesRead < 0)
+//     {
+//         std::cerr << "failed to read file: " << file << ": " << strerror(errno) << std::endl;
+//         close(fileFd);
+//         return "";
+//     }
+//     close(fileFd);
+//     return fileContent;
+// }
 
 void    Server::checkTimeout(int time)
 {

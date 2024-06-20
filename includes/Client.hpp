@@ -1,10 +1,34 @@
 #pragma once
 
-#include <iostream>
 #include <sstream>
 #include <ctime>
 #include <map>
 #include <regex>
+#include <iostream>       // Input and output through streams
+#include <cstring>        // Manipulate C-style strings and arrays
+#include <arpa/inet.h>    // Provides functions for manipulating IP addresses (htonl, htons)
+#include <unistd.h>       // Provides access to the POSIX operating system API (close, read, write)
+#include <sys/socket.h>   // Provides declarations for the socket API functions (socket, bind, listen, access)
+#include <netinet/in.h>   // Constants and structures needed for internet domain addresses ( sockaddr_in AF_INET)
+#include <poll.h>         // Required for struct pollfd and poll
+#include <fcntl.h>
+#include <vector>
+#include <unordered_map>
+#include <csignal>
+#include <fstream>        // Temporary for testing  
+
+
+#define RESET   "\033[0m"
+#define RED     "\033[31m"
+#define GREEN   "\033[32m"
+#define YELLOW  "\033[33m"
+
+//pending config parsing these are set
+
+#define PORT 4040
+#define MAX_CLIENTS 10
+#define TIMEOUT 60
+#define BUFFER_SIZE 1024
 
 class Client
 {
@@ -20,6 +44,14 @@ class Client
         int                                     _statusCode = 0;
         std::time_t                             _time = std::time(nullptr);                     
         
+    /***************************************************************
+                    * Refactoring experiments 
+     ***************************************************************/
+
+        std::string                             _responseHeaders;
+        int                                     _fileFd = -1;
+        bool                                    _responseReady = false;
+
         void    errorCheckRequest( void );
         bool    isValidMethod( std::string method );
         bool    isValidPath( std::string path );
@@ -45,7 +77,7 @@ class Client
         std::string getWriteBuffer();
         void        setFileBuffer(std::string buffer);
         void        setWriteBuffer( std::string buffer );
-        void       setStatusCode( const int statusCode );
+        void        setStatusCode( const int statusCode );
         std::map<std::string, std::string>    getRequestMap( void );
 
         bool        requestComplete();
@@ -53,6 +85,20 @@ class Client
 
         std::time_t getTime();
         void        updateTime();
+
+    /***************************************************************
+                    * Refactoring experiments 
+     ***************************************************************/
+
+        std::string getFileBuffer();
+        void        setFileFd(int fd);
+        int         getFileFd();
+
+        bool        readNextChunk();
+        void        prepareResponse();
+        void        finishResponse();
+        bool        getResponseStatus();
+
 };
 
 std::string trimWhiteSpace(std::string& string);
