@@ -277,5 +277,16 @@ void Client::createResponse ( void )
     }
 }
 
+void    Client::resetClientData( void )
+{
+    _readBuffer.clear();
+    _writeBuffer.clear();
+    _fileBuffer.clear();
+    _writePos = 0;
+    _requestMap.clear();
+    _responseMap.clear();
+    _statusCode = 0;
+}
+
 
 

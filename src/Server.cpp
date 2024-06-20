@@ -233,6 +233,7 @@ void Server::sendClientData(size_t index)
             if (client.getWriteBuffer().empty())
             {
                 std::cout << GREEN << "Response sent to client: " << _pollFds[index].fd << RESET << std::endl;
+                client.resetClientData(); // Resetting all data of client. Right location?
             }
         }
     }
