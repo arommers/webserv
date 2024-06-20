@@ -1,0 +1,23 @@
+/* NOTES
+	default_error_pages :
+	- Setup default error pages.
+		- 400 \ 403 \ 404 \ 405 \ 406 \ 409 \ 410 \ 413 \ 500 \ 505
+
+
+	default_server :
+	- Choose the port and host of each ’server’.
+	- Setup the server_names or not
+	- "The first server for a host:port will be the default for this host:port (that means
+		it will answer to all the requests that don’t belong to an other server)."
+
+
+[server]
+port = 8080
+root_directory = /var/www/html
+log_file = /var/log/myserver.log
+
+[security]
+enable_ssl = true
+certificate_file = /etc/ssl/certs/myserver.crt
+key_file = /etc/ssl/private/myserver.key
+*/

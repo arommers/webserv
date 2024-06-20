@@ -1,0 +1,26 @@
+/*
+	default_error_pages :
+	- Setup default error pages.
+		- 400 \ 403 \ 404 \ 405 \ 406 \ 409 \ 410 \ 500 \ 505
+
+		html files (.html)
+
+		400 Bad Request
+		403 Forbidden
+		404 Not Found
+		405 Method Not Allowed
+		406 Not Acceptable
+		409 Conflict
+		410 Gone
+		500 Internal Server Error
+		505 HTTP Version Not Supported
+
+
+
+for testig run:
+----------------
+g++ -o simple_test main_test.cpp
+./simple_test
+http://localhost:8080/
+
+*/
