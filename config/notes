@@ -11,13 +11,17 @@
 		it will answer to all the requests that don’t belong to an other server)."
 
 
-[server]
-port = 8080
-root_directory = /var/www/html
-log_file = /var/log/myserver.log
+for testig run:
+----------------
+g++ main_test.cpp config.cpp
+./a.out
 
-[security]
-enable_ssl = true
-certificate_file = /etc/ssl/certs/myserver.crt
-key_file = /etc/ssl/private/myserver.key
+
+
+/*
+ * Things that should not work in the config file:
+ * - double port -> if both servers have the same port.
+ * - no data -> empty file
+ * - wrong port
+ */
 */
