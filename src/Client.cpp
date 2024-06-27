@@ -262,18 +262,6 @@ void Client::tempReponse( void)
 
 }
 
-void Client::createResponse()
-{
-    prepareResponse();
-    if (!_fileBuffer.empty())
-    {
-        _responseMap["Content-Length"] = std::to_string(_fileBuffer.size());
-        finishResponse();
-    }
-    else if (_fileFd != -1)
-        readNextChunk();
-}
-
 // void Client::createResponse ( void )
 // {
 //     std::string responseMessage;
@@ -282,9 +270,10 @@ void Client::createResponse()
 //     setStatusCode(200);
 //     responseMessage = _requestMap.at("Version") + " " + std::to_string(_statusCode) + " " + _ErrorMap.at(_statusCode) + "\n";
 //     responseMessage += "Content-Type: " + _responseMap.at("Content-Type") + "\n";
-//     std::cout << "Test: " << std::endl;
+//     // std::cout << "Test: " << std::endl;
 
-//     if (!_fileBuffer.empty()){
+//     if (!_fileBuffer.empty())
+//     {
 //         _responseMap["Content-Length"] = std::to_string(_fileBuffer.size());
 //         responseMessage += "Content-Length: " + _responseMap.at("Content-Length") + "\r\n\r\n";
 //         responseMessage += _fileBuffer;
@@ -292,41 +281,67 @@ void Client::createResponse()
 //     _writeBuffer = responseMessage;
 // }
 
-bool Client::readNextChunk()
+void Client::createResponse ( void )
+{
+    std::string responseMessage;
+
+    if (_statusCode == 0)
+        setStatusCode(200);
+    // if (getState() == ERROR)
+    // {
+    //     _writeBuffer = createErrorResponse();
+    //     setState(READY);
+    // }
+    // else {
+    _responseMap["Content-Type"] = "text/html";
+    responseMessage = _requestMap.at("Version") + " " + std::to_string(_statusCode) + " " + _ErrorMap.at(_statusCode) + "\r\n";
+    responseMessage += "Content-Type: " + _responseMap.at("Content-Type") + "\r\n";
+    if (!_fileBuffer.empty())
+    {
+        responseMessage += "Content-Length: " + std::to_string(_fileBuffer.size()) + "\r\n\r\n";
+        responseMessage += _fileBuffer;
+    }
+    else
+        responseMessage += "\r\n";
+    _writeBuffer = responseMessage;
+    // }
+}
+
+void    Client::readNextChunk()
 {
     char    buffer[BUFFER_SIZE];
-    int     bytesRead = read(_fileFd, buffer, sizeof(buffer));
+    int     bytesRead = read(_fd, buffer, BUFFER_SIZE);
     
     if (bytesRead < 0)
     {
         std::cerr << "Failed to read file: " << strerror(errno) << std::endl;
-        close(_fileFd);
-        _fileFd = -1;
-        return false;
-    } else if (bytesRead == 0)
-    {
-        close(_fileFd);
-        _fileFd = -1;
-        finishResponse();
-        return true;
+        setStatusCode(404);
+        close(_fd);
+        _responseReady = true;
+        return;
     }
-    
+    else if (bytesRead == 0)
+    {
+        close(_fd);
+        _responseReady = true;
+        createResponse();
+        return;
+    }
     _fileBuffer.append(buffer, bytesRead);
-    return false;
 }
 
-void Client::prepareResponse()
-{
-    _responseHeaders = _requestMap.at("Version") + " " + std::to_string(_statusCode) + " " + _ErrorMap.at(_statusCode) + "\r\n";
-    _responseHeaders += "Content-Type: " + _responseMap.at("Content-Type") + "\r\n";
-}
+// void Client::prepareResponse()
+// {
+//     _responseHeaders = _requestMap.at("Version") + " " + std::to_string(_statusCode) + " " + _ErrorMap.at(_statusCode) + "\r\n";
+//     _responseHeaders += "Content-Type: " + _responseMap.at("Content-Type") + "\r\n";
+// }
 
-void Client::finishResponse()
-{
-    _responseHeaders += "Content-Length: " + std::to_string(_fileBuffer.size()) + "\r\n\r\n";
-    _writeBuffer = _responseHeaders + _fileBuffer;
-    _responseReady = true;
-}
+// void Client::finishResponse()
+// {
+//     _responseHeaders += "Content-Length: " + std::to_string(_fileBuffer.size()) + "\r\n\r\n";
+//     _writeBuffer = _responseHeaders + _fileBuffer;
+//     _responseReady = true;
+// }
 
 bool Client::getResponseStatus()
 {
@@ -336,14 +351,4 @@ bool Client::getResponseStatus()
 std::string Client::getFileBuffer()
 {
     return _fileBuffer;
-}
-
-void    Client::setFileFd(int fd)
-{
-    _fileFd = fd;
-}
-
-int Client::getFileFd()
-{
-    return _fileFd;
 }

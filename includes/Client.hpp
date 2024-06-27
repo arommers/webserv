@@ -33,7 +33,7 @@
 class Client
 {
     private:
-        int                                     _fd;
+        int                                     _fd = -1;
         std::string                             _readBuffer;
         std::string                             _writeBuffer;
         std::string                             _fileBuffer;
@@ -44,12 +44,6 @@ class Client
         int                                     _statusCode = 0;
         std::time_t                             _time = std::time(nullptr);                     
         
-    /***************************************************************
-                    * Refactoring experiments 
-     ***************************************************************/
-
-        std::string                             _responseHeaders;
-        int                                     _fileFd = -1;
         bool                                    _responseReady = false;
 
         void    errorCheckRequest( void );
@@ -70,7 +64,7 @@ class Client
         void        printRequestMap( void );
         void        createResponse ( void );
         void        tempReponse( void);
-        void        setFd( int fd );
+        void        setFd(int fd);
         int         getFd();
         size_t      getWritePos();
         void        setWritePos( size_t pos );
@@ -86,15 +80,12 @@ class Client
         std::time_t getTime();
         void        updateTime();
 
-    /***************************************************************
-                    * Refactoring experiments 
-     ***************************************************************/
-
+ 
         std::string getFileBuffer();
         void        setFileFd(int fd);
         int         getFileFd();
 
-        bool        readNextChunk();
+        void        readNextChunk();
         void        prepareResponse();
         void        finishResponse();
         bool        getResponseStatus();

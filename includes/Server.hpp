@@ -29,9 +29,8 @@ class Server
         void    checkTimeout(int time);
         int     getServerSocket();
 
-        // void        handleClientRequest();
-        int         checkFile(std::string &file);
-        std::string readFile(std::string &file, Client& client);
+        int     checkFile(std::string &file);
+        void    readFile(Client& client);
 
 
         void    handleClientRequest(Client &client);
