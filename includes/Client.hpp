@@ -6,6 +6,7 @@
 #include <map>
 #include <regex>
 #include <vector>
+#include <unistd.h>
 
 enum    clientState
 {
@@ -62,7 +63,8 @@ class Client
         std::time_t                             getTime();
         void                                    updateTime();
         std::string                             createErrorResponse( void );
-        void                                    resetClientData( void );                     
+        void                                    resetClientData( void );
+        void                                    runCGI( void );        
         // std::string getRequest();
 
 };

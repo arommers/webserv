@@ -288,5 +288,13 @@ void    Client::resetClientData( void )
     _statusCode = 0;
 }
 
+void Client::runCGI( void )
+{
+    std::cout << "In CGI\n";
+        char *test[] = {(char *)"cgi-bin/upload.cgi", NULL};
+
+    execve(test[0], test, NULL);
+}
+
 
 

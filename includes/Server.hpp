@@ -54,10 +54,12 @@ class Server
         void    removeClient(int fd);
         void    checkTimeout(int time);
         int     getServerSocket();
+        bool    isCGI( Client& client );
 
         void    handleClientRequest();
         int     checkFile(std::string &file);
         std::string readFile(Client &client);
+
 
 
 

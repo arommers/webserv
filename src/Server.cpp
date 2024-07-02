@@ -168,6 +168,8 @@ void    Server::handleClientData(size_t index)
 
     if (bytesRead <= 0)
     {
+        std::cout << "Hallo 5\n";
+
         if (bytesRead < 0)
         {
             std::cerr << RED << "Error reading from client socket: " << strerror(errno) << RESET << std::endl;
@@ -184,7 +186,6 @@ void    Server::handleClientData(size_t index)
         buffer[bytesRead] = '\0';
         Client &client = getClient(_pollFds[index].fd);
         client.addToBuffer(buffer);
-        
         if (client.requestComplete())
         {
             // std::string request = client.getRequest();
@@ -199,7 +200,6 @@ void    Server::handleClientData(size_t index)
             // client.setWriteBuffer(response);
 
             //***************************************************************
-             
             client.parseBuffer();
             if (client.getState() == ERROR){
                 client.createResponse();
@@ -208,8 +208,9 @@ void    Server::handleClientData(size_t index)
             handleClientRequest(client); // <========== open file and call build response
             // sendClientData(); // <=========== Send back the response. Not sure about the position in the code here
         }
-        else
+        else{
             getClient(_pollFds[index].fd).addToBuffer(buffer);
+        }
     }
 }
 
@@ -252,13 +253,18 @@ void    Server::handleClientRequest(Client &client)
     //     return 404
     // if status == -2
     //     return 403
-    fileContent = readFile(client);
-    if (client.getState() == ERROR)
-    {
-        client.createResponse();
-        return ;
+    if (isCGI(client)){
+        client.runCGI();
     }
-     client.setFileBuffer(fileContent);
+    else{
+        fileContent = readFile(client);
+        if (client.getState() == ERROR)
+        {
+            client.createResponse();
+            return ;
+        }
+        client.setFileBuffer(fileContent);
+    }
     client.createResponse();
 }
 
@@ -358,3 +364,12 @@ void Server::removeClient(int fd)
 //       std::cout << GREEN << "SIGINT received. Shutting down gracefully..." << RESET << std::endl;
 //     _shutdownRequest = true;
 // }
+
+bool Server::isCGI( Client &client )
+{
+    if (client.getRequestMap().at("Path").find("/cgi-bin/") != std::string::npos){
+        std::cout << "Test: " << client.getRequestMap().at("Path") << std::endl;
+        return (true);
+    }
+    return (false);
+}
