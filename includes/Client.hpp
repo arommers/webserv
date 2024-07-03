@@ -30,6 +30,18 @@
 #define TIMEOUT 60
 #define BUFFER_SIZE 1024
 
+enum class type {
+    SERVER_SOCKET,
+    CLIENT_SOCKET,
+    FILE,
+    PIPE
+};
+
+struct pollInfo {
+    struct pollfd   fd;
+    type          type;
+};
+
 class Client
 {
     private:

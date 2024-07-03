@@ -7,7 +7,7 @@ class Server
     private:
         int                             _serverSocket;
         struct sockaddr_in              _address;
-        std::vector<struct pollfd>      _pollFds;
+        std::vector<struct pollInfo>    _pollFds;
         std::unordered_map<int, Client> _clients;
 
     public:
@@ -39,11 +39,10 @@ class Server
         void    handlePostRequest(Client &client);
         void    handleDeleteRequest(Client &client);
 
+        void    addPollFd(int fd, type type);
+        void    removePollFd(int fd);
 
 
-        // temporary chatgpt created test functions
-        // std::string parseRequest(const std::string& request);
-        // std::string buildResponse(const std::string& content);
 
         // static void signalHandler(int signal);
 };
