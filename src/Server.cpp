@@ -309,4 +309,41 @@ void Server::removeClient(int fd)
     _clients.erase(fd);
 }
 
+<<<<<<< HEAD
 
+=======
+void Server::addPollFd(int fd, type type)
+{
+    pollfd pollFd;
+    pollFd.fd = fd;
+
+    if (type == type::CLIENT_SOCKET) {
+        pollFd.events = POLLIN | POLLOUT;
+    } else {
+        pollFd.events = POLLIN;
+    }
+
+    pollInfo pollInfo;
+    pollInfo.fd = pollFd;
+    pollInfo.type = type;
+    _pollFds.push_back(pollInfo);
+}
+
+void Server::removePollFd(int fd)
+{
+    for (auto it = _pollFds.begin(); it != _pollFds.end(); ++it)
+    {
+        if (it->fd.fd == fd)
+        {
+            _pollFds.erase(it);
+            break;
+        }
+    }
+}
+
+// void Server::signalHandler(int signal)
+// {
+//       std::cout << GREEN << "SIGINT received. Shutting down gracefully..." << RESET << std::endl;
+//     _shutdownRequest = true;
+// }
+>>>>>>> df9966bbb40871113db8679a2c95b08eaa1082e3

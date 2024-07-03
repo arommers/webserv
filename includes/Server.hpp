@@ -7,7 +7,7 @@ class Server
     private:
         int                             _serverSocket;
         struct sockaddr_in              _address;
-        std::vector<struct pollfd>      _pollFds;
+        std::vector<struct pollInfo>    _pollFds;
         std::unordered_map<int, Client> _clients;
 
     public:
