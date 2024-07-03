@@ -44,51 +44,6 @@ void    Client::addToBuffer( std::string bufferNew )
     _readBuffer += bufferNew;
 }
 
-std::string    Client::getReadBuffer( void )
-{
-    return (_readBuffer);
-}
-
-void Client::setFd ( int fd )
-{
-    _fd = fd;
-}
-
-int Client::getFd()
-{
-    return (_fd);
-}
-
-size_t      Client::getWritePos()
-{
-    return (_writePos);
-}
-
-void        Client::setWritePos( size_t pos )
-{
-    _writePos = pos;
-}
-
-std::string Client::getWriteBuffer()
-{
-    return (_writeBuffer);
-}
-
-void        Client::setWriteBuffer( std::string buffer )
-{
-    _writeBuffer = buffer;
-}
-
-void        Client::setFileBuffer(std::string buffer)
-{
-    _fileBuffer = buffer;
-}
-
-void Client::setStatusCode( const int statusCode )
-{
-    _statusCode = statusCode;
-}
-
 bool    Client::requestComplete()
 {
     size_t pos = _readBuffer.find("\r\n\r\n");
@@ -111,14 +66,6 @@ bool    Client::requestComplete()
 
     return _readBuffer.size() >= bodyLength;
 }
-
-// std::string Client::getRequest()
-// {
-//     std::string request = _readBuffer;
-//     _readBuffer.clear();
-
-//     return request;
-// }
 
 void    Client::updateTime()
 {
@@ -229,7 +176,6 @@ bool    Client::isValidVersion( std::string version )
     return (true);
 }
 
-
 std::string trimWhiteSpace(std::string& string)
 {
     size_t start = string.find_first_not_of(" \n\t\r");
@@ -258,28 +204,7 @@ void Client::tempReponse( void)
     //     _responseMap["Content-Type"] = "text/plain";
 
     // }
-    
-
 }
-
-// void Client::createResponse ( void )
-// {
-//     std::string responseMessage;
-
-//     _responseMap["Content-Type"] = "text/html";
-//     setStatusCode(200);
-//     responseMessage = _requestMap.at("Version") + " " + std::to_string(_statusCode) + " " + _ErrorMap.at(_statusCode) + "\n";
-//     responseMessage += "Content-Type: " + _responseMap.at("Content-Type") + "\n";
-//     // std::cout << "Test: " << std::endl;
-
-//     if (!_fileBuffer.empty())
-//     {
-//         _responseMap["Content-Length"] = std::to_string(_fileBuffer.size());
-//         responseMessage += "Content-Length: " + _responseMap.at("Content-Length") + "\r\n\r\n";
-//         responseMessage += _fileBuffer;
-//     }
-//     _writeBuffer = responseMessage;
-// }
 
 void Client::createResponse ( void )
 {
@@ -307,22 +232,23 @@ void Client::createResponse ( void )
     // }
 }
 
-void    Client::readNextChunk()
+void Client::readNextChunk()
 {
-    char    buffer[BUFFER_SIZE];
-    int     bytesRead = read(_fd, buffer, BUFFER_SIZE);
-    
+    char buffer[BUFFER_SIZE];
+    int bytesRead = read(_fd, buffer, BUFFER_SIZE);
+
     if (bytesRead < 0)
     {
         std::cerr << "Failed to read file: " << strerror(errno) << std::endl;
         setStatusCode(404);
         close(_fd);
+        _fd = -1;
         _responseReady = true;
         return;
-    }
-    else if (bytesRead == 0)
+    } else if (bytesRead == 0)
     {
         close(_fd);
+        _fd = -1;
         _responseReady = true;
         createResponse();
         return;
@@ -330,18 +256,31 @@ void    Client::readNextChunk()
     _fileBuffer.append(buffer, bytesRead);
 }
 
-// void Client::prepareResponse()
+// void    Client::readNextChunk()
 // {
-//     _responseHeaders = _requestMap.at("Version") + " " + std::to_string(_statusCode) + " " + _ErrorMap.at(_statusCode) + "\r\n";
-//     _responseHeaders += "Content-Type: " + _responseMap.at("Content-Type") + "\r\n";
+//     char    buffer[BUFFER_SIZE];
+//     int     bytesRead = read(_fd, buffer, BUFFER_SIZE);
+    
+//     if (bytesRead < 0)
+//     {
+//         std::cerr << "Failed to read file: " << strerror(errno) << std::endl;
+//         setStatusCode(404);
+//         close(_fd);
+//         _responseReady = true;
+//         return;
+//     }
+//     else if (bytesRead == 0)
+//     {
+//         close(_fd);
+//         _responseReady = true;
+//         createResponse();
+//         return;
+//     }
+//     _fileBuffer.append(buffer, bytesRead);
 // }
 
-// void Client::finishResponse()
-// {
-//     _responseHeaders += "Content-Length: " + std::to_string(_fileBuffer.size()) + "\r\n\r\n";
-//     _writeBuffer = _responseHeaders + _fileBuffer;
-//     _responseReady = true;
-// }
+// Getters and Setters
+
 
 bool Client::getResponseStatus()
 {
@@ -351,4 +290,64 @@ bool Client::getResponseStatus()
 std::string Client::getFileBuffer()
 {
     return _fileBuffer;
+}
+
+std::string    Client::getReadBuffer( void )
+{
+    return (_readBuffer);
+}
+
+void Client::setFd ( int fd )
+{
+    _fd = fd;
+}
+
+int Client::getFd()
+{
+    return (_fd);
+}
+
+size_t      Client::getWritePos()
+{
+    return (_writePos);
+}
+
+void        Client::setWritePos( size_t pos )
+{
+    _writePos = pos;
+}
+
+std::string Client::getWriteBuffer()
+{
+    return (_writeBuffer);
+}
+
+void        Client::setWriteBuffer( std::string buffer )
+{
+    _writeBuffer = buffer;
+}
+
+void        Client::setFileBuffer(std::string buffer)
+{
+    _fileBuffer = buffer;
+}
+
+void Client::setStatusCode( const int statusCode )
+{
+    _statusCode = statusCode;
+}
+
+// 
+// 
+
+void Client::setFileFd(int fd) {
+    _fileFd = fd;
+}
+
+int Client::getFileFd() {
+    return _fileFd;
+}
+
+bool Client::fileReadComplete() {
+    return _fileFd == -1;
 }

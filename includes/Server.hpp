@@ -24,14 +24,12 @@ class Server
         void    handleClientData(size_t index);
         void    sendClientData(size_t index);
         void    addClient(int fd);
-        Client&  getClient(int fd);
+        Client& getClient(int fd);
         void    removeClient(int fd);
         void    checkTimeout(int time);
         int     getServerSocket();
 
-        int     checkFile(std::string &file);
         void    readFile(Client& client);
-
 
         void    handleClientRequest(Client &client);
 
@@ -39,11 +37,5 @@ class Server
         void    handlePostRequest(Client &client);
         void    handleDeleteRequest(Client &client);
 
-
-
-        // temporary chatgpt created test functions
-        // std::string parseRequest(const std::string& request);
-        // std::string buildResponse(const std::string& content);
-
-        // static void signalHandler(int signal);
-};
+        void    handleFileRead(size_t index)
+}

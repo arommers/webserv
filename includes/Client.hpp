@@ -34,6 +34,7 @@ class Client
 {
     private:
         int                                     _fd = -1;
+        int                                     _fileFd = -1;
         std::string                             _readBuffer;
         std::string                             _writeBuffer;
         std::string                             _fileBuffer;
@@ -59,11 +60,19 @@ class Client
         ~Client();
 
         void        addToBuffer( std::string bufferNew );
-        std::string getReadBuffer();
+
         void        parseBuffer ( void );
         void        printRequestMap( void );
         void        createResponse ( void );
         void        tempReponse( void);
+        std::map<std::string, std::string>    getRequestMap( void );
+
+        bool        requestComplete();
+
+        std::time_t getTime();
+        void        updateTime();
+
+        std::string getReadBuffer();
         void        setFd(int fd);
         int         getFd();
         size_t      getWritePos();
@@ -72,24 +81,17 @@ class Client
         void        setFileBuffer(std::string buffer);
         void        setWriteBuffer( std::string buffer );
         void        setStatusCode( const int statusCode );
-        std::map<std::string, std::string>    getRequestMap( void );
-
-        bool        requestComplete();
-        // std::string getRequest();
-
-        std::time_t getTime();
-        void        updateTime();
-
- 
         std::string getFileBuffer();
-        void        setFileFd(int fd);
-        int         getFileFd();
 
         void        readNextChunk();
-        void        prepareResponse();
-        void        finishResponse();
         bool        getResponseStatus();
 
+        // 
+
+        void setFileFd(int fd);
+        int getFileFd();
+        void readNextChunk();
+        bool fileReadComplete();
 };
 
 std::string trimWhiteSpace(std::string& string);
