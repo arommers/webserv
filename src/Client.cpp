@@ -235,20 +235,21 @@ void Client::createResponse ( void )
 void Client::readNextChunk()
 {
     char buffer[BUFFER_SIZE];
-    int bytesRead = read(_fd, buffer, BUFFER_SIZE);
+    int bytesRead = read(_fileFd, buffer, BUFFER_SIZE);
 
     if (bytesRead < 0)
     {
         std::cerr << "Failed to read file: " << strerror(errno) << std::endl;
         setStatusCode(404);
-        close(_fd);
+        close(_fileFd);
         _fd = -1;
         _responseReady = true;
         return;
-    } else if (bytesRead == 0)
+    }
+    else if (bytesRead == 0)
     {
-        close(_fd);
-        _fd = -1;
+        close(_fileFd);
+        _fileFd = -1;
         _responseReady = true;
         createResponse();
         return;
@@ -337,17 +338,12 @@ void Client::setStatusCode( const int statusCode )
     _statusCode = statusCode;
 }
 
-// 
-// 
-
-void Client::setFileFd(int fd) {
+void Client::setFileFd(int fd)
+{
     _fileFd = fd;
 }
 
-int Client::getFileFd() {
+int Client::getFileFd()
+{
     return _fileFd;
-}
-
-bool Client::fileReadComplete() {
-    return _fileFd == -1;
 }

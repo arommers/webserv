@@ -51,9 +51,12 @@ void    Server::createServerSocket()
 }
 
 /*  START A POLL LOOP AND CHECKS FOR REVENTS THAT TRIGGERED
+    POLLIN
     - IF IT'S A SERVER SOCKET A NEW CLIENT SOCKET GETS CREATED AND ADDED TO THE POLLFD ARRAY
-    - IF IT'S A CLIENT SOCKET 'x' GET READ FROM THE FD AND STORED IN A STRING 
-    - IF IT'S A FILE FD*/
+    - IF IT'S A CLIENT SOCKET 'x' GET READ FROM THE FD AND STORED IN A STRING UNTIL THE REQUEST IS COMPLETE
+    - IF IT'S A FILE FD, READ FROM THE FILE UNTILL WE REACH EOF 
+    POLLOUT
+    - SEND DATA */
      
 
 void    Server::createPollLoop()
@@ -84,6 +87,7 @@ void    Server::createPollLoop()
 
         for (size_t i = 0; i < _pollFds.size(); ++i)
         {
+            std::cout << "revent: " << _pollFds[i].revents << std::endl;
             if (_pollFds[i].revents & POLLIN)
             {
                 if (_pollFds[i].fd == _serverSocket)
@@ -96,6 +100,18 @@ void    Server::createPollLoop()
             else if (_pollFds[i].revents & POLLOUT)
                 sendClientData(i);
         }
+    }
+}
+
+void    Server::handleFileRead(size_t index)
+{
+    int fd;
+
+    fd = _pollFds[index].fd;
+    for (auto& [fd, client] : _clients)
+    {
+        if (client.getFileFd() == fd)
+            client.readNextChunk();
     }
 }
 
@@ -134,15 +150,12 @@ void    Server::handleClientData(size_t index)
     char    buffer[BUFFER_SIZE];
     int     bytesRead = read(_pollFds[index].fd, buffer, BUFFER_SIZE);
 
-    if (bytesRead <= 0)
-    {
-        if (bytesRead < 0)
+    if (bytesRead < 0)
             std::cerr << RED << "Error reading from client socket: " << strerror(errno) << RESET << std::endl;
-        else
-        {
-            std::cout << YELLOW << "Client disconnected, socket fd is: " << RESET << std::endl;
-            closeConnection(index);
-        }
+    else if(bytesRead == 0)
+    {
+        std::cout << YELLOW << "Client disconnected, socket fd is: " << RESET << std::endl;
+        closeConnection(index);
     }
     else
     {
@@ -152,11 +165,11 @@ void    Server::handleClientData(size_t index)
         
         if (client.requestComplete())
         {
-            client.parseBuffer();        
-            // std::cout << GREEN << "Request Received from socket " << _pollFds[index].fd << ", method: [" << client.getRequestMap()["Method"] << "]" << RESET << std::endl;
+            client.parseBuffer();
+            // We need a check to assess the method
+            std::cout << GREEN << "Request Received from socket " << _pollFds[index].fd << ", method: [" << client.getRequestMap()["Method"] << "]" << ", version: [" << client.getRequestMap()["Version"] << "]" <<  RESET << std::endl;
+            openFile(client);
         }
-        else
-            getClient(_pollFds[index].fd).addToBuffer(buffer);
     }
 }
 
@@ -164,55 +177,56 @@ void Server::sendClientData(size_t index)
 {
     Client& client = getClient(_pollFds[index].fd);
 
-    if(!client.getResponseStatus())
-        handleClientRequest(client);
-    else if (client.getResponseStatus())
-    {
-        std::string writeBuffer = client.getWriteBuffer();
+    // if(!client.getResponseStatus())
+    //     handleClientRequest(client);
+    // else if (client.getResponseStatus())
+    // {
+    std::string writeBuffer = client.getWriteBuffer();
 
-        int bytesSent = send(_pollFds[index].fd, writeBuffer.c_str(), writeBuffer.size(), 0);
-        if (bytesSent < 0)
+    int bytesSent = send(_pollFds[index].fd, writeBuffer.c_str(), writeBuffer.size(), 0);
+    if (bytesSent < 0)
+    {
+        std::cerr << RED << "Error sending data to client: " << strerror(errno) << RESET << std::endl;
+        closeConnection(index);
+    }
+    else
+    {
+        client.setWriteBuffer(writeBuffer.substr(bytesSent));
+        if (client.getWriteBuffer().empty())
         {
-            std::cerr << RED << "Error sending data to client: " << strerror(errno) << RESET << std::endl;
+            std::cout << GREEN << "Response sent to client: " << _pollFds[index].fd << RESET << std::endl;
             closeConnection(index);
         }
-        else
-        {
-            client.setWriteBuffer(writeBuffer.substr(bytesSent));
-            if (client.getWriteBuffer().empty())
-            {
-                std::cout << GREEN << "Response sent to client: " << _pollFds[index].fd << RESET << std::endl;
-                closeConnection(index);
-            }
-        }
     }
+    // }
 }
 
-void Server::handleClientRequest(Client &client)
-{
-    std::map<std::string, std::string> requestMap = client.getRequestMap();
-    std::map<std::string, std::string>::iterator it = requestMap.find("Method");
+// void Server::handleClientRequest(Client &client)
+// {
+//     std::map<std::string, std::string> requestMap = client.getRequestMap();
+//     std::map<std::string, std::string>::iterator it = requestMap.find("Method");
 
-    if (it != requestMap.end()) {
-        std::string method = it->second;
-        if (method == "GET")
-            readFile(client);
-        // Handle other methods (POST, DELETE) as needed
-    } else {
-        std::cerr << RED << "Request missing Method key." << RESET << std::endl;
-        client.setStatusCode(400); // Bad Request
-        client.createResponse();
-    }
-}
+//     if (it != requestMap.end()) {
+//         std::string method = it->second;
+//         if (method == "GET")
+//             readFile(client);
+//         // Handle other methods (POST, DELETE) as needed
+//     } else {
+//         std::cerr << RED << "Request missing Method key." << RESET << std::endl;
+//         client.setStatusCode(400); // Bad Request
+//         client.createResponse();
+//     }
+// }
 
-void Server::readFile(Client &client)
+void Server::openFile(Client &client)
 {
     int fileFd;
     std::string file;
-
+    
     file = client.getRequestMap().at("Path");
     if (file == "/") file += "index.html";
-    file = "./html" + file;
+        file = "./html" + file;
+    
     fileFd = open(file.c_str(), O_RDONLY);
     if (fileFd < 0)
     {
@@ -228,24 +242,6 @@ void Server::readFile(Client &client)
     pollFd.fd = fileFd;
     pollFd.events = POLLIN;
     _pollFds.push_back(pollFd);
-}
-
-void Server::handleFileRead(size_t index)
-{
-    int fd = _pollFds[index].fd;
-    auto it = _clients.find(fd);
-    if (it == _clients.end())
-        return;
-
-    Client &client = it->second;
-    client.readNextChunk();
-
-    if (client.fileReadComplete())
-    {
-        _pollFds.erase(_pollFds.begin() + index);
-        close(fd);
-        client.createResponse();
-    }
 }
 
 // void    Server::readFile(Client &client)
@@ -309,41 +305,4 @@ void Server::removeClient(int fd)
     _clients.erase(fd);
 }
 
-<<<<<<< HEAD
 
-=======
-void Server::addPollFd(int fd, type type)
-{
-    pollfd pollFd;
-    pollFd.fd = fd;
-
-    if (type == type::CLIENT_SOCKET) {
-        pollFd.events = POLLIN | POLLOUT;
-    } else {
-        pollFd.events = POLLIN;
-    }
-
-    pollInfo pollInfo;
-    pollInfo.fd = pollFd;
-    pollInfo.type = type;
-    _pollFds.push_back(pollInfo);
-}
-
-void Server::removePollFd(int fd)
-{
-    for (auto it = _pollFds.begin(); it != _pollFds.end(); ++it)
-    {
-        if (it->fd.fd == fd)
-        {
-            _pollFds.erase(it);
-            break;
-        }
-    }
-}
-
-// void Server::signalHandler(int signal)
-// {
-//       std::cout << GREEN << "SIGINT received. Shutting down gracefully..." << RESET << std::endl;
-//     _shutdownRequest = true;
-// }
->>>>>>> df9966bbb40871113db8679a2c95b08eaa1082e3

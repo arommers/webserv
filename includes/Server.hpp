@@ -7,7 +7,7 @@ class Server
     private:
         int                             _serverSocket;
         struct sockaddr_in              _address;
-        std::vector<struct pollInfo>    _pollFds;
+        std::vector<struct pollfd>      _pollFds;
         std::unordered_map<int, Client> _clients;
 
     public:
@@ -29,13 +29,13 @@ class Server
         void    checkTimeout(int time);
         int     getServerSocket();
 
-        void    readFile(Client& client);
+        void    openFile(Client& client);
 
         void    handleClientRequest(Client &client);
 
-        void    handleGetRequest(Client &client);
-        void    handlePostRequest(Client &client);
-        void    handleDeleteRequest(Client &client);
+        // void    handleGetRequest(Client &client);
+        // void    handlePostRequest(Client &client);
+        // void    handleDeleteRequest(Client &client);
 
-        void    handleFileRead(size_t index)
-}
+        void    handleFileRead(size_t index);
+};
