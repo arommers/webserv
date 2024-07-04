@@ -13,22 +13,29 @@
 # define RESET "\033[0m"
 
 
-# include "Server_test.hpp"  // this or Forward declaration?
-// class	Server; // Forward declaration
+# include "ServerInfo.hpp"  // this or Forward declaration?
+// class	ServerInfo; // Forward declaration
 
 // configuration file class
 class	Config
 {
 	private:
-		std::vector<Server>		_serverBlock; 	// Info of each server block  
+		std::vector<ServerInfo>		_serverBlocks; 	// Info of each server block 
+		int							_server_i;		// How many servers we have
 	public:
 		Config(std::string file_name);			// Constructor
 		~Config();								// Destructor
 
 		// Member functions
-		std::string		readConfigFile(std::string name);
-		std::string		checkConfigInput(std::string config);
-		void			printConfigFile();
+		std::string					readConfigFile(std::string name);
+		std::string					checkConfigInput(std::string file_content);
+		std::vector<ServerInfo>		getServerBlocks();
+
+		// Utils
+		void						printConfigFile(); 	// for testing
+		void						removeComments(std::string &file_content);
+		void						removeWhitespace(std::string &file_content);
+		void						splitServers(std::string &file_content);
 
 		// Exception class
 		class Exception_Config: public std::exception
@@ -49,7 +56,7 @@ class	Config
 
 /*
 
-I need from adri: private variables
+I need to give adri: private variables
 
 - The name of the server. 				   (std::string)
 - A vector of ports the server listens on. (std::vector<int>)
