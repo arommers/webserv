@@ -251,7 +251,7 @@ void Client::readNextChunk()
     else if (bytesRead == 0)
     {
         close(_fileFd);
-        _fileFd = -1;
+        // _fileFd = -1; // This is commented out, otherwise I can't remove it from the _pollFds
         _responseReady = true;
         createResponse();
         return;

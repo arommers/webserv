@@ -102,7 +102,6 @@ void    Server::createPollLoop()
             else if (_pollFds[i].revents & POLLOUT)
                 sendClientData(i);
         }
-        std::cout << "hier" << std::endl;
     }
 }
 
@@ -119,10 +118,19 @@ void Server::handleFileRead(size_t index)
             {
                 for (auto& value : _pollFds)
                 {
-                    if (value.fd == it->second.getFd())
-                    {
+                    if (value.fd == it->second.getFd()){
                         value.events = POLLOUT;
                     }
+                }
+                
+                //Ugly loop to remove file fd from _pollFds
+                int i = 0;
+                for (auto& value : _pollFds)
+                {
+                    if (value.fd == it->second.getFileFd()){
+                        _pollFds.erase(_pollFds.begin() + i);
+                    }
+                    i++;
                 }
             }
         }
@@ -189,7 +197,6 @@ void    Server::handleClientData(size_t index)
 
 void Server::sendClientData(size_t index)
 {
-    std::cout << "Test 666" << std::endl;
     Client& client = getClient(_pollFds[index].fd);
 
     // if(!client.getResponseStatus())
@@ -197,8 +204,6 @@ void Server::sendClientData(size_t index)
     // else if (client.getResponseStatus())
     // {
     std::string writeBuffer = client.getWriteBuffer();
-
-    std::cout << RED << "TEST TEST TEST" << RESET << std::endl;
 
     int bytesSent = send(_pollFds[index].fd, writeBuffer.c_str(), writeBuffer.size(), 0);
     if (bytesSent < 0)
