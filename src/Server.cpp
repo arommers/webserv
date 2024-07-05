@@ -102,6 +102,7 @@ void    Server::createPollLoop()
             else if (_pollFds[i].revents & POLLOUT)
                 sendClientData(i);
         }
+        std::cout << "hier" << std::endl;
     }
 }
 
@@ -116,8 +117,13 @@ void Server::handleFileRead(size_t index)
             it->second.readNextChunk();
             if (it->second.getResponseStatus() == true)
             {
-                _pollFds[it->second.getFd()].events = POLLOUT;
-                std::cout << "TO SEND: \n" << it->second.getWriteBuffer();
+                for (auto& value : _pollFds)
+                {
+                    if (value.fd == it->second.getFd())
+                    {
+                        value.events = POLLOUT;
+                    }
+                }
             }
         }
     }
@@ -183,6 +189,7 @@ void    Server::handleClientData(size_t index)
 
 void Server::sendClientData(size_t index)
 {
+    std::cout << "Test 666" << std::endl;
     Client& client = getClient(_pollFds[index].fd);
 
     // if(!client.getResponseStatus())

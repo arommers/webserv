@@ -104,7 +104,7 @@ void    Client::parseBuffer ( void )
                 _requestMap["Body"] = key;
         }
     }
-    errorCheckRequest();
+    //errorCheckRequest();
 }
 
 void    Client::printRequestMap( void )
