@@ -113,8 +113,12 @@ void Server::handleFileRead(size_t index)
     {
         if (it->second.getFileFd() == fd)
         {
-            std::cout << RED << "TEST" << RESET << std::endl;
             it->second.readNextChunk();
+            if (it->second.getResponseStatus() == true)
+            {
+                _pollFds[it->second.getFd()].events = POLLOUT;
+                std::cout << "TO SEND: \n" << it->second.getWriteBuffer();
+            }
         }
     }
 }
@@ -133,7 +137,7 @@ void    Server::acceptConnection()
 
         struct pollfd clientFd;
         clientFd.fd = newSocket;
-        clientFd.events = POLLIN | POLLOUT;
+        clientFd.events = POLLIN;
         _pollFds.push_back(clientFd);
         
         addClient(newSocket);

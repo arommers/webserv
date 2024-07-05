@@ -34,6 +34,7 @@ class Client
 {
     private:
         int                                     _fd = -1;
+        bool                                    _state = false;
         int                                     _fileFd = -1;
         std::string                             _readBuffer;
         std::string                             _writeBuffer;

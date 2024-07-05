@@ -7,6 +7,7 @@ const std::map<int, std::string> Client::_ErrorMap = {
     {400, "Bad Formatting"},
     {401, "Unauthorized"},
     {404, "Not Found"},
+    {405, "Method not allowed"},
     {500, "Internal Server Error"},
     {503, "Service Unavailable"},
 };
@@ -230,6 +231,7 @@ void Client::createResponse ( void )
         responseMessage += "\r\n";
     _writeBuffer = responseMessage;
     // }
+
 }
 
 void Client::readNextChunk()
@@ -254,9 +256,11 @@ void Client::readNextChunk()
         createResponse();
         return;
     }
+
     _fileBuffer.append(buffer, bytesRead);
 
 }
+
 
 // void    Client::readNextChunk()
 // {
