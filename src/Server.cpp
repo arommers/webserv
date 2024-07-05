@@ -20,12 +20,14 @@ void    Server::createServerSocket()
 {
     int addrLen = sizeof(_address);
     struct pollfd serverFd;
+    int opt = 1;
 
     if ((_serverSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
         std::cerr << RED << "Socket failed: " << strerror(errno) << RESET << std::endl;
         exit(EXIT_FAILURE);
     }
+    setsockopt(getServerSocket(), SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt));
 
     _address.sin_family = AF_INET; // address family
     _address.sin_addr.s_addr = INADDR_ANY; // accepts connections from any IP on the host
@@ -71,7 +73,7 @@ void    Server::createPollLoop()
             exit(EXIT_FAILURE);
         }
 
-        checkTimeout(TIMEOUT);
+        // checkTimeout(TIMEOUT);
 
         // for (size_t i = 0; i < _pollFds.size(); ++i)
         // {
@@ -87,7 +89,7 @@ void    Server::createPollLoop()
 
         for (size_t i = 0; i < _pollFds.size(); ++i)
         {
-            std::cout << "revent: " << _pollFds[i].revents << std::endl;
+            std::cout << "FD: " << _pollFds[i].fd << " revent: " << _pollFds[i].revents << std::endl;
             if (_pollFds[i].revents & POLLIN)
             {
                 if (_pollFds[i].fd == _serverSocket)
@@ -103,15 +105,17 @@ void    Server::createPollLoop()
     }
 }
 
-void    Server::handleFileRead(size_t index)
+void Server::handleFileRead(size_t index)
 {
-    int fd;
+    int fd = _pollFds[index].fd;
 
-    fd = _pollFds[index].fd;
-    for (auto& [fd, client] : _clients)
+    for (std::unordered_map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it)
     {
-        if (client.getFileFd() == fd)
-            client.readNextChunk();
+        if (it->second.getFileFd() == fd)
+        {
+            std::cout << RED << "TEST" << RESET << std::endl;
+            it->second.readNextChunk();
+        }
     }
 }
 
@@ -182,6 +186,8 @@ void Server::sendClientData(size_t index)
     // else if (client.getResponseStatus())
     // {
     std::string writeBuffer = client.getWriteBuffer();
+
+    std::cout << RED << "TEST TEST TEST" << RESET << std::endl;
 
     int bytesSent = send(_pollFds[index].fd, writeBuffer.c_str(), writeBuffer.size(), 0);
     if (bytesSent < 0)

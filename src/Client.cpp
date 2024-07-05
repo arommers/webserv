@@ -255,6 +255,7 @@ void Client::readNextChunk()
         return;
     }
     _fileBuffer.append(buffer, bytesRead);
+
 }
 
 // void    Client::readNextChunk()
