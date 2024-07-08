@@ -1,16 +1,10 @@
-#include "ServerInfo.hpp"
+#include "serverInfo.hpp"
 
 // Constructor
-ServerInfo::ServerInfo()
-{
-	std::cout << "SERVER Constructor called !!!!!!" << std::endl; // mute or rm later
-}
+ServerInfo::ServerInfo() {}
 
 // Destructor
-ServerInfo::~ServerInfo()
-{
-	std::cout << "SERVER Destructor called !!!!!!" << std::endl; // mute or rm later
-}
+ServerInfo::~ServerInfo() {}
 
 // --- Setter ---
 void ServerInfo::setName(const std::string &newName)
