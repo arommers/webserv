@@ -22,13 +22,12 @@ Config::Config(std::string file_name)
 	for (size_t i = 0; i < _server_i; i++)
 	{
 		ServerInfo server;
-		createServer(_info[i], server);
-		// _servers.push_back(serverInfo);
+		createServer(_info[i], server);		// We create server
+		_serverBlocks.push_back(server);	// We put serverInfo into _serverBlocks, so we can excess it later
 	}
 	// if (_nb_server > 1)
 	// 	checkServers();
-	// printConfigFile();
-
+	// printConfigFile();	// for testing -> do we have everything
 }
 
 // Destructor
@@ -38,13 +37,13 @@ Config::~Config() {}
 // -------------------------------------------------------------------------------------
 // --- Main functions for Config ---
 
-/*	readConfigFile(); 
- *	- Opens the file
- *	- Gets each line (getline())
- *	- Remove comments & whithspace, so we get a 'clean' string
- *	- If something goes wrong it will throw an exeption with an error message.
+/* readConfigFile(); 
+ * - Opens the file
+ * - Gets each line (getline())
+ * - Remove comments & whithspace, so we get a 'clean' string
+ * - If something goes wrong it will throw an exeption with an error message.
 */
-std::string Config::readConfigFile(std::string name)
+std::string	Config::readConfigFile(std::string name)
 {
 	std::ifstream	file(name);
 	std::string		file_content;
@@ -71,17 +70,17 @@ std::string Config::readConfigFile(std::string name)
 // 	return (_serverBlocks);
 // }
 
-void Config::createServer(std::string &config, ServerInfo &server)
+void	Config::createServer(std::string &config, ServerInfo &server)
 {
 	std::cout << "HERE" << std::endl << std::endl; // ---> RM
 }
 
-/*	splitServers();
- *	- Checks that all breckets are closed
- *	- Finds start and end of server '{}'
- *	- Pushes the found server to _serverBlock
+/* splitServers();
+ * - Checks that all breckets are closed
+ * - Finds start and end of server '{}'
+ * - Pushes the found server to _serverBlock
  */
-void Config::splitServers(std::string &file_content)
+void	Config::splitServers(std::string &file_content)
 {
 	size_t start = 0;
 	size_t end = 1;
@@ -108,20 +107,19 @@ void Config::splitServers(std::string &file_content)
 // -------------------------------------------------------------------------------------
 // --- Utils for Config ---
 
-/*	ft_findServerStart();
- *	- Checks for keyword 'server'
- *	- Puts start position at '{'
+/* ft_findServerStart();
+ * - Checks for keyword 'server'
+ * - Puts start position at '{'
  */
 size_t	Config::ft_findServerStart(size_t start, std::string &file_content)
 {
 	size_t i = start;
 
-
 	// Check if "server" keyword exists in the content
 	while (file_content[i])
 	{
 		if (file_content[i] == 's')
-			break;
+			break ;
 		i++;
 	}
 	if (file_content.compare(i, 6, "server") != 0)
@@ -134,19 +132,18 @@ size_t	Config::ft_findServerStart(size_t start, std::string &file_content)
 
 	// Check if the server configuration starts with '{'
 	if (file_content[i] == '{')
-		return (i);
+		return i;
 	else
 		throw  Exception_Config("Invalid server scope{}");
-
 }
 
-/* 	ft_findServerEnd();
- *	- If an opening brace '{' is found, increment the scope.
- *	- If a closing brace '}' is found:
- *		- If scope is 0 we have found the matching closing brace.
- *		- If scope is not 0, decrement scope to indicate leaving a nested block.
+/* ft_findServerEnd();
+ * - If an opening brace '{' is found, increment the scope.
+ * - If a closing brace '}' is found:
+ *    - If scope is 0 we have found the matching closing brace.
+ *    - If scope is not 0, decrement scope to indicate leaving a nested block.
  */
-size_t Config::ft_findServerEnd(size_t start, std::string &file_content)
+size_t	Config::ft_findServerEnd(size_t start, std::string &file_content)
 {
 	size_t	i = start + 1;
 	size_t	scope = 0;
@@ -159,18 +156,18 @@ size_t Config::ft_findServerEnd(size_t start, std::string &file_content)
 		if (file_content[i] == '}')
 		{
 			if (!scope)
-				return (i);
+				return i;
 			scope--;
 		}
 		i++;
 	}
-	return (start);
+	return start;
 }
 
-/*	ft_checkBrackets();
- *	- Checks if every '{' is closed 
+/* ft_checkBrackets();
+ * - Checks if every '{' is closed 
  */
-bool Config::ft_checkBrackets(std::string &str) 
+bool	Config::ft_checkBrackets(std::string &str) 
 {
 	int stack[100];		// Stack to store open brackets
 	int top = -1;		// Initialize stack top to -1
@@ -187,23 +184,23 @@ bool Config::ft_checkBrackets(std::string &str)
 		else if (str[i] == '}') 
 		{
 			if (top == -1) 
-				return (false);    
+				return false;    
 			openBracket = stack[top];
 			top--;
 		}
 		if (str[i] == '}' && openBracket != '{') 
-			return (false); // Return false if brackets don't match
+			return false; // Return false if brackets don't match
 		i++;
 	}
 	if (top != -1)
-		return (false);		// If there are unmatched open brackets left on the stack, return false
-	return (true);
+		return false;	// If there are unmatched open brackets left on the stack, return false
+	return true;
 }
 
-/*	removeComments();
- *	- Removes the comments from 'char #' to '\n' 
+/* removeComments();
+ * - Removes the comments from 'char #' to '\n' 
  */
-void Config::removeComments(std::string &file_content)
+void	Config::removeComments(std::string &file_content)
 {
 	size_t pos;
 
@@ -218,10 +215,10 @@ void Config::removeComments(std::string &file_content)
 	}
 }
 
-/*	removeWhitespace();
- *	- Removes whitespaces in the start, end and in the content (if more than one)
+/* removeWhitespace();
+ * - Removes whitespaces in the start, end and in the content (if more than one)
  */
-void Config::removeWhitespace(std::string &file_content)
+void	Config::removeWhitespace(std::string &file_content)
 {
 	size_t	i = 0;
 
@@ -259,9 +256,7 @@ void Config::removeWhitespace(std::string &file_content)
 	}
 }
 
-/*	Prints the arguments that need to be passed onto the 'Server'.
- *	- Used for testing purpose
- */
+// Prints the arguments that need to be passed onto the 'Server' -> Used for testing purpose
 void	Config::printConfigFile()
 {
 	std::cout << "------ " << BOLD << "Printing Config file" << RESET << " ------" << std::endl << std::endl;
@@ -275,6 +270,9 @@ void	Config::printConfigFile()
 
 		// prints server name
 		std::cout << "Server_name : " << _serverBlocks[i].getName() << std::endl;
+
+		// prints server host
+		std::cout << "host : " << _serverBlocks[i].getHost() << std::endl;
 
 		// prints port
 		std::cout << "Port : ";

@@ -29,31 +29,30 @@
 
 
 
-// // Better main
 // /*	main();
-//  *	- Checks for correct arguments
-//  *	- If no configuration file ist past (argc 2)
-//  *		- It will take the default configuration file
-//  *	- Else it will take argv[1] (The file that you passed along)
-//  *	- Step 1: It will check the configuration file and parse all the agruments (config(configFile))
-//  *	- Step 2: It will create the sockets and start the server for the request/respond
-//  *	- If something goes wrong it will throw an exception
+//  *	- Checks for correct arguments.
+//  *	- If no configuration file is passed (argc <= 2):
+//  *		- It will use the default configuration file.
+//  *	- Otherwise, it will use argv[1] (the file provided as an argument).
+//  *	- Step 1: It will check the configuration file and parse all the arguments (Config(configFile)).
+//  *	- Step 2: It will create the sockets and start the server for request/response.
+//  *	- If something goes wrong, it will throw an exception.
 //  */
 // int	main(int argc, char **argv)
 // {
 // 	std::string		configFile = "config/config_file.conf";  // Default configFile
 
-// 	// Checking for the correct aruments
+// 	// Check for the correct number of arguments
 // 	if (argc <= 2)
 // 	{
-// 		// If there is a second argument use that argument/file as the configFile
-// 		// Else it will use the default configFile
+// 		// If there is a second argument, use it as the configFile
+// 		// Otherwise, use the default configFile
 // 		if (argc == 2)
 // 			configFile = argv[1];
 // 		try
 // 		{
-// 			Config config(configFile);
-// 			// SOKETS here
+// 			Config config(configFile);	// Step 1:
+// 			// SOKETS here				// Step 2:
 // 		}
 // 		catch (const std::exception &e)
 // 		{
