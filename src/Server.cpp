@@ -189,7 +189,7 @@ void    Server::handleClientData(size_t index)
         {
             client.parseBuffer();
             // We need a check to assess the method
-            std::cout << GREEN << "Request Received from socket " << _pollFds[index].fd << ", method: [" << client.getRequestMap()["Method"] << "]" << ", version: [" << client.getRequestMap()["Version"] << "]" <<  RESET << std::endl;
+            std::cout << GREEN << "Request Received from socket " << _pollFds[index].fd << ", method: [" << client.getRequestMap()["Method"] << "]" << ", version: [" << client.getRequestMap()["Version"] << "], URI: "<< client.getRequestMap()["Path"] <<  RESET << std::endl;
             openFile(client);
         }
     }
@@ -246,9 +246,11 @@ void Server::openFile(Client &client)
     std::string file;
     
     file = client.getRequestMap().at("Path");
-    if (file == "/") file += "index.html";
-        file = "./html" + file;
+    if (file == "/")
+        file += "index.html";
+    file = "./html" + file;
     
+    std::cout << "Constructed file path: " << file << std::endl;
     fileFd = open(file.c_str(), O_RDONLY);
     if (fileFd < 0)
     {
