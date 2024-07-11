@@ -1,4 +1,4 @@
-#include "config.hpp"
+#include "../includes/Config.hpp"
 
 // Constructor
 Config::Config(std::string file_name)

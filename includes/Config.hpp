@@ -5,7 +5,7 @@
 # include <string.h>
 # include <fstream>
 # include <vector>
-# include "serverInfo.hpp"
+# include "../includes/ServerInfo.hpp"
 
 // COLORS
 # define BLUE "\e[1;34m"

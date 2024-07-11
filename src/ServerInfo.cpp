@@ -1,4 +1,4 @@
-#include "serverInfo.hpp"
+#include "../includes/ServerInfo.hpp"
 
 // Constructor
 ServerInfo::ServerInfo() {}
