@@ -86,7 +86,7 @@ void	Config::splitServers(std::string &file_content)
 	size_t end = 1;
 
 	if (ft_checkBrackets(file_content) == 0)
-		throw Exception_Config("There is problem with the scope, please check {}");
+		throw Exception_Config("There is problem with the scope, please check '{}'");
 
 	// Loop to find and split each server configuration
 	while (start != end && start < file_content.length())
