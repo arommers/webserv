@@ -7,61 +7,57 @@ Server::~Server() {}
 // Server::Server(const Server &rhs) {}
 // Server& Server::operator=(const Server& rhs) {}
 
-
-int     Server::getServerSocket()
+void    Server::addServer(const ServerInfo& serverInfo)
 {
-    return (_serverSocket);
+    _servers.push_back(serverInfo);
 }
 
-/*  CREATES A SERVERSOCKET, INITIALIZES THE POLLFD ARRAY
-    AND STARTS LISTENING FOR CONNECTIONS    */
-
-void    Server::createServerSocket()
+void Server::createServerSockets()
 {
-    int addrLen = sizeof(_address);
-    struct pollfd serverFd;
+    struct sockaddr_in address;
+    int addrLen = sizeof(address);
     int opt = 1;
 
-    if ((_serverSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    for (ServerInfo& serverInfo : _servers)
     {
-        std::cerr << RED << "Socket failed: " << strerror(errno) << RESET << std::endl;
-        exit(EXIT_FAILURE);
+        int serverSocket;
+
+        if ((serverSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+        {
+            std::cerr << RED << "Socket failed: " << strerror(errno) << RESET << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
+        setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt));
+
+        address.sin_family = AF_INET;
+        address.sin_addr.s_addr = inet_addr(serverInfo.getHost().c_str());
+        address.sin_port = htons(serverInfo.getPort());
+
+        if (bind(serverSocket, reinterpret_cast<struct sockaddr*>(&address), addrLen) < 0)
+        {
+            std::cerr << RED << "Bind failed: " << strerror(errno) << RESET << std::endl;
+            close(serverSocket);
+            exit(EXIT_FAILURE);
+        }
+
+        if (listen(serverSocket, serverInfo.getMaxClient()) < 0)
+        {
+            std::cerr << RED << "Listen failed: " << strerror(errno) << RESET << std::endl;
+            close(serverSocket);
+            exit(EXIT_FAILURE);
+        }
+
+        struct pollfd serverFd;
+        serverFd.fd = serverSocket;
+        serverFd.events = POLLIN;
+        _pollFds.push_back(serverFd);
+
+        serverInfo.setServerFd(serverSocket);
     }
-    setsockopt(getServerSocket(), SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt));
-
-    _address.sin_family = AF_INET; // address family
-    _address.sin_addr.s_addr = INADDR_ANY; // accepts connections from any IP on the host
-    _address.sin_port = htons(PORT); // ensures the port number is correctly formatted
-
-    if (bind(_serverSocket, reinterpret_cast<struct sockaddr*>(&_address), addrLen) < 0)
-    {
-        std::cerr << RED << "Bind failed: " << strerror(errno) << RESET << std::endl;
-        close(_serverSocket);
-        exit(EXIT_FAILURE);
-    }
-
-    if (listen(_serverSocket, MAX_CLIENTS) < 0)
-    {
-        std::cerr << RED << "Listen failed: " << strerror(errno) << RESET << std::endl;
-        close(_serverSocket);
-        exit(EXIT_FAILURE);
-    }
-
-    serverFd.fd = _serverSocket;
-    serverFd.events = POLLIN;
-    _pollFds.push_back(serverFd);
 }
 
-/*  START A POLL LOOP AND CHECKS FOR REVENTS THAT TRIGGERED
-    POLLIN
-    - IF IT'S A SERVER SOCKET A NEW CLIENT SOCKET GETS CREATED AND ADDED TO THE POLLFD ARRAY
-    - IF IT'S A CLIENT SOCKET 'x' GET READ FROM THE FD AND STORED IN A STRING UNTIL THE REQUEST IS COMPLETE
-    - IF IT'S A FILE FD, READ FROM THE FILE UNTILL WE REACH EOF 
-    POLLOUT
-    - SEND DATA */
-     
-
-void    Server::createPollLoop()
+void Server::createPollLoop()
 {
     while (true)
     {
@@ -73,37 +69,119 @@ void    Server::createPollLoop()
             exit(EXIT_FAILURE);
         }
 
-        // checkTimeout(TIMEOUT);
-
-        // for (size_t i = 0; i < _pollFds.size(); ++i)
-        // {
-        //     if (_pollFds[i].revents & POLLIN)
-        //     {
-        //         if (_pollFds[i].fd == _serverSocket)
-        //             acceptConnection();
-        //         else
-        //             handleClientData(i);
-        //     }
-        //     else if (_pollFds[i].revents & POLLOUT)
-        //         sendClientData(i);
-
         for (size_t i = 0; i < _pollFds.size(); ++i)
         {
-            std::cout << "FD: " << _pollFds[i].fd << " revent: " << _pollFds[i].revents << std::endl;
             if (_pollFds[i].revents & POLLIN)
             {
-                if (_pollFds[i].fd == _serverSocket)
+                if (i < _servers.size())
                     acceptConnection();
                 else if (_clients.count(_pollFds[i].fd))
                     handleClientData(i);
                 else
                     handleFileRead(i);
-            } 
+            }
             else if (_pollFds[i].revents & POLLOUT)
                 sendClientData(i);
         }
     }
 }
+
+int     Server::getServerSocket()
+{
+    return (_serverSocket);
+}
+
+/*  CREATES A SERVERSOCKET, INITIALIZES THE POLLFD ARRAY
+    AND STARTS LISTENING FOR CONNECTIONS    */
+
+// void    Server::createServerSocket()
+// {
+//     int addrLen = sizeof(_address);
+//     struct pollfd serverFd;
+//     int opt = 1;
+
+//     if ((_serverSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+//     {
+//         std::cerr << RED << "Socket failed: " << strerror(errno) << RESET << std::endl;
+//         exit(EXIT_FAILURE);
+//     }
+//     setsockopt(getServerSocket(), SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt));
+
+//     _address.sin_family = AF_INET; // address family
+//     _address.sin_addr.s_addr = INADDR_ANY; // accepts connections from any IP on the host
+//     _address.sin_port = htons(PORT); // ensures the port number is correctly formatted
+
+//     if (bind(_serverSocket, reinterpret_cast<struct sockaddr*>(&_address), addrLen) < 0)
+//     {
+//         std::cerr << RED << "Bind failed: " << strerror(errno) << RESET << std::endl;
+//         close(_serverSocket);
+//         exit(EXIT_FAILURE);
+//     }
+
+//     if (listen(_serverSocket, MAX_CLIENTS) < 0)
+//     {
+//         std::cerr << RED << "Listen failed: " << strerror(errno) << RESET << std::endl;
+//         close(_serverSocket);
+//         exit(EXIT_FAILURE);
+//     }
+
+//     serverFd.fd = _serverSocket;
+//     serverFd.events = POLLIN;
+//     _pollFds.push_back(serverFd);
+// }
+
+/*  START A POLL LOOP AND CHECKS FOR REVENTS THAT TRIGGERED
+    POLLIN
+    - IF IT'S A SERVER SOCKET A NEW CLIENT SOCKET GETS CREATED AND ADDED TO THE POLLFD ARRAY
+    - IF IT'S A CLIENT SOCKET 'x' GET READ FROM THE FD AND STORED IN A STRING UNTIL THE REQUEST IS COMPLETE
+    - IF IT'S A FILE FD, READ FROM THE FILE UNTILL WE REACH EOF 
+    POLLOUT
+    - SEND DATA */
+     
+
+// void    Server::createPollLoop()
+// {
+//     while (true)
+//     {
+//         int pollSize = poll(_pollFds.data(), _pollFds.size(), -1);
+//         if (pollSize == -1)
+//         {
+//             std::cerr << RED << "Poll failed: " << strerror(errno) << RESET << std::endl;
+//             shutdownServer();
+//             exit(EXIT_FAILURE);
+//         }
+
+//         // checkTimeout(TIMEOUT);
+
+//         // for (size_t i = 0; i < _pollFds.size(); ++i)
+//         // {
+//         //     if (_pollFds[i].revents & POLLIN)
+//         //     {
+//         //         if (_pollFds[i].fd == _serverSocket)
+//         //             acceptConnection();
+//         //         else
+//         //             handleClientData(i);
+//         //     }
+//         //     else if (_pollFds[i].revents & POLLOUT)
+//         //         sendClientData(i);
+
+//         for (size_t i = 0; i < _pollFds.size(); ++i)
+//         {
+//             std::cout << "FD: " << _pollFds[i].fd << " revent: " << _pollFds[i].revents << std::endl;
+//             if (_pollFds[i].revents & POLLIN)
+//             {
+//                 if (_pollFds[i].fd == _serverSocket)
+//                     acceptConnection();
+//                 else if (_clients.count(_pollFds[i].fd))
+//                     handleClientData(i);
+//                 else
+//                     handleFileRead(i);
+//             } 
+//             else if (_pollFds[i].revents & POLLOUT)
+//                 sendClientData(i);
+//         }
+//     }
+// }
 
 void Server::handleFileRead(size_t index)
 {
