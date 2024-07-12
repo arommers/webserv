@@ -2,7 +2,9 @@
 
 // int _shutdownRequest = false;
 
-Server::Server() {}
+Server::Server() {
+    _cgi = new Cgi();
+}
 Server::~Server() {}
 // Server::Server(const Server &rhs) {}
 // Server& Server::operator=(const Server& rhs) {}
@@ -254,7 +256,7 @@ void    Server::handleClientRequest(Client &client)
     // if status == -2
     //     return 403
     if (isCGI(client)){
-        client.runCGI();
+        runCGI(*this, client);
     }
     else{
         fileContent = readFile(client);
@@ -266,6 +268,12 @@ void    Server::handleClientRequest(Client &client)
         client.setFileBuffer(fileContent);
     }
     client.createResponse();
+}
+
+void Server::runCGI( Server& server, Client& client)
+{
+    std::cout << "In runCGI\n";
+    _cgi->createFork(server, client);
 }
 
 

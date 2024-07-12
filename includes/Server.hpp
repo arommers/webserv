@@ -13,6 +13,7 @@
 #include <csignal>
 #include <fstream>        // Temporary for testing  
 #include "../includes/Client.hpp"
+#include "../includes/Cgi.hpp"
 
 #define RESET   "\033[0m"
 #define RED     "\033[31m"
@@ -26,7 +27,7 @@
 #define TIMEOUT 60
 #define BUFFER_SIZE 1024
 
-
+class Cgi;
 
 class Server
 {
@@ -35,12 +36,14 @@ class Server
         struct sockaddr_in              _address;
         std::vector<struct pollfd>      _pollFds;
         std::unordered_map<int, Client> _clients;
+        Cgi*                             _cgi;
 
     public:
         Server();
         Server(const Server &rhs);
         Server& operator=(const Server& rhs);
         ~Server();
+
 
         void    createServerSocket();
         void    createPollLoop();
@@ -55,6 +58,7 @@ class Server
         void    checkTimeout(int time);
         int     getServerSocket();
         bool    isCGI( Client& client );
+        void    runCGI( Server& server, Client& client);
 
         void    handleClientRequest();
         int     checkFile(std::string &file);
