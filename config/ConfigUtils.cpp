@@ -194,21 +194,23 @@ void	Config::ft_printConfigFile()
 		// prints WHAT server #
 		std::cout << RED << i << RESET << " Server" << std::endl;
 
-
 		// prints server host
-		std::cout << "host : " << _serverBlocks[i].getHost() << std::endl;
+		std::cout << "Host : " << _serverBlocks[i].getHost() << std::endl;
 
 		// prints port
-		std::cout << "Port : ";
-		std::vector<int> port = _serverBlocks[i].getPort();
-		for (size_t i = 0; i < port.size(); ++i) 
-		{
-			std::cout << port[i] << "  ";
-		}
-		std::cout << std::endl;
+		std::cout << "Port : " << _serverBlocks[i].getPort() << std::endl;
 
 		// prints root
-		std::cout << "RootPath : " << _serverBlocks[i].getRoot() << std::endl;
+		std::cout << "Root : " << _serverBlocks[i].getRoot() << std::endl;
+
+		// prints root
+		std::cout << "ServerFd : " << _serverBlocks[i].getServerFd() << std::endl;
+
+		// prints root
+		std::cout << "Max Client : " << _serverBlocks[i].getMaxClient() << std::endl;
+
+		// prints root
+		std::cout << "Index : " << _serverBlocks[i].getIndex() << std::endl;
 
 		// --- ADD more ---
 
