@@ -6,7 +6,7 @@ void	ServerInfo::setHost(const std::string &newHost)
 	_host = newHost;
 }
 
-void	ServerInfo::setPort(const int &newPort)
+void	ServerInfo::setPort(int newPort)
 {
 	_port = newPort;
 }
@@ -16,12 +16,12 @@ void	ServerInfo::setRoot(const std::string &newRoot)
 	_root = newRoot;
 }
 
-void	ServerInfo::setServerFd()
+void	ServerInfo::setServerFd(int fd)
 {
-	_serverFd = -1;
+	_serverFd = fd;
 }
 
-void	ServerInfo::setMaxClient(const int &newMaxClient)
+void	ServerInfo::setMaxClient(int newMaxClient)
 {
 	_maxClient = newMaxClient;
 }
