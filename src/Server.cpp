@@ -165,13 +165,12 @@ void    Server::closeConnection(size_t index)
 
 void    Server::handleClientData(size_t index)
 {
+
     char buffer[BUFFER_SIZE];
     int bytesRead = read(_pollFds[index].fd, buffer, BUFFER_SIZE);
 
     if (bytesRead <= 0)
     {
-        std::cout << "Hallo 5\n";
-
         if (bytesRead < 0)
         {
             std::cerr << RED << "Error reading from client socket: " << strerror(errno) << RESET << std::endl;
@@ -185,6 +184,7 @@ void    Server::handleClientData(size_t index)
     }
     else
     {
+
         buffer[bytesRead] = '\0';
         Client &client = getClient(_pollFds[index].fd);
         client.addToBuffer(buffer);
@@ -202,6 +202,7 @@ void    Server::handleClientData(size_t index)
             // client.setWriteBuffer(response);
 
             //***************************************************************
+
             client.parseBuffer();
             if (client.getState() == ERROR){
                 client.createResponse();
@@ -211,6 +212,7 @@ void    Server::handleClientData(size_t index)
             // sendClientData(); // <=========== Send back the response. Not sure about the position in the code here
         }
         else{
+
             getClient(_pollFds[index].fd).addToBuffer(buffer);
         }
     }

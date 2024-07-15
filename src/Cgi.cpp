@@ -59,7 +59,7 @@ void Cgi::createFork(Server& server, Client& client)
 
 void Cgi::launchScript(Server& server, Client& client)
 {
-        char * temp[] = {const_cast<char *>("./cgi-bin/upload.cgi"), nullptr};
+    char * temp[] = {const_cast<char *>("./cgi-bin/upload.cgi"), nullptr};
 
     execve(temp[0], temp, createEnv(server, client));
     perror("execve");
