@@ -10,6 +10,8 @@ SRC := \
 	src/Client.cpp \
 	src/Server.cpp \
 	src/Cgi.cpp \
+	src/Config.cpp \
+	src/ServerInfo.cpp \
 
 SRC := $(SRC:%=$(SRC_DIR)/%)
 OBJ := $(SRC:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)

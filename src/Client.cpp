@@ -127,14 +127,6 @@ bool    Client::requestComplete()
     return _readBuffer.size() >= bodyLength;
 }
 
-// std::string Client::getRequest()
-// {
-//     std::string request = _readBuffer;
-//     _readBuffer.clear();
-
-//     return request;
-// }
-
 void    Client::updateTime()
 {
     _time = std::time(nullptr);
@@ -222,7 +214,6 @@ void    Client::isValidVersion( std::string version )
     }
 }
 
-
 std::string trimWhiteSpace(std::string& string)
 {
     size_t start = string.find_first_not_of(" \n\t\r");
@@ -277,6 +268,33 @@ void Client::createResponse ( void )
     }
 }
 
+void Client::readNextChunk()
+{
+    char buffer[BUFFER_SIZE];
+    int bytesRead = read(_fileFd, buffer, BUFFER_SIZE);
+
+    if (bytesRead < 0)
+    {
+        std::cerr << "Failed to read file: " << strerror(errno) << std::endl;
+        setStatusCode(404);
+        close(_fileFd);
+        _fd = -1;
+        _responseReady = true;
+        return;
+    }
+    else if (bytesRead == 0)
+    {
+        close(_fileFd);
+        // _fileFd = -1; // This is commented out, otherwise I can't remove it from the _pollFds
+        _responseReady = true;
+        createResponse();
+        return;
+    }
+
+    _fileBuffer.append(buffer, bytesRead);
+
+}
+
 void    Client::resetClientData( void )
 {
     _readBuffer.clear();
@@ -289,6 +307,22 @@ void    Client::resetClientData( void )
 }
 
 
+bool Client::getResponseStatus()
+{
+    return _responseReady;
+}
 
+std::string Client::getFileBuffer()
+{
+    return _fileBuffer;
+}
 
+void Client::setFileFd(int fd)
+{
+    _fileFd = fd;
+}
 
+int Client::getFileFd()
+{
+    return _fileFd;
+}
