@@ -172,8 +172,7 @@ void    Server::closeConnection(size_t index)
 void    Server::handleClientData(size_t index)
 {
     char    buffer[BUFFER_SIZE];
-    int     bytesRead = read(_pollFds[index].fd, buffer, BUFFER_SIZE);
-
+    int     bytesRead = read(_pollFds[index].fd, buffer, BUFFER_SIZE - 1);
     if (bytesRead < 0)
             std::cerr << RED << "Error reading from client socket: " << strerror(errno) << RESET << std::endl;
     else if(bytesRead == 0)
@@ -183,12 +182,17 @@ void    Server::handleClientData(size_t index)
     }
     else
     {
+        // buffer[bytesRead] = '\0';
 
-        buffer[bytesRead] = '\0';
+        // for (auto& fds : _pollFds)
+        //     std::cout << "List Fds: " << fds.fd << std::endl;
+        // for (auto& client : _clients)
+        //     std::cout << "List Clients: " << client.second.getFd() << std::endl;
         Client &client = getClient(_pollFds[index].fd);
         client.addToBuffer(buffer);
         if (client.requestComplete())
         {
+            std::cout << client.getReadBuffer() << std::endl;
             client.parseBuffer();
             if (client.getState() == ERROR){
                 client.createResponse();
@@ -197,7 +201,18 @@ void    Server::handleClientData(size_t index)
             // handleClientRequest(client);
             // We need a check to assess the method
             std::cout << GREEN << "Request Received from socket " << _pollFds[index].fd << ", method: [" << client.getRequestMap()["Method"] << "]" << ", version: [" << client.getRequestMap()["Version"] << "], URI: "<< client.getRequestMap()["Path"] <<  RESET << std::endl;
-            openFile(client);
+            if (_cgi->checkIfCGI(client) == true){
+                _cgi->runCGI(*this, client);
+            }
+            else{
+                openFile(client);
+            }
+            if (client.getState() == ERROR)
+            {
+                client.createResponse();
+                _pollFds[index].events = POLLOUT;
+                return ;
+            }
         }
     }
 }
@@ -259,11 +274,6 @@ void Server::sendClientData(size_t index)
 //     client.createResponse();
 // }
 
-void Server::runCGI( Server& server, Client& client)
-{
-    std::cout << "In runCGI\n";
-    _cgi->createFork(server, client);
-}
 
 
 // void    Server::sendClientData(size_t index)
@@ -288,7 +298,6 @@ void Server::openFile(Client &client)
     {
         client.setStatusCode(404);
         std::cerr << "Failed to open file: " << file << ": " << strerror(errno) << std::endl;
-        client.createResponse();
         return;
     }
 
@@ -361,11 +370,3 @@ void Server::removeClient(int fd)
     _clients.erase(fd);
 }
 
-bool Server::isCGI( Client &client )
-{
-    if (client.getRequestMap().at("Path").find("/cgi-bin/") != std::string::npos){
-        std::cout << "Test: " << client.getRequestMap().at("Path") << std::endl;
-        return (true);
-    }
-    return (false);
-}

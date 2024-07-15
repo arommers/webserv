@@ -22,6 +22,8 @@ public:
     Cgi& operator=(const Cgi& rhs);
     ~Cgi();
     
+    bool    checkIfCGI( Client& client );
+    void    runCGI( Server& server, Client& client);
     char**  createEnv(Server& server, Client& client );
     void    createFork(Server& server, Client& client);
     void    launchScript(Server& server, Client& client);
