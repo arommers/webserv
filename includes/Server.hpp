@@ -22,13 +22,13 @@ class Server
 
         void    createServerSocket();
         void    createPollLoop();
-        void    acceptConnection();
+        // void    acceptConnection();
         void    closeConnection(size_t index);
         void    shutdownServer();
         void    handleClientData(size_t index);
         void    sendClientData(size_t index);
-        void    addClient(int fd);
-        Client& getClient(int fd);
+        // void    addClient(int fd);
+        // Client& getClient(int fd);
         void    removeClient(int fd);
         void    checkTimeout(int time);
         int     getServerSocket();
@@ -45,7 +45,14 @@ class Server
 
         // Temporary work in progress functions to accomodate multiple server blocks
 
-        void    addServer(const ServerInfo& serverInfo);
-        void    createServerSockets();
+        void        addServer(const ServerInfo& serverInfo);
+        void        addClient(int fd, ServerInfo& serverInfo);
+        void        createServerSockets();
+        void        acceptConnection(int serverSocket);
+        ServerInfo& getServerInfoByFd(int fd);
+        Client&     getClient(int fd);
+
+        void createServerInstances();
+
 
 };

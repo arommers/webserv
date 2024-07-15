@@ -16,6 +16,7 @@
 #include <unordered_map>
 #include <csignal>
 #include <fstream>        // Temporary for testing  
+#include "ServerInfo.hpp"
 
 
 #define RESET   "\033[0m"
@@ -47,6 +48,7 @@ class Client
         std::time_t                             _time = std::time(nullptr);                     
         
         bool                                    _responseReady = false;
+        ServerInfo                              _serverInfo;
 
         void    errorCheckRequest( void );
         bool    isValidMethod( std::string method );
@@ -55,9 +57,9 @@ class Client
 
     public:
         Client();
-        Client(int fd);
-        Client(const Client& rhs);
-        Client& operator=(const Client& rhs);
+        Client(int fd, ServerInfo& serverInfo);
+        // Client(const Client& rhs);
+        // Client& operator=(const Client& rhs);
         ~Client();
 
         void        addToBuffer( std::string bufferNew );
@@ -92,6 +94,8 @@ class Client
         void setFileFd(int fd);
         int getFileFd();
         bool fileReadComplete();
+
+        ServerInfo& getServerInfo();
 };
 
 std::string trimWhiteSpace(std::string& string);

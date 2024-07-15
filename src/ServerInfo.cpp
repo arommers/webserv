@@ -47,4 +47,29 @@
         {
             _serverFd = fd;
         }
+
+        void ServerInfo::setPort(int port)
+        {
+            _port = port;
+        }
+
+        void ServerInfo::setMaxClient(int maxClient)
+        {
+            _maxClient = maxClient;
+        }
+
+        void ServerInfo::setHost(const std::string& host)
+        {
+            _host = host;
+        }
+
+        void ServerInfo::setRoot(const std::string& root)
+        {
+            _root = root;
+        }
+
+        void ServerInfo::setIndex(const std::string& index)
+        {
+            _index = index;
+        }
         

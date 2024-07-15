@@ -7,6 +7,27 @@ Server::~Server() {}
 // Server::Server(const Server &rhs) {}
 // Server& Server::operator=(const Server& rhs) {}
 
+
+/*  Just for testing purposes    */
+
+void Server::createServerInstances()
+{
+    ServerInfo server1;
+    server1.setPort(4040);
+    server1.setIndex("index.html");
+    server1.setRoot("./html/");
+    server1.setHost("127.0.0.1");
+
+    ServerInfo server2;
+    server2.setPort(8080);
+    server2.setIndex("index.html");
+    server2.setRoot("./html1/");
+    server2.setHost("127.0.0.1");
+
+    _servers.push_back(server1);
+    _servers.push_back(server2);
+}
+
 void    Server::addServer(const ServerInfo& serverInfo)
 {
     _servers.push_back(serverInfo);
@@ -24,9 +45,10 @@ void Server::createServerSockets()
 
         if ((serverSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
         {
-            std::cerr << RED << "Socket failed: " << strerror(errno) << RESET << std::endl;
+            std::cerr << RED << "Socket creation failed: " << strerror(errno) << RESET << std::endl;
             exit(EXIT_FAILURE);
         }
+        std::cout << "Socket created successfully: " << serverSocket << std::endl;
 
         setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt));
 
@@ -40,6 +62,7 @@ void Server::createServerSockets()
             close(serverSocket);
             exit(EXIT_FAILURE);
         }
+        std::cout << "Bind successful on port: " << serverInfo.getPort() << std::endl;
 
         if (listen(serverSocket, serverInfo.getMaxClient()) < 0)
         {
@@ -47,6 +70,7 @@ void Server::createServerSockets()
             close(serverSocket);
             exit(EXIT_FAILURE);
         }
+        std::cout << "Listening on port: " << serverInfo.getPort() << std::endl;
 
         struct pollfd serverFd;
         serverFd.fd = serverSocket;
@@ -61,6 +85,12 @@ void Server::createPollLoop()
 {
     while (true)
     {
+        if (_pollFds.empty())
+        {
+            std::cerr << RED << "No file descriptors to poll." << RESET << std::endl;
+            break;
+        }
+
         int pollSize = poll(_pollFds.data(), _pollFds.size(), -1);
         if (pollSize == -1)
         {
@@ -69,12 +99,13 @@ void Server::createPollLoop()
             exit(EXIT_FAILURE);
         }
 
+        std::cout << RED << "TEST" << RESET << std::endl;
         for (size_t i = 0; i < _pollFds.size(); ++i)
         {
             if (_pollFds[i].revents & POLLIN)
             {
                 if (i < _servers.size())
-                    acceptConnection();
+                    acceptConnection(_pollFds[i].fd);
                 else if (_clients.count(_pollFds[i].fd))
                     handleClientData(i);
                 else
@@ -86,9 +117,104 @@ void Server::createPollLoop()
     }
 }
 
-int     Server::getServerSocket()
+void    Server::acceptConnection(int serverSocket)
 {
-    return (_serverSocket);
+    int newSocket;
+    struct sockaddr_in clientAddress;
+    int addrLen = sizeof(clientAddress);
+
+    if ((newSocket = accept(serverSocket, reinterpret_cast<struct sockaddr*>(&clientAddress), reinterpret_cast<socklen_t*>(&addrLen))) < 0)
+        std::cerr << RED << "Accept failed: " << strerror(errno) << RESET << std::endl;
+    else
+    {    
+        std::cout << GREEN << "New connection from: " << inet_ntoa(clientAddress.sin_addr) << ", assigned socket is: " << newSocket << RESET << std::endl;
+
+        struct pollfd clientFd;
+        clientFd.fd = newSocket;
+        clientFd.events = POLLIN;
+        _pollFds.push_back(clientFd);
+        
+        addClient(newSocket, getServerInfoByFd(serverSocket));
+    }
+}
+
+void Server::handleClientData(size_t index)
+{
+    char buffer[BUFFER_SIZE];
+    int bytesRead = read(_pollFds[index].fd, buffer, BUFFER_SIZE);
+
+    if (bytesRead < 0)
+        std::cerr << RED << "Error reading from client socket: " << strerror(errno) << RESET << std::endl;
+    else if (bytesRead == 0)
+    {
+        std::cout << YELLOW << "Client disconnected, socket fd is: " << _pollFds[index].fd << RESET << std::endl;
+        closeConnection(index);
+    }
+    else
+    {
+        buffer[bytesRead] = '\0';
+        Client &client = getClient(_pollFds[index].fd);
+        client.addToBuffer(buffer);
+
+        if (client.requestComplete())
+        {
+            client.parseBuffer();
+            std::cout << GREEN << "Request Received from socket " << _pollFds[index].fd << ", method: [" << client.getRequestMap()["Method"] << "], version: [" << client.getRequestMap()["Version"] << "], URI: " << client.getRequestMap()["Path"] << RESET << std::endl;
+            openFile(client);
+        }
+    }
+}
+
+ServerInfo& Server::getServerInfoByFd(int fd)
+{
+    auto it = std::find_if(_servers.begin(), _servers.end(), [&](const ServerInfo& serverInfo)
+    {
+        return serverInfo.getServerFd() == fd;
+    });
+    return *it;
+}
+
+void Server::addClient(int fd, ServerInfo& serverInfo)
+{
+    _clients.emplace(fd, Client(fd, serverInfo));
+}
+
+Client& Server::getClient(int fd)
+{
+    return _clients.at(fd);
+}
+
+void Server::closeConnection(size_t index)
+{
+    int fd = _pollFds[index].fd;
+
+    close(fd);
+    _pollFds.erase(_pollFds.begin() + index);
+    removeClient(fd);
+}
+
+void Server::openFile(Client &client)
+{
+    int fileFd;
+    std::string file;
+
+    file = client.getRequestMap().at("Path");
+    if (file == "/")
+        file += client.getServerInfo().getIndex();
+    file = client.getServerInfo().getRoot() + file;
+
+    std::cout << "Constructed file path: " << file << std::endl;
+    fileFd = open(file.c_str(), O_RDONLY);
+    if (fileFd < 0)
+        client.setStatusCode(404);
+    else
+    {
+        client.setFileFd(fileFd);
+        struct pollfd filePollFd;
+        filePollFd.fd = fileFd;
+        filePollFd.events = POLLIN;
+        _pollFds.push_back(filePollFd);
+    }
 }
 
 /*  CREATES A SERVERSOCKET, INITIALIZES THE POLLFD ARRAY
@@ -196,18 +322,14 @@ void Server::handleFileRead(size_t index)
             {
                 for (auto& value : _pollFds)
                 {
-                    if (value.fd == it->second.getFd()){
+                    if (value.fd == it->second.getFd())
                         value.events = POLLOUT;
-                    }
                 }
-                
-                //Ugly loop to remove file fd from _pollFds
                 int i = 0;
                 for (auto& value : _pollFds)
                 {
-                    if (value.fd == it->second.getFileFd()){
+                    if (value.fd == it->second.getFileFd())
                         _pollFds.erase(_pollFds.begin() + i);
-                    }
                     i++;
                 }
             }
@@ -215,63 +337,63 @@ void Server::handleFileRead(size_t index)
     }
 }
 
-void    Server::acceptConnection()
-{
-    int newSocket;
-    struct sockaddr_in clientAddress;
-    int addrLen = sizeof(clientAddress);
+// void    Server::acceptConnection()
+// {
+//     int newSocket;
+//     struct sockaddr_in clientAddress;
+//     int addrLen = sizeof(clientAddress);
 
-    if ((newSocket = accept(_serverSocket, reinterpret_cast<struct sockaddr*>(&clientAddress), reinterpret_cast<socklen_t*>(&addrLen))) < 0)
-        std::cerr << RED << "Accept failed: " << strerror(errno) << RESET << std::endl;
-    else
-    {    
-        std::cout << GREEN << "New connection from: " << inet_ntoa(_address.sin_addr) << ", assigned socket is: " << newSocket << RESET << std::endl;
+//     if ((newSocket = accept(_serverSocket, reinterpret_cast<struct sockaddr*>(&clientAddress), reinterpret_cast<socklen_t*>(&addrLen))) < 0)
+//         std::cerr << RED << "Accept failed: " << strerror(errno) << RESET << std::endl;
+//     else
+//     {    
+//         std::cout << GREEN << "New connection from: " << inet_ntoa(_address.sin_addr) << ", assigned socket is: " << newSocket << RESET << std::endl;
 
-        struct pollfd clientFd;
-        clientFd.fd = newSocket;
-        clientFd.events = POLLIN;
-        _pollFds.push_back(clientFd);
+//         struct pollfd clientFd;
+//         clientFd.fd = newSocket;
+//         clientFd.events = POLLIN;
+//         _pollFds.push_back(clientFd);
         
-        addClient(newSocket);
-    }
-}
+//         addClient(newSocket);
+//     }
+// }
 
-void    Server::closeConnection(size_t index)
-{
-    int fd = _pollFds[index].fd;
+// void    Server::closeConnection(size_t index)
+// {
+//     int fd = _pollFds[index].fd;
 
-    close(fd);
-    _pollFds.erase(_pollFds.begin() + index);
-    removeClient(fd);
-}
+//     close(fd);
+//     _pollFds.erase(_pollFds.begin() + index);
+//     removeClient(fd);
+// }
 
-void    Server::handleClientData(size_t index)
-{
-    char    buffer[BUFFER_SIZE];
-    int     bytesRead = read(_pollFds[index].fd, buffer, BUFFER_SIZE);
+// void    Server::handleClientData(size_t index)
+// {
+//     char    buffer[BUFFER_SIZE];
+//     int     bytesRead = read(_pollFds[index].fd, buffer, BUFFER_SIZE);
 
-    if (bytesRead < 0)
-            std::cerr << RED << "Error reading from client socket: " << strerror(errno) << RESET << std::endl;
-    else if(bytesRead == 0)
-    {
-        std::cout << YELLOW << "Client disconnected, socket fd is: " << RESET << std::endl;
-        closeConnection(index);
-    }
-    else
-    {
-        buffer[bytesRead] = '\0';
-        Client &client = getClient(_pollFds[index].fd);
-        client.addToBuffer(buffer);
+//     if (bytesRead < 0)
+//             std::cerr << RED << "Error reading from client socket: " << strerror(errno) << RESET << std::endl;
+//     else if(bytesRead == 0)
+//     {
+//         std::cout << YELLOW << "Client disconnected, socket fd is: " << RESET << std::endl;
+//         closeConnection(index);
+//     }
+//     else
+//     {
+//         buffer[bytesRead] = '\0';
+//         Client &client = getClient(_pollFds[index].fd);
+//         client.addToBuffer(buffer);
         
-        if (client.requestComplete())
-        {
-            client.parseBuffer();
-            // We need a check to assess the method
-            std::cout << GREEN << "Request Received from socket " << _pollFds[index].fd << ", method: [" << client.getRequestMap()["Method"] << "]" << ", version: [" << client.getRequestMap()["Version"] << "], URI: "<< client.getRequestMap()["Path"] <<  RESET << std::endl;
-            openFile(client);
-        }
-    }
-}
+//         if (client.requestComplete())
+//         {
+//             client.parseBuffer();
+//             // We need a check to assess the method
+//             std::cout << GREEN << "Request Received from socket " << _pollFds[index].fd << ", method: [" << client.getRequestMap()["Method"] << "]" << ", version: [" << client.getRequestMap()["Version"] << "], URI: "<< client.getRequestMap()["Path"] <<  RESET << std::endl;
+//             openFile(client);
+//         }
+//     }
+// }
 
 void Server::sendClientData(size_t index)
 {
@@ -318,33 +440,33 @@ void Server::sendClientData(size_t index)
 //     }
 // }
 
-void Server::openFile(Client &client)
-{
-    int fileFd;
-    std::string file;
+// void Server::openFile(Client &client)
+// {
+//     int fileFd;
+//     std::string file;
     
-    file = client.getRequestMap().at("Path");
-    if (file == "/")
-        file += "index.html";
-    file = "./html" + file;
+//     file = client.getRequestMap().at("Path");
+//     if (file == "/")
+//         file += "index.html";
+//     file = "./html" + file;
     
-    std::cout << "Constructed file path: " << file << std::endl;
-    fileFd = open(file.c_str(), O_RDONLY);
-    if (fileFd < 0)
-    {
-        client.setStatusCode(404);
-        std::cerr << "Failed to open file: " << file << ": " << strerror(errno) << std::endl;
-        client.createResponse();
-        return;
-    }
+//     std::cout << "Constructed file path: " << file << std::endl;
+//     fileFd = open(file.c_str(), O_RDONLY);
+//     if (fileFd < 0)
+//     {
+//         client.setStatusCode(404);
+//         std::cerr << "Failed to open file: " << file << ": " << strerror(errno) << std::endl;
+//         client.createResponse();
+//         return;
+//     }
 
-    client.setFileFd(fileFd);
+//     client.setFileFd(fileFd);
 
-    struct pollfd pollFd;
-    pollFd.fd = fileFd;
-    pollFd.events = POLLIN;
-    _pollFds.push_back(pollFd);
-}
+//     struct pollfd pollFd;
+//     pollFd.fd = fileFd;
+//     pollFd.events = POLLIN;
+//     _pollFds.push_back(pollFd);
+// }
 
 // void    Server::readFile(Client &client)
 // {
@@ -384,23 +506,44 @@ void    Server::checkTimeout(int time)
     }
 }
 
-void    Server::shutdownServer()
+void Server::shutdownServer()
 {
-    while (_pollFds.size() > 1)
-        closeConnection(1);
-    if (_serverSocket != -1)
-    close(_serverSocket);
+    // Close all client connections first
+    while (_pollFds.size() > _servers.size())
+        closeConnection(_servers.size());
+    // Close all server sockets
+    for (auto& serverInfo : _servers)
+    {
+        if (serverInfo.getServerFd() != -1)
+            close(serverInfo.getServerFd());
+    }
+    
+    _pollFds.clear();
+    _clients.clear();
 }
 
-void Server::addClient(int fd)
-{
-    _clients.emplace(fd, Client(fd));
-}
+// void    Server::shutdownServer()
+// {
+//     while (_pollFds.size() > 1)
+//         closeConnection(1);
+//     if (_serverSocket != -1)
+//     close(_serverSocket);
+// }
 
-Client& Server::getClient(int fd)
-{
-    return (_clients.at(fd));
-}
+// int     Server::getServerSocket()
+// {
+//     return (_serverSocket);
+// }
+
+// void Server::addClient(int fd)
+// {
+//     _clients.emplace(fd, Client(fd));
+// }
+
+// Client& Server::getClient(int fd)
+// {
+//     return (_clients.at(fd));
+// }
 
 void Server::removeClient(int fd)
 {

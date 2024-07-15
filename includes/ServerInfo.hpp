@@ -19,9 +19,15 @@ class ServerInfo
 
         int getPort() const;
         int getServerFd() const;
-        void setServerFd(int fd);
         int getMaxClient() const;
         std::string getHost() const;
         std::string getRoot() const;
         std::string getIndex() const;
+
+        void setPort(int port);
+        void setServerFd(int fd);
+        void setMaxClient(int maxClient);
+        void setHost(const std::string& host);
+        void setRoot(const std::string& root);
+        void setIndex(const std::string& index);
 };
