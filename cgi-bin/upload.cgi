@@ -5,12 +5,21 @@ import sys
 import cgi
 import cgitb
 
+
+# input_data = sys.stdin.read()
+
+# print("<p>{}</p>".format(input_data))
 # print("Hello! This is the upload script\n");
 
 # for key, value in os.environ.items():
 #     print(f"{key}:{value}")
 cgitb.enable()
 
+# input_data = sys.stdin.read(297)
+
+# # Print the raw input data to stderr for debugging
+# print("Raw input data:", input_data, file=sys.stderr)
+print("Environment variables:", os.environ, file=sys.stderr)
 form = cgi.FieldStorage()
 
 if not form:

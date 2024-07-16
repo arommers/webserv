@@ -173,7 +173,7 @@ void    Server::handleClientData(size_t index)
     }
     else
     {
-        // buffer[bytesRead] = '\0';
+        buffer[bytesRead] = '\0';
 
         // for (auto& fds : _pollFds)
         //     std::cout << "List Fds: " << fds.fd << std::endl;

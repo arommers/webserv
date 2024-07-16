@@ -31,6 +31,8 @@ bool Cgi::checkIfCGI( Client &client )
 
 void Cgi::runCGI( Server& server, Client& client)
 {
+    // client.printRequestMap();
+    std::cout << "Body size: " << client.getRequestMap().at("Body").length() << std::endl;
     createFork(server, client);
 }
 
@@ -40,15 +42,15 @@ char** Cgi::createEnv(Server& server, Client& client)
 {
     std::vector<std::string>    env_vec;
 
-    // client.printRequestMap();
-    env_vec.push_back("METHOD=" + client.getRequestMap().at("Method"));
+    env_vec.push_back("REQUEST_METHOD=" + client.getRequestMap().at("Method"));
     env_vec.push_back("QUERY_STRING=test"); // ADD!
     env_vec.push_back("QUERY_LENGTH=4");
     env_vec.push_back("SERVER_NAME=localhost");
     env_vec.push_back("SERVER_PORT=8080");
     env_vec.push_back("SERVER_PROTOCOL=HTTP/1.1");
     env_vec.push_back("REMOTE_ADDR=127.0.0.1");
-    env_vec.push_back("BODY=" + client.getRequestMap().at("Body"));
+    env_vec.push_back("CONTENT_LENGTH=" + std::to_string(client.getRequestMap().at("Body").length() - 2));
+    env_vec.push_back("CONTENT_TYPE=" + client.getRequestMap().at("Content-Type"));
 
     char** env = new char*[env_vec.size() + 1];
     for (int i = 0; i < env_vec.size(); i++){
@@ -106,7 +108,7 @@ void Cgi::writeBodyToPipe(Server& server, Client& client)
     int             writeFd;
     struct pollfd   pollFd;
 
-    client.printRequestMap();
+    // client.printRequestMap();
     writeFd = write(client.getRequestPipe()[1], client.getRequestMap().at("Body").c_str(), client.getRequestMap().at("Body").length());
     if (writeFd < 0){
         perror("write");
@@ -135,8 +137,8 @@ void Cgi::createFork(Server& server, Client& client)
     else // In parent
     {
         _childForks.push_back(pid);
-        readClosePipes(server, client);
         waitpid(pid, nullptr, 0); // Is this correct? Will the server hang if a child is hanging?
+        readClosePipes(server, client);
     }
 }
 
@@ -159,10 +161,6 @@ void Cgi::launchScript(Server& server, Client& client)
     std::string path = "." + client.getRequestMap().at("Path");
     char * pathArray[] = {const_cast<char *>(path.c_str()), nullptr};
 
-    char *buf[2000];
-    int dd = read(client.getRequestPipe()[0], buf, 2000);
-    std::cout << "Buf: " << buf << std::endl;
-    write(STDOUT_FILENO, buf, dd);
     redirectToPipes(server, client);
     execve(pathArray[0], pathArray, createEnv(server, client));
     perror("execve");
