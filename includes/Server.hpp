@@ -21,19 +21,20 @@ class Server
         ~Server();
 
 
-        void    createServerSocket();
-        void    createPollLoop();
-        void    acceptConnection();
-        void    closeConnection(size_t index);
-        void    shutdownServer();
-        void    handleClientData(size_t index);
-        void    sendClientData(size_t index);
-        void    addClient(int fd);
-        Client& getClient(int fd);
-        void    removeClient(int fd);
-        void    checkTimeout(int time);
-        int     getServerSocket();
-
+        void                        createServerSocket();
+        void                        createPollLoop();
+        void                        acceptConnection();
+        void                        closeConnection(size_t index);
+        void                        shutdownServer();
+        void                        handleClientData(size_t index);
+        void                        sendClientData(size_t index);
+        void                        addClient(int fd);
+        Client&                     getClient(int fd);
+        void                        removeClient(int fd);
+        void                        checkTimeout(int time);
+        int                         getServerSocket();
+        std::vector<struct pollfd>  getPollFds();
+        void                        removePollFd( int fd );
 
         void            handleClientRequest();
         int             checkFile(std::string &file);

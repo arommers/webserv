@@ -124,16 +124,7 @@ void Server::handleFileRead(size_t index)
                         value.events = POLLOUT;
                     }
                 }
-                
-                //Ugly loop to remove file fd from _pollFds
-                int i = 0;
-                for (auto& value : _pollFds)
-                {
-                    if (value.fd == it->second.getFileFd()){
-                        _pollFds.erase(_pollFds.begin() + i);
-                    }
-                    i++;
-                }
+                removePollFd(it->second.getFileFd());
             }
         }
     }
@@ -192,7 +183,6 @@ void    Server::handleClientData(size_t index)
         client.addToBuffer(buffer);
         if (client.requestComplete())
         {
-            std::cout << client.getReadBuffer() << std::endl;
             client.parseBuffer();
             if (client.getState() == ERROR){
                 client.createResponse();
@@ -203,6 +193,7 @@ void    Server::handleClientData(size_t index)
             std::cout << GREEN << "Request Received from socket " << _pollFds[index].fd << ", method: [" << client.getRequestMap()["Method"] << "]" << ", version: [" << client.getRequestMap()["Version"] << "], URI: "<< client.getRequestMap()["Path"] <<  RESET << std::endl;
             if (_cgi->checkIfCGI(client) == true){
                 _cgi->runCGI(*this, client);
+                _pollFds[index].events = POLLOUT; // CGI finished, so POLLOUT can be set
             }
             else{
                 openFile(client);
@@ -368,5 +359,24 @@ Client& Server::getClient(int fd)
 void Server::removeClient(int fd)
 {
     _clients.erase(fd);
+}
+
+std::vector<struct pollfd>  Server::getPollFds()
+{
+    return (_pollFds);
+}
+
+void Server::removePollFd( int fd )
+{
+    int i = 0;
+    for (auto& value : _pollFds)
+    {
+        if (value.fd == fd){
+            _pollFds.erase(_pollFds.begin() + i);
+            return ;
+        }
+        i++;
+    }
+
 }
 

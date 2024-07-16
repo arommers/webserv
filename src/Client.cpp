@@ -140,6 +140,7 @@ std::time_t Client::getTime()
 void    Client::parseBuffer ( void )
 {
     std::string line, key, value;
+    bool startBody = false;
 
     // Storing the (first) request line with the method (GET/POST etc..), path and version in headerMap
     std::istringstream stream(_readBuffer);
@@ -152,15 +153,19 @@ void    Client::parseBuffer ( void )
     while (std::getline(stream, line, '\n'))
     {
         std::istringstream lineStream(line);
-        if (std::getline(lineStream, key, ':'))
+        if (startBody == false && line == "\r"){
+            startBody = true;
+        }
+        if (startBody == true){
+            _requestMap["Body"] += line + '\n';
+        }
+        else if (std::getline(lineStream, key, ':'))
         {
             if (std::getline(lineStream, value))
-            {
+            {            
                 value = trimWhiteSpace(value);
                 _requestMap[key] = value;
             }
-            else if (!key.empty())
-                _requestMap["Body"] = key;
         }
     }
     isValidMethod(_requestMap["Method"]);
@@ -175,7 +180,8 @@ void    Client::printRequestMap( void )
     for (const auto& pair : _requestMap)
     {
         std::cout << pair.first << ":" << pair.second << std::endl;
-    }   
+    }
+    std::cout << "\n------- Content of header map -------\n";
 }
 
 std::map<std::string, std::string> Client::getRequestMap( void )
@@ -222,16 +228,35 @@ std::string trimWhiteSpace(std::string& string)
     return string.substr(start, end - start + 1);
 }
 
+std::string Client::readFile ( std::string file )
+{
+    int     fileFd;
+    int     bytesRead;
+    int     bufferSize = 2000;
+    char    buffer[bufferSize];
+
+    fileFd = open(file.c_str(), O_RDONLY);
+    if (fileFd == -1)
+    {
+        perror("file open");
+        exit (1);
+    }
+    bytesRead = read(fileFd, buffer, bufferSize - 1);
+    if (bytesRead == -1){
+        perror("read");
+        exit (1);
+    }
+    buffer[bytesRead] = '\0';
+    close(fileFd);
+    return (buffer);
+}
+
 std::string Client::createErrorResponse( void )
 {
     std::string errorResponse;
-    std::string errorPage = "<html>"
-                            "<head><title>" + std::to_string(_statusCode) + " " + _ErrorMap.at(_statusCode) + "</title></head>"
-                            "<body>"
-                            "<h1>" + std::to_string(_statusCode) + " " + _ErrorMap.at(_statusCode) + "</h1>"
-                            "<p>The request could not be understood by the server due to malformed syntax.</p>"
-                            "</body>"
-                            "</html>\r\t\r\t";
+    std::string file = "./config/error_page/" + std::to_string(_statusCode) + ".html";
+    std::string errorPage = readFile(file);
+    
     _responseMap["Content-Type"] = "text/html";
     if (!_requestMap.count("Version"))
         _requestMap["Version"] = "HTTP/1.1";
@@ -325,4 +350,14 @@ void Client::setFileFd(int fd)
 int Client::getFileFd()
 {
     return _fileFd;
+}
+
+int* Client::getRequestPipe()
+{
+    return (_requestPipe);
+}
+
+int* Client::getReponsePipe()
+{
+    return (_responsePipe);
 }

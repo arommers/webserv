@@ -59,7 +59,9 @@ class Client
         std::map<std::string, std::string>      _responseMap;
         static const std::map<int, std::string> _ErrorMap;
         int                                     _statusCode = 0;
-        std::time_t                             _time = std::time(nullptr);                     
+        std::time_t                             _time = std::time(nullptr);
+        int                                     _requestPipe[2];
+        int                                     _responsePipe[2];
         
         bool                                    _responseReady = false;
 
@@ -103,6 +105,9 @@ class Client
         void                                    setFileFd(int fd);
         int                                     getFileFd();
         bool                                    fileReadComplete();
+        int*                                    getRequestPipe();
+        int*                                    getReponsePipe();
+        std::string                             readFile ( std::string file );
 };
 
 std::string trimWhiteSpace(std::string& string);
