@@ -89,10 +89,8 @@ class Client
         void        readNextChunk();
         bool        getResponseStatus();
 
-        // 
-
-        void setFileFd(int fd);
-        int getFileFd();
+        void        setFileFd(int fd);
+        int         getFileFd();
         bool fileReadComplete();
 
         ServerInfo& getServerInfo();

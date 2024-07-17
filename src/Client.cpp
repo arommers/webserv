@@ -14,33 +14,33 @@ const std::map<int, std::string> Client::_ErrorMap = {
 
 Client::Client() {}
 
-Client::~Client() { }
+Client::~Client() {}
 
 Client::Client(int fd, ServerInfo& serverInfo): _fd(fd), _serverInfo(serverInfo) {}
 
-// Client::Client(const Client& rhs)
-// {
-//     _fd = rhs._fd;
-//     _serverInfo = rhs._serverInfo;
-//     _readBuffer = rhs._readBuffer;
-//     _writeBuffer = rhs._writeBuffer;
-//     _writePos = rhs._writePos;
-//     _time = rhs._time;
-// }
+Client::Client(const Client& rhs)
+{
+    _fd = rhs._fd;
+    _serverInfo = rhs._serverInfo;
+    _readBuffer = rhs._readBuffer;
+    _writeBuffer = rhs._writeBuffer;
+    _writePos = rhs._writePos;
+    _time = rhs._time;
+}
 
-// Client& Client::operator=(const Client& rhs)
-// {
-//     if (this != &rhs)
-//     {
-//         _fd = rhs._fd;
-//         _serverInfo = rhs._serverInfo;
-//         _readBuffer = rhs._readBuffer;
-//         _writeBuffer = rhs._writeBuffer;
-//         _writePos = rhs._writePos;
-//         _time = rhs._time;
-//     }
-//     return *this;
-// }
+Client& Client::operator=(const Client& rhs)
+{
+    if (this != &rhs)
+    {
+        _fd = rhs._fd;
+        _serverInfo = rhs._serverInfo;
+        _readBuffer = rhs._readBuffer;
+        _writeBuffer = rhs._writeBuffer;
+        _writePos = rhs._writePos;
+        _time = rhs._time;
+    }
+    return (*this);
+}
 
 void    Client::addToBuffer( std::string bufferNew )
 {
@@ -263,29 +263,6 @@ void Client::readNextChunk()
 
 }
 
-
-// void    Client::readNextChunk()
-// {
-//     char    buffer[BUFFER_SIZE];
-//     int     bytesRead = read(_fd, buffer, BUFFER_SIZE);
-    
-//     if (bytesRead < 0)
-//     {
-//         std::cerr << "Failed to read file: " << strerror(errno) << std::endl;
-//         setStatusCode(404);
-//         close(_fd);
-//         _responseReady = true;
-//         return;
-//     }
-//     else if (bytesRead == 0)
-//     {
-//         close(_fd);
-//         _responseReady = true;
-//         createResponse();
-//         return;
-//     }
-//     _fileBuffer.append(buffer, bytesRead);
-// }
 
 // Getters and Setters
 
