@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../includes/Client.hpp"
-#include "../includes/Cgi.hpp"
+#include "../includes/Cgi.hpp" 
 
 class Cgi;
 
@@ -12,7 +12,7 @@ class Server
         struct sockaddr_in              _address;
         std::vector<struct pollfd>      _pollFds;
         std::unordered_map<int, Client> _clients;
-        Cgi*                             _cgi;
+        Cgi                             _cgi;
 
     public:
         Server();

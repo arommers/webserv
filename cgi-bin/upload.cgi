@@ -6,48 +6,29 @@ import cgi
 import cgitb
 
 
-# input_data = sys.stdin.read()
-
-# print("<p>{}</p>".format(input_data))
-# print("Hello! This is the upload script\n");
-
-# for key, value in os.environ.items():
-#     print(f"{key}:{value}")
 cgitb.enable()
 
-# input_data = sys.stdin.read(297)
 
-# # Print the raw input data to stderr for debugging
-# print("Raw input data:", input_data, file=sys.stderr)
-print("Environment variables:", os.environ, file=sys.stderr)
 form = cgi.FieldStorage()
 
-if not form:
-    print("Form not working\n")
-for field in form.keys():
-    item = form[field]
-    if item.filename:  # This is a file upload field
-        print(f"<h2>Field: {field} (File)</h2>")
-        print(f"<p>Filename: {item.filename}</p>")
-        print("<pre>")
-        print(item.file.read().decode(errors='replace'))
-        print("</pre>")
-    else:  # This is a regular form field
-        print(f"<h2>Field: {field}</h2>")
-        print(f"<p>Value: {item.value}</p>")
 
-# print("""
-# <!DOCTYPE html>
-# <html lang="en">
-# <head>
-#     <meta charset="UTF-8">
-#     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-#     <title>CGI Script Success</title>
-# </head>
-# <body>
-#     <h1>Upload CGI script successfully run!</h1>
-# </body>
-# </html>
-# """)
+fileitem = form['fileToUpload']
 
-print ("Script test");
+if fileitem.filename:
+    
+    fn = os.path.basename(fileitem.filename)
+    savePath = os.path.join("./uploads/", fn)
+
+    try:
+        os.makedirs(os.path.dirname(savePath), exist_ok=True)
+
+        with open(savePath, 'wb') as f:
+            f.write(fileitem.file.read())
+        
+        print(f"<h1>File {fn} uploaded successfully!</h1>")
+    
+    except Exception as e:
+        print("<h1>Error saving file</h1>")
+        print(f"<p>{e}</p>")
+else:
+    print("<h1>No file was uploaded</h1>")

@@ -3,7 +3,7 @@
 // int _shutdownRequest = false;
 
 Server::Server() {
-    _cgi = new Cgi();
+
 }
 Server::~Server() {}
 // Server::Server(const Server &rhs) {}
@@ -191,8 +191,8 @@ void    Server::handleClientData(size_t index)
             // handleClientRequest(client);
             // We need a check to assess the method
             std::cout << GREEN << "Request Received from socket " << _pollFds[index].fd << ", method: [" << client.getRequestMap()["Method"] << "]" << ", version: [" << client.getRequestMap()["Version"] << "], URI: "<< client.getRequestMap()["Path"] <<  RESET << std::endl;
-            if (_cgi->checkIfCGI(client) == true){
-                _cgi->runCGI(*this, client);
+            if (_cgi.checkIfCGI(client) == true){
+                _cgi.runCGI(*this, client);
                 _pollFds[index].events = POLLOUT; // CGI finished, so POLLOUT can be set
             }
             else{

@@ -1,4 +1,6 @@
 #include "../includes/Cgi.hpp"
+#include "../includes/Server.hpp"
+
 
 Cgi::Cgi()
 {
@@ -32,7 +34,6 @@ bool Cgi::checkIfCGI( Client &client )
 void Cgi::runCGI( Server& server, Client& client)
 {
     // client.printRequestMap();
-    std::cout << "Body size: " << client.getRequestMap().at("Body").length() << std::endl;
     createFork(server, client);
 }
 
@@ -43,15 +44,10 @@ char** Cgi::createEnv(Server& server, Client& client)
     std::vector<std::string>    env_vec;
 
     env_vec.push_back("REQUEST_METHOD=" + client.getRequestMap().at("Method"));
-    env_vec.push_back("QUERY_STRING=test"); // ADD!
-    env_vec.push_back("QUERY_LENGTH=4");
-    env_vec.push_back("SERVER_NAME=localhost");
-    env_vec.push_back("SERVER_PORT=8080");
-    env_vec.push_back("SERVER_PROTOCOL=HTTP/1.1");
-    env_vec.push_back("REMOTE_ADDR=127.0.0.1");
-    env_vec.push_back("CONTENT_LENGTH=" + std::to_string(client.getRequestMap().at("Body").length() - 2));
-    env_vec.push_back("CONTENT_TYPE=" + client.getRequestMap().at("Content-Type"));
-
+    if (client.getRequestMap().count("Body"))
+        env_vec.push_back("CONTENT_LENGTH=" + std::to_string(client.getRequestMap().at("Body").length() - 2));
+    if (client.getRequestMap().count("Content-Type"))
+        env_vec.push_back("CONTENT_TYPE=" + client.getRequestMap().at("Content-Type"));
     char** env = new char*[env_vec.size() + 1];
     for (int i = 0; i < env_vec.size(); i++){
         env[i] = new char[env_vec[i].size() + 1];
@@ -70,7 +66,6 @@ void Cgi::createPipe(Server& server, Client& client, int* fdPipe)
         perror("pipe");
         exit(1);
     }
-    // std::cout << "Pipes: " << client.getCgiPipes()[0] << " " << client.getCgiPipes()[1] << std::endl;
     pipeFdRead.fd = fdPipe[0];
     pipeFdRead.events = POLLIN;
     pipeFdWrite.fd = fdPipe[1];
@@ -93,14 +88,14 @@ void Cgi::readClosePipes(Server& server, Client& client)
     client.setFileBuffer(buffer);
     client.createResponse();
     
-    server.removePollFd(client.getRequestPipe()[0]);
-    server.removePollFd(client.getRequestPipe()[1]);
-    server.removePollFd(client.getReponsePipe()[0]);
-    server.removePollFd(client.getReponsePipe()[1]);
-    close (client.getRequestPipe()[0]);
-    close (client.getRequestPipe()[1]);
-    close (client.getReponsePipe()[0]);
-    close (client.getReponsePipe()[1]);
+    // server.removePollFd(client.getRequestPipe()[0]);
+    // server.removePollFd(client.getRequestPipe()[1]);
+    // server.removePollFd(client.getReponsePipe()[0]);
+    // server.removePollFd(client.getReponsePipe()[1]);
+    // close (client.getRequestPipe()[0]);
+    // close (client.getRequestPipe()[1]);
+    // close (client.getReponsePipe()[0]);
+    // close (client.getReponsePipe()[1]);
 }
 
 void Cgi::writeBodyToPipe(Server& server, Client& client)
@@ -108,7 +103,6 @@ void Cgi::writeBodyToPipe(Server& server, Client& client)
     int             writeFd;
     struct pollfd   pollFd;
 
-    // client.printRequestMap();
     writeFd = write(client.getRequestPipe()[1], client.getRequestMap().at("Body").c_str(), client.getRequestMap().at("Body").length());
     if (writeFd < 0){
         perror("write");
@@ -119,11 +113,14 @@ void Cgi::writeBodyToPipe(Server& server, Client& client)
 void Cgi::createFork(Server& server, Client& client)
 {
     pid_t   pid;
-    
-    createPipe(server, client, client.getRequestPipe());
-    createPipe(server, client, client.getReponsePipe());
-    writeBodyToPipe(server, client);
 
+    if (client.getRequestMap().at("Method") == "POST"){    
+        createPipe(server, client, client.getRequestPipe());
+        writeBodyToPipe(server, client);
+    }
+
+    createPipe(server, client, client.getReponsePipe());
+    std::cout << "Test!\n";
     
     pid = fork();
     if (pid == -1){
@@ -144,10 +141,12 @@ void Cgi::createFork(Server& server, Client& client)
 
 void Cgi::redirectToPipes(Server& server, Client& client)
 {
-    close(client.getRequestPipe()[1]);
-    if (dup2(client.getRequestPipe()[0], STDIN_FILENO) == -1){
-        perror("dup2");
-        exit(1);
+    if (client.getRequestMap().at("Method") == "POST"){
+        close(client.getRequestPipe()[1]);
+        if (dup2(client.getRequestPipe()[0], STDIN_FILENO) == -1){
+            perror("dup2");
+            exit(1);
+        }
     }
     close(client.getReponsePipe()[0]);
     if (dup2(client.getReponsePipe()[1], STDOUT_FILENO) == -1){
@@ -160,9 +159,13 @@ void Cgi::launchScript(Server& server, Client& client)
 {
     std::string path = "." + client.getRequestMap().at("Path");
     char * pathArray[] = {const_cast<char *>(path.c_str()), nullptr};
+    write(2, "Hier!\n", 6);
+
+    char** env = createEnv(server, client);
+
 
     redirectToPipes(server, client);
-    execve(pathArray[0], pathArray, createEnv(server, client));
+    execve(pathArray[0], pathArray, env);
     perror("execve");
     exit(1);
 }

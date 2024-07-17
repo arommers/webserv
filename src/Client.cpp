@@ -329,6 +329,10 @@ void    Client::resetClientData( void )
     _requestMap.clear();
     _responseMap.clear();
     _statusCode = 0;
+    _fd = -1;
+    _state = -1;
+    _fileFd = -1;
+    _responseReady = false;
 }
 
 

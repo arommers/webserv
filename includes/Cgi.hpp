@@ -6,10 +6,9 @@
 #include <map>
 #include <sys/wait.h>
 #include "../includes/Client.hpp"
-#include "../includes/Server.hpp"
 
 class Server;
-class Client;
+// class Client;
 
 class Cgi
 {
