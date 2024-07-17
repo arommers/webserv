@@ -50,7 +50,7 @@ std::string	Config::readConfigFile(std::string name)
 	}
 	getline(file, file_content, '\0');
 	ft_removeComments(file_content);
-	ft_removeWhitespace(file_content);
+	// ft_removeWhitespace(file_content);
 	if (file_content.size() == 0)
 	{
 		throw Exception_Config("Config format is empty");
@@ -90,14 +90,51 @@ void	Config::splitServers(std::string &file_content)
 /* createServer();
  * - ...
  */
-void	Config::createServer(std::string &config, ServerInfo &server)
+void	Config::createServer(std::string &config_string, ServerInfo &server)
 {
 	//split in key and value (key = value);
 	//loop through array find for 'keyword' matching variable.
 	// - fill key value into that variable (setter)
 	// - before that check if everything is correct (port has only numbers)
 	//check if the important stuff have a value -> ft_checkServer()
+	// -----------------------------------------------------------------
+	// -----------------------------------------------------------------
+	// 		// Must be in the file (Importan once)
+	// 		_port;
+	// 		_serverFd;
+	// 		_maxClient;
+	// 		_host;		   
+	// 		_root; 
+	// 		_index
+	// -----------------------------------------------------------------
+	// -----------------------------------------------------------------
 
+	// std::vector<std::string>	parameters;	
+	// std::vector<std::string>	key;
+	// std::vector<std::string>	value;
+	std::vector<std::vector<std::string>>	parameters;
+	bool _maxClientSize = false;
+	bool _autoindex = OFF; 		// Turn on or off directory listing.
+
+	parameters = ft_splitParameters(config_string);
+	// You can now use parameters[0] for keys and parameters[1] for values
+	for (size_t i = 0; i < parameters[0].size(); ++i)
+	{
+        std::cout << "Key: " << parameters[0][i] << " -> Value: " << parameters[1][i] << std::endl;
+    }
+
+
+
+
+
+
+
+
+
+
+
+	// -----------------------------------------------------------------
+	// -----------------------------------------------------------------
 	std::cout << "HERE" << std::endl << std::endl; // ---> RM
 	// // --- NOT working yet ---
 	// ft_checkServer()			;		// Check that nothing is empty. All ServerInfo variables are filled.

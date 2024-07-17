@@ -13,12 +13,16 @@
 # define BOLD "\033[1m"
 # define RESET "\033[0m"
 
+// For directory listing (autoindex)
+# define ON "true"
+# define OFF "false"
+
 // Configuration file class
 class	Config
 {
 	private:
 		std::vector<ServerInfo>		_serverBlocks; 	// Info of each server block
-		std::vector<std::string>	_info; 			// Save serverBlock string, before they will be parsed correctly  
+		std::vector<std::string>	_info; 			// Save serverBlock string, before they will be parsed correctly 
 		int							_server_i;		// How many servers we have
 
 	public:
@@ -28,7 +32,7 @@ class	Config
 		// Member functions
 		std::string					readConfigFile(std::string name);
 		void						splitServers(std::string &file_content);
-		void 						createServer(std::string &config, ServerInfo &server);
+		void 						createServer(std::string &config_string, ServerInfo &server);
 
 		// Getter
 		std::vector<ServerInfo>		getServerBlocks();	// Used for creating the sockets (aka. Server.cpp)
@@ -41,6 +45,7 @@ class	Config
 		bool						ft_checkBrackets(std::string &str);
 		size_t						ft_findServerStart(size_t start, std::string &file_content);
 		size_t						ft_findServerEnd(size_t start, std::string &file_content);
+		std::vector<std::vector<std::string>>	ft_splitParameters(const std::string &config_string);
 
 		// Exception class
 		class Exception_Config: public std::exception

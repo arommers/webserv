@@ -163,12 +163,94 @@ bool	Config::ft_checkBrackets(std::string &str)
 // -------------------------------------------------------------------------------------
 // --- Utils for createServer(); ---
 
+/* ft_trim();
+ * - Helper function to trim whitespace from both ends of a string
+ */
+static std::string	ft_trim(const std::string& str)
+{
+	size_t first;
+	size_t	last;
+
+	first = str.find_first_not_of(" \t\n");
+	if (first == std::string::npos)
+		return ("");
+	last = str.find_last_not_of(" \t\n");
+	return (str.substr(first, last - first + 1));
+}
+
+/* ft_splitParameters();
+ * - Split the configuration string into keys and values
+
+ */
+std::vector<std::vector<std::string>>	Config::ft_splitParameters(const std::string &config_string)
+{
+	std::vector<std::vector<std::string>>	parameters(2); // 0: keys, 1: values
+	std::vector<std::string>		&keys = parameters[0];
+	std::vector<std::string>		&values = parameters[1];
+	// std::string		key;
+	// std::string		value;
+	// size_t		value_start;
+	// size_t		value_end;
+	// size_t		equal_pos;
+	size_t		start = 1;
+
+	while (start < config_string.size())
+	{
+		// Skip leading whitespace
+        while (start < config_string.size() && isspace(config_string[start]))
+            start++;
+
+        // Find the position of the '=' character
+        size_t equal_pos = config_string.find('=', start);
+        if (equal_pos == std::string::npos)
+            break;
+
+        // Extract the key
+        std::string key = ft_trim(config_string.substr(start, equal_pos - start));
+
+        // Find the start of the value
+        size_t value_start = equal_pos + 1;
+
+        // Skip any leading whitespace before the value
+        while (value_start < config_string.size() && isspace(config_string[value_start]))
+            value_start++;
+
+        // Find the end of the value (first whitespace character after the first word)
+        size_t value_end = value_start;
+        while (value_end < config_string.size() && !isspace(config_string[value_end]))
+            value_end++;
+
+        // Adjust value_end to include newline cases
+        if (value_end < config_string.size() && (config_string[value_end] == '\n' || config_string[value_end] == '\r'))
+            value_end--;
+
+        // Extract the value and trim any surrounding whitespace
+        std::string value = ft_trim(config_string.substr(value_start, value_end - value_start + 1));
+
+        // Add key and value to their respective vectors
+        keys.push_back(key);
+        values.push_back(value);
+
+        // Update the start position for the next iteration
+        start = value_end + 1;
+    }
+	return (parameters);
+}
+
+
 // // ---- !!!!!!!!!!!!!!!! NOT DONE !!!!!!!!!!!!!!!! ----
 // /* ft_checkServer();
 //  * - ...
 //  */
 // void	Config::ft_checkServer()
 // {
+// 		// Must be in the file (Importan once)
+// 		_port;
+// 		_serverFd;
+// 		_maxClient;
+// 		_host;		   
+// 		_root; 
+// 		_index;		
 // 		if (!(_Bhost && _Bports && _BrootPath))
 // 			throw Exception_Config("Failed server validation, you are missing some configuration file information");
 // }
@@ -192,7 +274,7 @@ void	Config::ft_printConfigFile()
 	while (++i < _serverBlocks.size())
 	{
 		// prints WHAT server #
-		std::cout << RED << i << RESET << " Server" << std::endl;
+		std::cout << RED << i << RESET << BOLD << " Server " << RESET << std::endl;
 
 		// prints server host
 		std::cout << "Host : " << _serverBlocks[i].getHost() << std::endl;
