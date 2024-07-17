@@ -18,29 +18,29 @@ Client::~Client() {}
 
 Client::Client(int fd, ServerInfo& serverInfo): _fd(fd), _serverInfo(serverInfo) {}
 
-Client::Client(const Client& rhs)
-{
-    _fd = rhs._fd;
-    _serverInfo = rhs._serverInfo;
-    _readBuffer = rhs._readBuffer;
-    _writeBuffer = rhs._writeBuffer;
-    _writePos = rhs._writePos;
-    _time = rhs._time;
-}
+// Client::Client(const Client& rhs)
+// {
+//     _fd = rhs._fd;
+//     _serverInfo = rhs._serverInfo;
+//     _readBuffer = rhs._readBuffer;
+//     _writeBuffer = rhs._writeBuffer;
+//     _writePos = rhs._writePos;
+//     _time = rhs._time;
+// }
 
-Client& Client::operator=(const Client& rhs)
-{
-    if (this != &rhs)
-    {
-        _fd = rhs._fd;
-        _serverInfo = rhs._serverInfo;
-        _readBuffer = rhs._readBuffer;
-        _writeBuffer = rhs._writeBuffer;
-        _writePos = rhs._writePos;
-        _time = rhs._time;
-    }
-    return (*this);
-}
+// Client& Client::operator=(const Client& rhs)
+// {
+//     if (this != &rhs)
+//     {
+//         _fd = rhs._fd;
+//         _serverInfo = rhs._serverInfo;
+//         _readBuffer = rhs._readBuffer;
+//         _writeBuffer = rhs._writeBuffer;
+//         _writePos = rhs._writePos;
+//         _time = rhs._time;
+//     }
+//     return (*this);
+// }
 
 void    Client::addToBuffer( std::string bufferNew )
 {
