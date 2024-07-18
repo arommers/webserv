@@ -25,13 +25,13 @@ void Server::createServerInstances()
     ServerInfo server1;
     server1.setPort(4040);
     server1.setIndex("index.html");
-    server1.setRoot("./html/");
+    server1.setRoot("./html");
     server1.setHost("127.0.0.1");
 
     ServerInfo server2;
     server2.setPort(8080);
     server2.setIndex("index.html");
-    server2.setRoot("./html1/");
+    server2.setRoot("./html1");
     server2.setHost("127.0.0.1");
 
     _servers.push_back(server1);
