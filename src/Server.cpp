@@ -91,6 +91,7 @@ void    Server::createPollLoop()
 
         for (size_t i = 0; i < _pollFds.size(); ++i)
         {
+
             std::cout << "FD: " << _pollFds[i].fd << " revent: " << _pollFds[i].revents << std::endl;
             if (_pollFds[i].revents & POLLIN)
             {
@@ -101,10 +102,12 @@ void    Server::createPollLoop()
                 else
                     handleFileRead(i);
             } 
-            else if (_pollFds[i].revents & POLLOUT)
+            else if (_pollFds[i].revents & POLLOUT){
                 sendClientData(i);
+            }
         }
     }
+
 }
 
 void Server::handleFileRead(size_t index)
@@ -181,8 +184,11 @@ void    Server::handleClientData(size_t index)
         //     std::cout << "List Clients: " << client.second.getFd() << std::endl;
         Client &client = getClient(_pollFds[index].fd);
         client.addToBuffer(buffer);
+        std::time_t now = std::time(nullptr);
+        std::tm* local_time = std::localtime(&now);
         if (client.requestComplete())
         {
+
             client.parseBuffer();
             if (client.getState() == ERROR){
                 client.createResponse();
@@ -205,7 +211,10 @@ void    Server::handleClientData(size_t index)
                 return ;
             }
         }
+
+
     }
+
 }
 
 void Server::sendClientData(size_t index)

@@ -124,7 +124,7 @@ bool    Client::requestComplete()
     size_t bodyBegin = pos + 4;
     size_t bodyLength = bodyBegin + contentLength;
 
-    return _readBuffer.size() >= bodyLength;
+    return  _readBuffer.size() >= bodyLength;
 }
 
 void    Client::updateTime()
