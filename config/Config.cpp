@@ -50,7 +50,7 @@ std::string	Config::readConfigFile(std::string name)
 	}
 	getline(file, file_content, '\0');
 	ft_removeComments(file_content);
-	// ft_removeWhitespace(file_content);
+	ft_removeWhitespace(file_content);
 	if (file_content.size() == 0)
 	{
 		throw Exception_Config("Config format is empty");
@@ -101,8 +101,6 @@ void	Config::createServer(std::string &config_string, ServerInfo &server)
 	// -----------------------------------------------------------------
 	// 		// Must be in the file (Importan once)
 	// 		_port;
-	// 		_serverFd;
-	// 		_maxClient;
 	// 		_host;		   
 	// 		_root; 
 	// 		_index
@@ -114,14 +112,108 @@ void	Config::createServer(std::string &config_string, ServerInfo &server)
 	// std::vector<std::string>	value;
 	std::vector<std::vector<std::string>>	parameters;
 	bool _maxClientSize = false;
-	bool _autoindex = OFF; 		// Turn on or off directory listing.
+	// bool _autoindex = OFF; 		// Turn on or off directory listing.
 
-	parameters = ft_splitParameters(config_string);
-	// You can now use parameters[0] for keys and parameters[1] for values
-	for (size_t i = 0; i < parameters[0].size(); ++i)
+	parameters = ft_splitParameters(config_string); // needs improvment !!!!!!
+	// for (size_t i = 0; i < parameters[0].size(); ++i)	// ----> RM
+	// {				// ----> RM
+    //     std::cout << "Key: " << parameters[0][i] << " -> Value: " << parameters[1][i] << std::endl;
+    // }				// ----> RM
+	if (parameters[0].size() == 0)
+		throw  Exception_Config("Invalid configuration foramt (1)");
+	for (size_t i = 0; i < parameters.size(); i++)
 	{
-        std::cout << "Key: " << parameters[0][i] << " -> Value: " << parameters[1][i] << std::endl;
-    }
+		if (parameters[0][i] == "port")
+		{
+			if (server.getPort())
+				throw  Exception_Config("Port is duplicated");
+			server.setPort(parameters[1][++i]);
+		}
+		else if (parameters[0][i] == "host")
+		{
+			if (!server.getHost().empty())
+				throw  Exception_Config("Host is duplicated");
+			server.setHost(parameters[1][++i]);
+		}
+		else if (parameters[0][i] == "root")
+		{
+			if (!server.getRoot().empty())
+				throw  Exception_Config("Root is duplicated");
+			server.setRoot(parameters[1][++i]);
+		}
+		else if (parameters[0][i] == "index" && (i + 1) < parameters.size())
+		{
+			if (!server.getIndex().empty())
+				throw  Exception_Config("Index is duplicated");
+			server.setIndex(parameters[0][++i]);
+		}
+		else if (parameters[0][i] == "error_page")
+		{
+			
+		}
+		else if (parameters[0][i] == "location" && (i + 1) < parameters.size())
+		{
+			std::string	path;
+			i++;
+			if (parameters[0][i] == "{" || parameters[0][i] == "}")
+				throw  Exception_Config("Wrong character in server scope{}");
+			path = parameters[0][i];
+			std::vector<std::string> codes;
+			if (parameters[0][++i] != "{")
+				throw  Exception_Config("Wrong character in server scope{}");
+			i++;
+			while (i < parameters.size() && parameters[0][i] != "}")
+				codes.push_back(parameters[i++]);
+			server.setLocation(path, codes);
+			if (i < parameters.size() && parameters[0][i] != "}")
+				throw  Exception_Config("Wrong character in server scope{}");
+			flag_loc = 0;
+		}
+		else if (parameters[0][i] == "client_max_body_size" && (i + 1) < parameters.size())
+		{
+			if (flag_max_size)
+				throw  Exception_Config("Client_max_body_size is duplicated");
+			server.setClientMaxBodySize(parameters[0][++i]);
+			flag_max_size = true;
+		}
+		else if (parameters[0][i] == "server_name" && (i + 1) < parameters.size())
+		{
+			if (!server.getServerName().empty())
+				throw  Exception_Config("Server_name is duplicated");
+			server.setServerName(parameters[0][++i]);
+		}
+		else if (parameters[0][i] == "autoindex" && (i + 1) < parameters.size())
+		{
+			if (flag_autoindex)
+				throw Exception_Config("Autoindex of server is duplicated");
+			server.setAutoindex(parameters[0][++i]);
+			flag_autoindex = true;
+		}
+		server.setServerFd(-1);
+	}
+
+	// Check that all important varabiles are filled.
+	if (!server.getPort())
+		throw Exception_Config("Port not found");
+	if (server.getHost().empty())
+		server.setHost("localhost");
+	if (server.getRoot().empty())
+		server.setRoot("./html");
+	if (server.getIndex().empty())
+		server.setIndex("index.html");
+	if (!server.getMaxClient())
+		server.setMaxClient(10);
+
+	// if (!server.getErrorPage().empty())
+
+		
+	
+
+
+		// Question to Adri:
+		/*
+		what if there is no location block?
+		*/
 
 
 

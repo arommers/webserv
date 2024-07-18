@@ -4,6 +4,7 @@
 # include <iostream>
 # include <string.h>
 # include <fstream>
+# include <sstream>
 # include <vector>
 # include "ServerInfo.hpp"
 
@@ -45,6 +46,8 @@ class	Config
 		bool						ft_checkBrackets(std::string &str);
 		size_t						ft_findServerStart(size_t start, std::string &file_content);
 		size_t						ft_findServerEnd(size_t start, std::string &file_content);
+		void						ft_checkEqualSign(const std::string& config_string);
+		void						ft_splitLocationBlocks(std::vector<std::string> &keys, std::vector<std::string> &values, size_t start, const std::string &config_string);
 		std::vector<std::vector<std::string>>	ft_splitParameters(const std::string &config_string);
 
 		// Exception class

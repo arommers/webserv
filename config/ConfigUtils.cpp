@@ -178,62 +178,168 @@ static std::string	ft_trim(const std::string& str)
 	return (str.substr(first, last - first + 1));
 }
 
-/* ft_splitParameters();
- * - Split the configuration string into keys and values
-
+/* ft_isChar();
+ * - Helper function to look for characters between 33 and 126 in ascii
  */
-std::vector<std::vector<std::string>>	Config::ft_splitParameters(const std::string &config_string)
+static bool ft_isChar(char c) 
 {
-	std::vector<std::vector<std::string>>	parameters(2); // 0: keys, 1: values
-	std::vector<std::string>		&keys = parameters[0];
-	std::vector<std::string>		&values = parameters[1];
-	// std::string		key;
-	// std::string		value;
-	// size_t		value_start;
-	// size_t		value_end;
-	// size_t		equal_pos;
-	size_t		start = 1;
+	int	ascii_value;
+
+	ascii_value = static_cast<int>(c);
+	return (ascii_value >= 33 && ascii_value <= 126);
+}
+
+/* ft_checkEqualSign();
+ * - Check if all 'key = value' have a '=' sign
+ */
+void	Config::ft_checkEqualSign(const std::string& config_string)
+{
+	size_t		start = 0;
+	std::string	current_word;
 
 	while (start < config_string.size())
 	{
+		size_t		equal_pos = config_string.find('=', start);;
+		size_t		word_count = 0;
+		bool		isWord = false;
+
+		// Loop through the characters from start to equal_pos (or end of string if '=' not found)
+		for (size_t i = start; i < (equal_pos == std::string::npos ? config_string.size() : equal_pos); ++i)
+		{
+			// Character is found -> update word_count and what the current_word is.
+			if (ft_isChar(config_string[i]))
+			{
+				if (!isWord)
+				{
+					isWord = true;
+					word_count++;
+				}
+				current_word += config_string[i];
+			}
+			else if (isspace(config_string[i])) // No character is found
+			{
+				if (isWord)
+				{
+					if (current_word == "location") // If the current_word is 'location' stop/return
+						return ;
+					current_word.clear();
+				}
+				isWord = false;
+			}
+		}
+
+		// Check if word_count is 2
+		if (word_count != 2)
+			throw Exception_Config("Invalid configuration foramt (2)");
+
+		// If no '=' was found, break the loop
+		if (equal_pos == std::string::npos)
+			break ;
+			
+		// Move past '='
+		start = equal_pos + 1;
+	}
+}
+
+/* ft_splitLocationBlocks();
+ * - Split the location Blocks
+ * - key: location ./
+ * - value : {root = /html/}
+ */
+void Config::ft_splitLocationBlocks(std::vector<std::string> &keys, std::vector<std::string> &values, size_t start, const std::string &config_string)
+{
+	std::string 	key;
+	std::string 	value;
+	size_t 			brace_start;
+	size_t 			brace_end;
+
+	while (start < config_string.size())
+	{
+		// Find the "location"
+		size_t location_pos = config_string.find("location", start);
+		if (location_pos == std::string::npos)
+			break; 
+		start = location_pos + 8; // move past "location" (8)
+
+		// Find the position of '{'
+		brace_start = config_string.find('{', start);
+		if (brace_start == std::string::npos)
+			break;
+
+		// Find the position of '}'
+		brace_end = config_string.find('}', brace_start);
+		if (brace_end == std::string::npos)
+			break;
+
+		// Extract key and value
+		key = ft_trim(config_string.substr(start, brace_start - start));
+		value = ft_trim(config_string.substr(brace_start + 1, brace_end - brace_start - 1)); // Exclude '{' and '}'
+
+		// Add key and value to their vectors
+		keys.push_back(key);
+		values.push_back(value);
+
+		// Move start past '}'
+		start = brace_end + 1; 
+	}
+}
+
+/* ft_splitParameters();
+ * - Split the configuration string into keys and values
+ */
+std::vector<std::vector<std::string>>	Config::ft_splitParameters(const std::string &config_string)
+{
+	std::vector<std::vector<std::string>>	parameters(2);
+	std::vector<std::string>		&keys = parameters[0];
+	std::vector<std::string>		&values = parameters[1];
+
+	std::string		key;
+	std::string		value;
+
+	// Check equal signs '='
+	ft_checkEqualSign(config_string);
+
+	size_t		start = 1;
+	while (start < config_string.size())
+	{
 		// Skip leading whitespace
-        while (start < config_string.size() && isspace(config_string[start]))
-            start++;
+		while (start < config_string.size() && isspace(config_string[start]))
+			start++;
 
-        // Find the position of the '=' character
-        size_t equal_pos = config_string.find('=', start);
-        if (equal_pos == std::string::npos)
-            break;
+		// Check if 'location' is found
+		if ((config_string[start] == 'l') && (config_string[start + 1] == 'o') && (config_string[start + 2] == 'c') && (config_string[start + 3] == 'a') && (config_string[start + 4] == 't') && (config_string[start + 5] == 'i') && (config_string[start + 6] == 'o') && (config_string[start + 7] == 'n') && (config_string[start + 8] == ' '))
+		{
+			// Handle "location blocks"
+			ft_splitLocationBlocks(keys, values, start, config_string);
+			break;
+		}
 
-        // Extract the key
-        std::string key = ft_trim(config_string.substr(start, equal_pos - start));
+		// Find the position of the '=' character
+		size_t equal_pos = config_string.find('=', start);
+		if (equal_pos == std::string::npos)
+			break;
 
-        // Find the start of the value
-        size_t value_start = equal_pos + 1;
+		// Extract the key
+		key = ft_trim(config_string.substr(start, equal_pos - start));
 
-        // Skip any leading whitespace before the value
-        while (value_start < config_string.size() && isspace(config_string[value_start]))
-            value_start++;
+		// Find the start/end of the value
+		size_t value_start = equal_pos + 1;
+		while (value_start < config_string.size() && isspace(config_string[value_start]))
+			value_start++;
+		size_t value_end = value_start;
+		while (value_end < config_string.size() && !isspace(config_string[value_end]))
+			value_end++;
 
-        // Find the end of the value (first whitespace character after the first word)
-        size_t value_end = value_start;
-        while (value_end < config_string.size() && !isspace(config_string[value_end]))
-            value_end++;
+		// Extract the value
+		value = ft_trim(config_string.substr(value_start, value_end - value_start + 1));
 
-        // Adjust value_end to include newline cases
-        if (value_end < config_string.size() && (config_string[value_end] == '\n' || config_string[value_end] == '\r'))
-            value_end--;
+		// Add key and value to their vectors
+		keys.push_back(key);
+		values.push_back(value);
 
-        // Extract the value and trim any surrounding whitespace
-        std::string value = ft_trim(config_string.substr(value_start, value_end - value_start + 1));
-
-        // Add key and value to their respective vectors
-        keys.push_back(key);
-        values.push_back(value);
-
-        // Update the start position for the next iteration
-        start = value_end + 1;
-    }
+		// Move start past '='
+		start = value_end + 1;
+	}
 	return (parameters);
 }
 
