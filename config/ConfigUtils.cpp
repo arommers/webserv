@@ -47,7 +47,7 @@ void	Config::ft_removeWhitespace(std::string &file_content)
 	i = 0;
 	while (i < file_content.length())
 	{
-		if (isspace(file_content[i]))
+		if (file_content[i] == ' ' || file_content[i] == '\t')
 		{
 			if (in_space)
 				file_content.erase(i, 1);
@@ -189,6 +189,20 @@ static bool ft_isChar(char c)
 	return (ascii_value >= 33 && ascii_value <= 126);
 }
 
+/* ft_splitStringByNewline();
+ * - Helper function to look for characters between 33 and 126 in ascii
+ */
+static	std::vector<std::string> ft_splitStringByNewline(const std::string &input)
+{
+	std::vector<std::string> result;
+	std::istringstream stream(input);
+	std::string line;
+	
+	while (std::getline(stream, line))
+		result.push_back(line);
+	return result;
+}
+
 /* ft_checkEqualSign();
  * - Check if all 'key = value' have a '=' sign
  */
@@ -296,8 +310,17 @@ std::vector<std::vector<std::string>>	Config::ft_splitParameters(const std::stri
 	std::string		key;
 	std::string		value;
 
-	// Check equal signs '='
-	ft_checkEqualSign(config_string);
+
+	std::vector<std::string> line;
+	line = ft_splitStringByNewline(config_string);
+	for (size_t i = 0; i < line.size(); i++)
+	{
+		std::cout << "line " << line[i] << std::endl;
+		// Check equal signs '='
+		ft_checkEqualSign(line[i]); // rewrite
+
+	}
+
 
 	size_t		start = 1;
 	while (start < config_string.size())
@@ -348,17 +371,19 @@ std::vector<std::vector<std::string>>	Config::ft_splitParameters(const std::stri
 // /* ft_checkServer();
 //  * - ...
 //  */
-// void	Config::ft_checkServer()
+// void	Config::ft_checkServer(ServerInfo &server)
 // {
-// 		// Must be in the file (Importan once)
-// 		_port;
-// 		_serverFd;
-// 		_maxClient;
-// 		_host;		   
-// 		_root; 
-// 		_index;		
-// 		if (!(_Bhost && _Bports && _BrootPath))
-// 			throw Exception_Config("Failed server validation, you are missing some configuration file information");
+// 	server.setServerFd(-1);
+// 	if (!server.getPort())
+// 		throw Exception_Config("Port not found");
+// 	if (server.getHost().empty())
+// 		throw Exception_Config("Host not found");
+// 	if (server.getRoot().empty())
+// 		server.setRoot("./html");
+// 	if (server.getIndex().empty())
+// 		server.setIndex("index.html");
+// 	if (!server.getMaxClient())
+// 		server.setMaxClient(10);
 // }
 
 
@@ -415,7 +440,7 @@ void	Config::ft_printConfigFile()
 		std::cout << "Location Blocks : " << std::endl;
 		for (size_t j = 0; j < _serverBlocks[i].getLocations().size(); j++)
 		{
-			const Location& loc = _serverBlocks[i].getLocations()[j];
+			Location loc = _serverBlocks[i].getLocations()[j];
 			std::cout << j << " : " << std::endl;
 			std::cout << "  Path: " << loc.getPath() << std::endl;
 			std::cout << "  Root: " << loc.getRoot() << std::endl;

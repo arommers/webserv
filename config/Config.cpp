@@ -25,7 +25,7 @@ Config::Config(std::string file_name)
 		createServer(_info[i], server);		// We create server
 		_serverBlocks.push_back(server);	// We put serverInfo into _serverBlocks, so we can excess it later
 	}
-	// ft_printConfigFile();	// for testing -> do we have everything
+	ft_printConfigFile();	// for testing -> do we have everything
 }
 
 // -------------------------------------------------------------------------------------
@@ -92,33 +92,14 @@ void	Config::splitServers(std::string &file_content)
  */
 void	Config::createServer(std::string &config_string, ServerInfo &server)
 {
-	//split in key and value (key = value);
-	//loop through array find for 'keyword' matching variable.
-	// - fill key value into that variable (setter)
-	// - before that check if everything is correct (port has only numbers)
-	//check if the important stuff have a value -> ft_checkServer()
-	// -----------------------------------------------------------------
-	// -----------------------------------------------------------------
-	// 		// Must be in the file (Importan once)
-	// 		_port;
-	// 		_host;		   
-	// 		_root; 
-	// 		_index
-	// -----------------------------------------------------------------
-	// -----------------------------------------------------------------
-
-	// std::vector<std::string>	parameters;	
-	// std::vector<std::string>	key;
-	// std::vector<std::string>	value;
 	std::vector<std::vector<std::string>>	parameters;
-	// bool _maxClientSize = false;
-	// bool _autoindex = OFF; 		// Turn on or off directory listing.
 
 	parameters = ft_splitParameters(config_string); // needs improvment !!!!!!
-	// for (size_t i = 0; i < parameters[0].size(); ++i)	// ----> RM
-	// {				// ----> RM
-    //     std::cout << "Key: " << parameters[0][i] << " -> Value: " << parameters[1][i] << std::endl;
-    // }				// ----> RM
+	for (size_t i = 0; i < parameters[0].size(); ++i)	// ----> RM
+	{				// ----> RM
+        std::cout << "Key: " << parameters[0][i] << " -> Value: " << parameters[1][i] << std::endl;
+    }				// ----> RM
+	std::cout << std::endl;
 	if (parameters[0].size() == 0)
 		throw  Exception_Config("Invalid configuration foramt (1)");
 	for (size_t i = 0; i < parameters.size(); i++)
@@ -127,31 +108,31 @@ void	Config::createServer(std::string &config_string, ServerInfo &server)
 		{
 			if (server.getPort())
 				throw  Exception_Config("Port is duplicated");
-			server.setPort(parameters[1][++i]);
+			server.setPort(std::stoi(parameters[1][i]));
 		}
 		else if (parameters[0][i] == "host")
 		{
 			if (!server.getHost().empty())
 				throw  Exception_Config("Host is duplicated");
-			server.setHost(parameters[1][++i]);
+			server.setHost(parameters[1][i]);
 		}
 		else if (parameters[0][i] == "root")
 		{
 			if (!server.getRoot().empty())
 				throw  Exception_Config("Root is duplicated");
-			server.setRoot(parameters[1][++i]);
+			server.setRoot(parameters[1][i]);
 		}
-		else if (parameters[0][i] == "index" && (i + 1) < parameters.size())
+		else if (parameters[0][i] == "index")
 		{
 			if (!server.getIndex().empty())
 				throw  Exception_Config("Index is duplicated");
-			server.setIndex(parameters[0][++i]);
+			server.setIndex(parameters[1][i]);
 		}
 		else if (parameters[0][i] == "error_page")
 		{
 			
 		}
-		else if (parameters[0][i] == "location" && (i + 1) < parameters.size())
+		else if (parameters[0][i] == "location" && (i + 1))
 		{
 			// std::string	path;
 			// i++;
@@ -172,13 +153,13 @@ void	Config::createServer(std::string &config_string, ServerInfo &server)
 		{
 			if (server.getMaxClient())
 				throw  Exception_Config("max_client_size is duplicated");
-			server.setMaxClient(parameters[1][++i]);
+			server.setMaxClient(std::stoi(parameters[1][i]));
 		}
-		else if (parameters[0][i] == "server_name" && (i + 1) < parameters.size())
+		else if (parameters[0][i] == "server_name")
 		{
 			if (!server.getServerName().empty())
 				throw  Exception_Config("Server_name is duplicated");
-			server.setServerName(parameters[0][++i]);
+			server.setServerName(parameters[1][i]);
 		}
 	}
 
@@ -193,19 +174,20 @@ void	Config::createServer(std::string &config_string, ServerInfo &server)
 		server.setRoot("./html");
 	if (server.getIndex().empty())
 		server.setIndex("index.html");
+	if (server.getServerName().empty())
+		server.setServerName("W3bMasters");
 	if (!server.getMaxClient())
 		server.setMaxClient(10);
+// if (!server.getErrorPage().empty())
 
-	// if (!server.getErrorPage().empty())
+	// Question to Adri:
+	/*
+	what if there is no location block?
+	*/
 
 		
 	
 
-
-		// Question to Adri:
-		/*
-		what if there is no location block?
-		*/
 
 
 
