@@ -111,7 +111,7 @@ void	Config::createServer(std::string &config_string, ServerInfo &server)
 	// std::vector<std::string>	key;
 	// std::vector<std::string>	value;
 	std::vector<std::vector<std::string>>	parameters;
-	bool _maxClientSize = false;
+	// bool _maxClientSize = false;
 	// bool _autoindex = OFF; 		// Turn on or off directory listing.
 
 	parameters = ft_splitParameters(config_string); // needs improvment !!!!!!
@@ -153,28 +153,26 @@ void	Config::createServer(std::string &config_string, ServerInfo &server)
 		}
 		else if (parameters[0][i] == "location" && (i + 1) < parameters.size())
 		{
-			std::string	path;
-			i++;
-			if (parameters[0][i] == "{" || parameters[0][i] == "}")
-				throw  Exception_Config("Wrong character in server scope{}");
-			path = parameters[0][i];
-			std::vector<std::string> codes;
-			if (parameters[0][++i] != "{")
-				throw  Exception_Config("Wrong character in server scope{}");
-			i++;
-			while (i < parameters.size() && parameters[0][i] != "}")
-				codes.push_back(parameters[i++]);
-			server.setLocation(path, codes);
-			if (i < parameters.size() && parameters[0][i] != "}")
-				throw  Exception_Config("Wrong character in server scope{}");
-			flag_loc = 0;
+			// std::string	path;
+			// i++;
+			// if (parameters[0][i] == "{" || parameters[0][i] == "}")
+			// 	throw  Exception_Config("Wrong character in server scope{}");
+			// path = parameters[0][i];
+			// std::vector<std::string> codes;
+			// if (parameters[0][++i] != "{")
+			// 	throw  Exception_Config("Wrong character in server scope{}");
+			// i++;
+			// while (i < parameters.size() && parameters[0][i] != "}")
+			// 	codes.push_back(parameters[i++]);
+			// server.setLocation(path, codes);
+			// if (i < parameters.size() && parameters[0][i] != "}")
+			// 	throw  Exception_Config("Wrong character in server scope{}");
 		}
-		else if (parameters[0][i] == "client_max_body_size" && (i + 1) < parameters.size())
+		else if (parameters[0][i] == "max_client_size")
 		{
-			if (flag_max_size)
-				throw  Exception_Config("Client_max_body_size is duplicated");
-			server.setClientMaxBodySize(parameters[0][++i]);
-			flag_max_size = true;
+			if (server.getMaxClient())
+				throw  Exception_Config("max_client_size is duplicated");
+			server.setMaxClient(parameters[1][++i]);
 		}
 		else if (parameters[0][i] == "server_name" && (i + 1) < parameters.size())
 		{
@@ -182,21 +180,15 @@ void	Config::createServer(std::string &config_string, ServerInfo &server)
 				throw  Exception_Config("Server_name is duplicated");
 			server.setServerName(parameters[0][++i]);
 		}
-		else if (parameters[0][i] == "autoindex" && (i + 1) < parameters.size())
-		{
-			if (flag_autoindex)
-				throw Exception_Config("Autoindex of server is duplicated");
-			server.setAutoindex(parameters[0][++i]);
-			flag_autoindex = true;
-		}
-		server.setServerFd(-1);
 	}
 
 	// Check that all important varabiles are filled.
+	// ft_checkServer();
+	server.setServerFd(-1);
 	if (!server.getPort())
 		throw Exception_Config("Port not found");
 	if (server.getHost().empty())
-		server.setHost("localhost");
+		throw Exception_Config("Host not found");
 	if (server.getRoot().empty())
 		server.setRoot("./html");
 	if (server.getIndex().empty())
@@ -228,9 +220,6 @@ void	Config::createServer(std::string &config_string, ServerInfo &server)
 	// -----------------------------------------------------------------
 	// -----------------------------------------------------------------
 	std::cout << "HERE" << std::endl << std::endl; // ---> RM
-	// // --- NOT working yet ---
-	// ft_checkServer()			;		// Check that nothing is empty. All ServerInfo variables are filled.
-	// // -----------------------
 }
 
 /* getServerBlocks();

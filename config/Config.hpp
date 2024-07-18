@@ -7,6 +7,7 @@
 # include <sstream>
 # include <vector>
 # include "ServerInfo.hpp"
+# include "Location.hpp"
 
 // COLORS
 # define BLUE "\e[1;34m"

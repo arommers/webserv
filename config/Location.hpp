@@ -24,10 +24,12 @@ class Location
         std::string getRoot() const;
         std::string getIndex() const;
         std::vector<std::string> getAllowedMethods() const;
+		bool getAutoindex() const;
 
 		// Getter
         void setPath(std::string& path);
         void setRoot(std::string& root);
         void setIndex(std::string& index);
         void setAllowedMethods(std::vector<std::string>& methods);
+		void setAutoindex(bool autoindex);
 };
