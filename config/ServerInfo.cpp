@@ -1,57 +1,46 @@
 #include "ServerInfo.hpp"
 
+// --- Constructor ---
+ServerInfo::ServerInfo() : _port(0), _serverFd(-1), _maxClient(0), _host(""), _root(""), _index(""), _serverName("") {}
+
 // --- Setter ---
 void	ServerInfo::setHost(const std::string &newHost)
 {
-	// ft_checkHost(newHost);
 	_host = newHost;
 }
 
 void	ServerInfo::setPort(int newPort)
 {
-	// ft_checkPort(newPort);
 	_port = newPort;
 }
 
 void	ServerInfo::setRoot(const std::string &newRoot)
 {
-	// ft_checkRoot(newRoot);
 	_root = newRoot;
-}
-
-void	ServerInfo::setServerFd(int fd)
-{
-	// ft_checkServerFd(newServerFd);
-	_serverFd = fd;
 }
 
 void	ServerInfo::setMaxClient(int newMaxClient)
 {
-	// ft_checkMaxClient(newMaxClient);
 	_maxClient = newMaxClient;
 }
 
 void	ServerInfo::setIndex(const std::string &newIndex)
 {
-	// ft_checkIndex(newIndex);
 	_index = newIndex;
 }
 
 void	ServerInfo::setServerName(const std::string &newServerName)
 {
-	// ft_checkServerName(newServerName);
 	_serverName = newServerName;
 }
 
 void ServerInfo::setLocations(const std::vector<Location> &newLocation)
 {
-	// ft_checkLocation(newLocation);
 	_locations = newLocation;
 }
 
 void ServerInfo::setErrorPage(const std::vector<std::string> &newErrorPage)
 {
-	// ft_checkErrorPage(newErrorPage);
 	_errorPage = newErrorPage;
 }
 
@@ -100,4 +89,3 @@ std::vector<std::string> ServerInfo::getErrorPage() const
 {
 	return _errorPage;
 }
-

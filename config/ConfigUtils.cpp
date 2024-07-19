@@ -163,237 +163,162 @@ bool	Config::ft_checkBrackets(std::string &str)
 // -------------------------------------------------------------------------------------
 // --- Utils for createServer(); ---
 
-/* ft_trim();
- * - Helper function to trim whitespace from both ends of a string
- */
-static std::string	ft_trim(const std::string& str)
-{
-	size_t first;
-	size_t	last;
-
-	first = str.find_first_not_of(" \t\n");
-	if (first == std::string::npos)
-		return ("");
-	last = str.find_last_not_of(" \t\n");
-	return (str.substr(first, last - first + 1));
-}
-
-/* ft_isChar();
- * - Helper function to look for characters between 33 and 126 in ascii
- */
-static bool ft_isChar(char c) 
-{
-	int	ascii_value;
-
-	ascii_value = static_cast<int>(c);
-	return (ascii_value >= 33 && ascii_value <= 126);
-}
-
 /* ft_splitStringByNewline();
- * - Helper function to look for characters between 33 and 126 in ascii
+ * - static helper function to split by 'new line' and remove empty lines
  */
 static	std::vector<std::string> ft_splitStringByNewline(const std::string &input)
 {
 	std::vector<std::string> result;
 	std::istringstream stream(input);
 	std::string line;
-	
+
 	while (std::getline(stream, line))
-		result.push_back(line);
-	return result;
-}
-
-/* ft_checkEqualSign();
- * - Check if all 'key = value' have a '=' sign
- */
-void	Config::ft_checkEqualSign(const std::string& config_string)
-{
-	size_t		start = 0;
-	std::string	current_word;
-
-	while (start < config_string.size())
 	{
-		size_t		equal_pos = config_string.find('=', start);;
-		size_t		word_count = 0;
-		bool		isWord = false;
-
-		// Loop through the characters from start to equal_pos (or end of string if '=' not found)
-		for (size_t i = start; i < (equal_pos == std::string::npos ? config_string.size() : equal_pos); ++i)
-		{
-			// Character is found -> update word_count and what the current_word is.
-			if (ft_isChar(config_string[i]))
-			{
-				if (!isWord)
-				{
-					isWord = true;
-					word_count++;
-				}
-				current_word += config_string[i];
-			}
-			else if (isspace(config_string[i])) // No character is found
-			{
-				if (isWord)
-				{
-					if (current_word == "location") // If the current_word is 'location' stop/return
-						return ;
-					current_word.clear();
-				}
-				isWord = false;
-			}
-		}
-
-		// Check if word_count is 2
-		if (word_count != 2)
-			throw Exception_Config("Invalid configuration foramt (2)");
-
-		// If no '=' was found, break the loop
-		if (equal_pos == std::string::npos)
-			break ;
-			
-		// Move past '='
-		start = equal_pos + 1;
+		// Check if the line is not empty and not just whitespace
+		if (!line.empty() && !std::all_of(line.begin(), line.end(), [](char c) { return std::isspace(c); }))
+			result.push_back(line);
 	}
-}
-
-/* ft_splitLocationBlocks();
- * - Split the location Blocks
- * - key: location ./
- * - value : {root = /html/}
- */
-void Config::ft_splitLocationBlocks(std::vector<std::string> &keys, std::vector<std::string> &values, size_t start, const std::string &config_string)
-{
-	std::string 	key;
-	std::string 	value;
-	size_t 			brace_start;
-	size_t 			brace_end;
-
-	while (start < config_string.size())
-	{
-		// Find the "location"
-		size_t location_pos = config_string.find("location", start);
-		if (location_pos == std::string::npos)
-			break; 
-		start = location_pos + 8; // move past "location" (8)
-
-		// Find the position of '{'
-		brace_start = config_string.find('{', start);
-		if (brace_start == std::string::npos)
-			break;
-
-		// Find the position of '}'
-		brace_end = config_string.find('}', brace_start);
-		if (brace_end == std::string::npos)
-			break;
-
-		// Extract key and value
-		key = ft_trim(config_string.substr(start, brace_start - start));
-		value = ft_trim(config_string.substr(brace_start + 1, brace_end - brace_start - 1)); // Exclude '{' and '}'
-
-		// Add key and value to their vectors
-		keys.push_back(key);
-		values.push_back(value);
-
-		// Move start past '}'
-		start = brace_end + 1; 
-	}
+	return (result);
 }
 
 /* ft_splitParameters();
- * - Split the configuration string into keys and values
+ * - Checks for '='
+ * - Seperates line into 'key' and 'value' (key = value) + 'Location Blocks'
+ * - Checks that all 'key' parametres and 'value' parametres are not empty
+ * - If something is not correct it will theow an exeption
  */
 std::vector<std::vector<std::string>>	Config::ft_splitParameters(const std::string &config_string)
 {
-	std::vector<std::vector<std::string>>	parameters(2);
-	std::vector<std::string>		&keys = parameters[0];
-	std::vector<std::string>		&values = parameters[1];
+	std::vector<std::vector<std::string>> parameters(2);
+	std::vector<std::string> &keys = parameters[0];
+	std::vector<std::string> &values = parameters[1];
 
-	std::string		key;
-	std::string		value;
+	// Split the input string by newline
+	std::vector<std::string> lines = ft_splitStringByNewline(config_string);
 
-
-	std::vector<std::string> line;
-	line = ft_splitStringByNewline(config_string);
-	for (size_t i = 0; i < line.size(); i++)
+	for (size_t i = 1; i < lines.size() - 1; i++)
 	{
-		std::cout << "line " << line[i] << std::endl;
-		// Check equal signs '='
-		ft_checkEqualSign(line[i]); // rewrite
+		std::string line = lines[i];
+		std::string key;
+		std::string value;
 
-	}
+		// Trim whitespace from both ends of the line
+		line.erase(0, line.find_first_not_of(" \t"));
+		line.erase(line.find_last_not_of(" \t") + 1);
 
 
-	size_t		start = 1;
-	while (start < config_string.size())
-	{
-		// Skip leading whitespace
-		while (start < config_string.size() && isspace(config_string[start]))
-			start++;
+		// Check for invalid '==' case
+		if (line.find("==") != std::string::npos)
+			throw Exception_Config("Invalid configuration format, check '='");
 
-		// Check if 'location' is found
-		if ((config_string[start] == 'l') && (config_string[start + 1] == 'o') && (config_string[start + 2] == 'c') && (config_string[start + 3] == 'a') && (config_string[start + 4] == 't') && (config_string[start + 5] == 'i') && (config_string[start + 6] == 'o') && (config_string[start + 7] == 'n') && (config_string[start + 8] == ' '))
+		if (line.find("location") == 0 && line.find('{') != std::string::npos)
 		{
-			// Handle "location blocks"
-			ft_splitLocationBlocks(keys, values, start, config_string);
-			break;
+			// Handle 'location' block
+			key = line;
+			value.clear();
+			while (++i < lines.size() && lines[i].find('}') == std::string::npos)
+				value += lines[i] + "\n";
+			if (i < lines.size())
+				value += lines[i]; // Add the closing '}'
+			else
+				throw Exception_Config("Invalid configuration format, check 'location block'");
+		} 
+		else if (line.find('=') != std::string::npos) 
+		{
+			// Handle regular key-value pairs
+			size_t pos = line.find('=');
+			key = line.substr(0, pos);
+			value = line.substr(pos + 1);
+
+			// Trim whitespace from key and value
+			key.erase(0, key.find_first_not_of(" \t"));
+			key.erase(key.find_last_not_of(" \t") + 1);
+			value.erase(0, value.find_first_not_of(" \t"));
+			value.erase(value.find_last_not_of(" \t") + 1);
+
+			// Check if key or value is empty
+			if (key.empty() || value.empty())
+				throw Exception_Config("Invalid configuration format (1)");
 		}
+		else
+			throw Exception_Config("Invalid configuration format (2)");
 
-		// Find the position of the '=' character
-		size_t equal_pos = config_string.find('=', start);
-		if (equal_pos == std::string::npos)
-			break;
-
-		// Extract the key
-		key = ft_trim(config_string.substr(start, equal_pos - start));
-
-		// Find the start/end of the value
-		size_t value_start = equal_pos + 1;
-		while (value_start < config_string.size() && isspace(config_string[value_start]))
-			value_start++;
-		size_t value_end = value_start;
-		while (value_end < config_string.size() && !isspace(config_string[value_end]))
-			value_end++;
-
-		// Extract the value
-		value = ft_trim(config_string.substr(value_start, value_end - value_start + 1));
-
-		// Add key and value to their vectors
+		// Push on the vector
 		keys.push_back(key);
 		values.push_back(value);
-
-		// Move start past '='
-		start = value_end + 1;
 	}
 	return (parameters);
 }
 
+/* ft_checkServer();
+ * - Set _serverFd -> needs to be -1
+ * - Checks that all necessary variables are filled
+ * - _port and _host will error if not filled
+ * - The rest will be filled by default
+ */
+void	Config::ft_checkServerVariables(ServerInfo &server)
+{
+	if (server.getPort() == 0)
+        throw Exception_Config("Port not found");
+    if (server.getHost().empty())
+        throw Exception_Config("Host not found");
+    if (server.getRoot().empty())
+        server.setRoot("./html");
+    if (server.getIndex().empty())
+        server.setIndex("index.html");
+    if (server.getServerName().empty())
+        server.setServerName("W3bMasters");
+    if (server.getMaxClient() == 0)
+        server.setMaxClient(10);
 
-// // ---- !!!!!!!!!!!!!!!! NOT DONE !!!!!!!!!!!!!!!! ----
-// /* ft_checkServer();
-//  * - ...
-//  */
-// void	Config::ft_checkServer(ServerInfo &server)
-// {
-// 	server.setServerFd(-1);
-// 	if (!server.getPort())
-// 		throw Exception_Config("Port not found");
-// 	if (server.getHost().empty())
-// 		throw Exception_Config("Host not found");
-// 	if (server.getRoot().empty())
-// 		server.setRoot("./html");
-// 	if (server.getIndex().empty())
-// 		server.setIndex("index.html");
-// 	if (!server.getMaxClient())
-// 		server.setMaxClient(10);
-// }
-
-
-
-
-
+    // // Check _locations and _errorPage if they must not be empty
+    // if (server.getLocations().empty())
+    //     throw Exception_Config("Locations not found");
+    // if (server.getErrorPage().empty())
+    //     throw Exception_Config("Error pages not found");
+}
 
 // -------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------
 // --- Utils for gerneral stuff ---
+
+// Helper function to check the "error_page" parameter
+bool Config::errorPage(std::string string)
+{
+	std::vector<std::string> validErrorPages = {
+		"error_page 400",
+		"error_page 403",
+		"error_page 404",
+		"error_page 405",
+		"error_page 406",
+		"error_page 409",
+		"error_page 410",
+		"error_page 500"
+	};
+
+	// Check if the input string is in the list of valid error pages
+	if (std::find(validErrorPages.begin(), validErrorPages.end(), string) != validErrorPages.end())
+		return (true);
+	return (false);
+}
+
+// Helper function to check the "location" parameter
+bool Config::location(std::string string)
+{
+	std::istringstream iss(string);
+	std::vector<std::string> words;
+	std::string word;
+
+	while (iss >> word)			// Split the input string into words
+		words.push_back(word);
+	if (words.size() != 3)		// Check if there are exactly 3 words
+		return (false);
+	if (words[0] != "location")	// Check if the first word is "location"
+		return (false);
+	if (words[2] != "{")		// Check if the third word is "{"
+		return (false);
+	return (true);
+}
 
 // Prints the arguments that need to be passed onto the 'Server' -> Used for testing purpose
 void	Config::ft_printConfigFile()

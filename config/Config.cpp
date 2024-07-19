@@ -1,29 +1,19 @@
 #include "Config.hpp"
 
-// Constructor
-Config::Config(std::string file_name)
+// --- Constructor ---
+Config::Config(std::string file_name) : _server_i(0), _info(0), _serverBlocks(0)
 {
 	std::string file_content;
-	_server_i = 0;
 
-	// read config file
-	file_content = readConfigFile(file_name);
-	// std::cout << "READ : " << file_content << std::endl << std::endl; // ---> RM
-
-	// Split the Servers (you have each server block)
-	splitServers(file_content);
-	// std::cout << "Server_i : " << _server_i << std::endl;	// ---> RM
-	// for (size_t i = 0; i < _server_i; ++i)					// ---> RM 
-	// {														// ---> RM
-	// 	std::cout << "Server_Block [" << i << "]: " << _info[i] << std::endl << std::endl; // ---> RM
-	// }														// ---> RM
+	file_content = readConfigFile(file_name);	// read config file
+	splitServers(file_content);					// Split the Servers (you have each server block)
 
 	// Create the servers -> parse the info into each ServerInfo class
 	for (size_t i = 0; i < _server_i; i++)
 	{
 		ServerInfo server;
 		createServer(_info[i], server);		// We create server
-		_serverBlocks.push_back(server);	// We put serverInfo into _serverBlocks, so we can excess it later
+		_serverBlocks.push_back(server);	// We push serverInfo into _serverBlocks, so we can excess it later
 	}
 	ft_printConfigFile();	// for testing -> do we have everything
 }
@@ -88,52 +78,54 @@ void	Config::splitServers(std::string &file_content)
 }
 
 /* createServer();
- * - ...
+ * - Substract 'key' and 'value' from the file
+ * - Looks for matching keyword
+ * - Does checks on the 'value' of the 'key'
+ * - Pushes the 'value' onto the matching variable on ServerInfo class
  */
 void	Config::createServer(std::string &config_string, ServerInfo &server)
 {
 	std::vector<std::vector<std::string>>	parameters;
+	// Define a set of valid error codes
 
-	parameters = ft_splitParameters(config_string); // needs improvment !!!!!!
-	for (size_t i = 0; i < parameters[0].size(); ++i)	// ----> RM
-	{				// ----> RM
-        std::cout << "Key: " << parameters[0][i] << " -> Value: " << parameters[1][i] << std::endl;
-    }				// ----> RM
-	std::cout << std::endl;
+	parameters = ft_splitParameters(config_string);
+	// for (size_t i = 0; i < parameters[0].size(); ++i)	// ----> RM
+	// {				// ----> RM
+    //     std::cout << "Key: " << parameters[0][i] << " -> Value: " << parameters[1][i] << std::endl;
+    // }				// ----> RM
+	// std::cout << std::endl; // ----> RM
+
 	if (parameters[0].size() == 0)
-		throw  Exception_Config("Invalid configuration foramt (1)");
-	for (size_t i = 0; i < parameters.size(); i++)
+		throw  Exception_Config("Invalid configuration foramt (3)");
+	for (size_t i = 0; i < parameters[0].size(); i++)
 	{
 		if (parameters[0][i] == "port")
 		{
-			if (server.getPort())
-				throw  Exception_Config("Port is duplicated");
+			// ft_checkPort(parameters[1][i]);
 			server.setPort(std::stoi(parameters[1][i]));
 		}
 		else if (parameters[0][i] == "host")
 		{
-			if (!server.getHost().empty())
-				throw  Exception_Config("Host is duplicated");
+			// ft_checkHost(parameters[1][i]);
 			server.setHost(parameters[1][i]);
 		}
 		else if (parameters[0][i] == "root")
 		{
-			if (!server.getRoot().empty())
-				throw  Exception_Config("Root is duplicated");
+			// ft_checkRoot(parameters[1][i]);
 			server.setRoot(parameters[1][i]);
 		}
 		else if (parameters[0][i] == "index")
 		{
-			if (!server.getIndex().empty())
-				throw  Exception_Config("Index is duplicated");
+			// ft_checkIndex(parameters[1][i]);
 			server.setIndex(parameters[1][i]);
 		}
-		else if (parameters[0][i] == "error_page")
+		else if (errorPage(parameters[0][i]))
 		{
-			
+			// ft_checkErrorPage(parameters[0][i]), parameters[1][i]))
 		}
-		else if (parameters[0][i] == "location" && (i + 1))
+		else if (location(parameters[0][i]))
 		{
+			// ft_checkLocation(parameters[0][i]), parameters[1][i]));
 			// std::string	path;
 			// i++;
 			// if (parameters[0][i] == "{" || parameters[0][i] == "}")
@@ -151,57 +143,25 @@ void	Config::createServer(std::string &config_string, ServerInfo &server)
 		}
 		else if (parameters[0][i] == "max_client_size")
 		{
-			if (server.getMaxClient())
-				throw  Exception_Config("max_client_size is duplicated");
+			// ft_checkMaxClient(parameters[1][i]);
 			server.setMaxClient(std::stoi(parameters[1][i]));
 		}
 		else if (parameters[0][i] == "server_name")
 		{
-			if (!server.getServerName().empty())
-				throw  Exception_Config("Server_name is duplicated");
+			// ft_checkServerName(parameters[1][i]);
 			server.setServerName(parameters[1][i]);
 		}
+		else
+			throw Exception_Config("Invalid configuration format, invalid keyword");
 	}
 
 	// Check that all important varabiles are filled.
-	// ft_checkServer();
-	server.setServerFd(-1);
-	if (!server.getPort())
-		throw Exception_Config("Port not found");
-	if (server.getHost().empty())
-		throw Exception_Config("Host not found");
-	if (server.getRoot().empty())
-		server.setRoot("./html");
-	if (server.getIndex().empty())
-		server.setIndex("index.html");
-	if (server.getServerName().empty())
-		server.setServerName("W3bMasters");
-	if (!server.getMaxClient())
-		server.setMaxClient(10);
-// if (!server.getErrorPage().empty())
+	ft_checkServerVariables(server);  // ----> need to add some checks !!!!!!!!!!!!!!!!!!!!
 
 	// Question to Adri:
 	/*
 	what if there is no location block?
 	*/
-
-		
-	
-
-
-
-
-
-
-
-
-
-
-
-
-	// -----------------------------------------------------------------
-	// -----------------------------------------------------------------
-	std::cout << "HERE" << std::endl << std::endl; // ---> RM
 }
 
 /* getServerBlocks();

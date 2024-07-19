@@ -6,6 +6,7 @@
 # include <fstream>
 # include <sstream>
 # include <vector>
+# include <algorithm>
 # include "ServerInfo.hpp"
 # include "Location.hpp"
 
@@ -15,16 +16,12 @@
 # define BOLD "\033[1m"
 # define RESET "\033[0m"
 
-// For directory listing (autoindex)
-# define ON "true"
-# define OFF "false"
-
 // Configuration file class
 class	Config
 {
 	private:
-		std::vector<ServerInfo>		_serverBlocks; 	// Info of each server block
-		std::vector<std::string>	_info; 			// Save serverBlock string, before they will be parsed correctly 
+		std::vector<ServerInfo>		_serverBlocks;	// Info of each server block
+		std::vector<std::string>	_info;			// Save serverBlock string, before they will be parsed correctly 
 		int							_server_i;		// How many servers we have
 
 	public:
@@ -39,16 +36,26 @@ class	Config
 		// Getter
 		std::vector<ServerInfo>		getServerBlocks();	// Used for creating the sockets (aka. Server.cpp)
 
+		// Checkers
+		void						ft_checkHost(const std::string &newHost);
+		void						ft_checkPort(int newPort);
+		void						ft_checkRoot(const std::string &newRoot);
+		void						ft_checkMaxClient(int newMaxClient);
+		void						ft_checkIndex(const std::string &newIndex);
+		void						ft_checkServerName(const std::string &newServerName);
+		void						ft_checkLocation(const std::vector<Location> &newLocation);
+		void						ft_checkErrorPage(const std::vector<std::string> &newErrorPage);
+
 		// Utils
 		void						ft_printConfigFile();	// for testing purpose
-		void						ft_checkServer();
+		void						ft_checkServerVariables(ServerInfo &server);
 		void						ft_removeComments(std::string &file_content);
 		void						ft_removeWhitespace(std::string &file_content);
 		bool						ft_checkBrackets(std::string &str);
 		size_t						ft_findServerStart(size_t start, std::string &file_content);
 		size_t						ft_findServerEnd(size_t start, std::string &file_content);
-		void						ft_checkEqualSign(const std::string& config_string);
-		void						ft_splitLocationBlocks(std::vector<std::string> &keys, std::vector<std::string> &values, size_t start, const std::string &config_string);
+		bool						errorPage(std::string string);
+		bool						location(std::string string);
 		std::vector<std::vector<std::string>>	ft_splitParameters(const std::string &config_string);
 
 		// Exception class

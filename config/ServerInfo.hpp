@@ -23,7 +23,7 @@ class ServerInfo
 		std::vector<std::string>	_errorPage;		// Error Pages
 
 	public:
-		ServerInfo() {}		// Constructor
+		ServerInfo();		// Constructor
 		~ServerInfo() {}	// Destructor
 
 		// Setter

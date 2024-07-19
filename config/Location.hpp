@@ -3,6 +3,10 @@
 #include <vector>
 #include <string>
 
+// For directory listing (autoindex)
+# define ON "true"
+# define OFF "false"
+
 class Location
 {
     private:
@@ -13,11 +17,8 @@ class Location
 		bool						_autoindex;
 
     public:
-        Location() {}	// Constructor
+        Location();		// Constructor
         ~Location() {}	// Destructor
-        // Location(std::string& path, std::string& root, std::string& index, std::vector<std::string>& allowedMethods);
-        // Location(Location& rhs);
-        // Location& operator=(const Location& rhs);
 
 		// Setter
         std::string getPath() const;
