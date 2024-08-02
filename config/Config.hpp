@@ -51,7 +51,7 @@ class	Config
 		void						ft_checkIndex(const std::string &newIndex, ServerInfo &server);
 		void						ft_checkServerName(const std::string &newServerName, ServerInfo &server);
 		void						ft_checkLocation(const std::vector<Location> &newLocation, ServerInfo &server);
-		void						ft_checkErrorPage(const std::vector<std::string> &newErrorPage, ServerInfo &server);
+		void						ft_checkErrorPage(const std::string &param0, const std::string &param1, ServerInfo &server);
 
 		// Utils
 		void						ft_printConfigFile();	// for testing purpose

@@ -366,39 +366,43 @@ void	Config::ft_printConfigFile()
 		// prints root
 		std::cout << "Root : " << _serverBlocks[i].getRoot() << std::endl;
 
-		// prints root
+		// prints Index
+		std::cout << "Index : " << _serverBlocks[i].getIndex() << std::endl;
+
+		// prints Server Fd
 		std::cout << "ServerFd : " << _serverBlocks[i].getServerFd() << std::endl;
 
-		// prints root
+		// prints Max Client Body
 		std::cout << "Max Client : " << _serverBlocks[i].getMaxClient() << std::endl;
-
-		// prints root
-		std::cout << "Index : " << _serverBlocks[i].getIndex() << std::endl;
 
 		// prints error pages
 		std::cout << "Error Page : " << std::endl;
+		int index = 1;
 		for (size_t j = 0; j < _serverBlocks[i].getErrorPage().size(); j++)
 		{
-			std::cout << "	- " << j << " " << _serverBlocks[i].getErrorPage()[j] << std::endl;
+			std::cout << "	- " << index << ")	" << _serverBlocks[i].getErrorPage()[j] << std::endl;
+			index++;
 		}
 		std::cout << std::endl;
 
 		// prints location blocks
 		std::cout << "Location Blocks : " << std::endl;
+		int jndex = 1;
 		for (size_t j = 0; j < _serverBlocks[i].getLocations().size(); j++)
 		{
 			Location loc = _serverBlocks[i].getLocations()[j];
-			std::cout << j << " : " << std::endl;
-			std::cout << "  Path: " << loc.getPath() << std::endl;
+			std::cout << jndex << " : " << std::endl;
+			std::cout << "	Path: " << loc.getPath() << std::endl;
 			std::cout << "  Root: " << loc.getRoot() << std::endl;
 			std::cout << "  Index: " << loc.getIndex() << std::endl;
 			std::cout << "  Allowed Methods: ";
 			for (size_t k = 0; k < loc.getAllowedMethods().size(); k++)
 			{
-				std::cout << "- " << loc.getAllowedMethods()[k] << std::endl;
+				std::cout << "	- " << loc.getAllowedMethods()[k] << std::endl;
 			}
 			std::cout << std::endl;
 			std::cout << "  Autoindex: " << (loc.getAutoindex() ? "on" : "off") << std::endl;
+			index++;
 		}
 
 		std::cout << BOLD << "----------------------------------" << RESET << std::endl;

@@ -123,8 +123,8 @@ void	Config::createServer(std::string &config_string, ServerInfo &server)
 		}
 		else if (errorPage(parameters[0][i]))
 		{
-			// ft_checkErrorPage(parameters[0][i], parameters[1][i], server);
-			// server.setErrorPage(parameters[1][i]);
+			ft_checkErrorPage(parameters[0][i], parameters[1][i], server);
+			server.setErrorPage(parameters[1][i]);
 		}
 		else if (location(parameters[0][i]))
 		{

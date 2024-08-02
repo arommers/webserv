@@ -2,9 +2,10 @@
 # define SERVERINFO_HPP
 
 # include <iostream>
-# include <string.h>
+# include <string>
 # include <fstream>
 # include <vector>
+# include <algorithm>
 # include "Location.hpp"
 
 class Config;
@@ -35,7 +36,7 @@ class ServerInfo
 		void setIndex(const std::string &newIndex);
 		void setServerName(const std::string &newServerName);
 		void setLocations(const std::vector<Location> &newLocation);
-		void setErrorPage(const std::vector<std::string> &newErrorPage);
+		void setErrorPage(const std::string &newErrorPage);
 
 		// Getter
 		int getPort() const;
@@ -47,6 +48,23 @@ class ServerInfo
 		std::string getServerName() const;
 		std::vector<Location> getLocations() const;
 		std::vector<std::string> getErrorPage() const;
+
+		// Utils
+		bool hasErrorPage(const std::string &errorPage) const;
+
+		// Exception class
+		class Exception_ServerInfo: public std::exception
+		{
+			private:
+				const char *_error_msg;
+
+			public:
+				Exception_ServerInfo(const char *error_msg) : _error_msg(error_msg) {}	// Constructor
+				const char *what() const noexcept										// Overriding the what() method
+				{
+					return (_error_msg);
+				}
+		};
 };
 
 #endif

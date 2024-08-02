@@ -154,7 +154,39 @@ void	Config::ft_checkLocation(const std::vector<Location> &newLocation, ServerIn
 	// Check if variable is already set
 }
 
-void	Config::ft_checkErrorPage(const std::vector<std::string> &newErrorPage, ServerInfo &server)
+void	Config::ft_checkErrorPage(const std::string &key, const std::string &value, ServerInfo &server)
 {
-	// Check if variable is already set
+	// Extract the last three characters from key
+	size_t spacePos = key.find(' ');
+	std::string errorKey = key.substr(spacePos + 1).substr(0, 3);
+
+	// Check if the first characters of value are '/config/error_page/'
+	std::string prefix = "/config/error_page/";
+	if (value.substr(0, prefix.size()) != prefix)
+		throw  Exception_Config("Invalid Error_page path");
+
+	// Ensure only 8 characters are left after the prefix
+	std::string remaining = value.substr(prefix.size());
+	if (remaining.size() != 8)
+		throw  Exception_Config("Invalid Error_page (1)");
+
+	// Check if the remaining part is one of the valid error pages
+	std::vector<std::string> validErrorPages = {
+		"400.html", "403.html", "404.html", "405.html", "406.html", "409.html", "410.html", "500.html"
+	};
+	if (std::find(validErrorPages.begin(), validErrorPages.end(), remaining) == validErrorPages.end())
+		throw  Exception_Config("Invalid Error_page (2)");
+
+	/* Compare the last 3 characters of key with the first 3 characters of the error code in value
+	 * To insure the key has the correct value
+	 * Input1: error_page 400 	=	/config/error_page/400.html
+	 * Input2 error_page 400 	=	/config/error_page/409.html
+	 * 
+	 * Input1: errorKey(400) == errorValue(400) -> correct
+	 * Input2: errorKey(400) == errorValue(409) -> false
+	 */
+	std::string errorValue = remaining.substr(0, 3);
+	if (errorKey != errorValue)
+		throw  Exception_Config("Invalid Error_page (3)");
+
 }

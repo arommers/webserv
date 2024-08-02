@@ -39,9 +39,13 @@ void ServerInfo::setLocations(const std::vector<Location> &newLocation)
 	_locations = newLocation;
 }
 
-void ServerInfo::setErrorPage(const std::vector<std::string> &newErrorPage)
+void ServerInfo::setErrorPage(const std::string &newErrorPage)
 {
-	_errorPage = newErrorPage;
+	// Check if variable is already set
+	if (!hasErrorPage(newErrorPage))
+		_errorPage.push_back(newErrorPage);
+	else
+		throw  Exception_ServerInfo("Error_page is duplicated");
 }
 
 // --- Getter ---
@@ -88,4 +92,11 @@ std::vector<Location> ServerInfo::getLocations() const
 std::vector<std::string> ServerInfo::getErrorPage() const
 {
 	return _errorPage;
+}
+
+// --- Utils ---
+// Helper function to check fot doubels in error_page
+bool ServerInfo::hasErrorPage(const std::string &errorPage) const
+{
+    return (std::find(_errorPage.begin(), _errorPage.end(), errorPage) != _errorPage.end());
 }
