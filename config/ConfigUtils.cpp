@@ -263,13 +263,13 @@ void	Config::ft_checkServerVariables(ServerInfo &server)
     if (server.getHost().empty())
         throw Exception_Config("Host not found");
     if (server.getRoot().empty())
-        server.setRoot("./html");
+        server.setRoot("/www");
     if (server.getIndex().empty())
         server.setIndex("index.html");
     if (server.getServerName().empty())
         server.setServerName("W3bMasters");
     if (server.getMaxClient() == 0)
-        server.setMaxClient(10);
+        server.setMaxClient(5000000);
 
     // // Check _locations and _errorPage if they must not be empty
     // if (server.getLocations().empty())
@@ -281,6 +281,28 @@ void	Config::ft_checkServerVariables(ServerInfo &server)
 // -------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------
 // --- Utils for gerneral stuff ---
+
+/* Helper function to check the type of the path.
+ * - Is path FILE(1), FOLDER(2) or SOMETHING_ELSE(3)
+ */
+int Config::getPathType(std::string const path)
+{
+	struct stat	buffer;
+	int			result;
+
+	result = stat(path.c_str(), &buffer);
+	if (result == 0) // stat returns 0 on success and -1 on failure
+	{
+		if (buffer.st_mode & S_IFREG) // 'S_IFREG' is a macro that checks if the file is a regular file
+			return (FILE);
+		else if (buffer.st_mode & S_IFDIR) // 'S_IFDIR' is a macro that checks if the file is a directory
+			return (FOLDER);
+		else
+			return (SOMETHING_ELSE);
+	}
+	else
+		return (-1);
+}
 
 // Helper function to check the "error_page" parameter
 bool Config::errorPage(std::string string)

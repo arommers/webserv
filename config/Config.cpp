@@ -6,7 +6,7 @@ Config::Config(std::string file_name) : _server_i(0), _info(0), _serverBlocks(0)
 	std::string file_content;
 
 	file_content = readConfigFile(file_name);	// read config file
-	splitServers(file_content);					// Split the Servers (you have each server block)
+	splitServers(file_content);					// Split the Servers (to have each server block)
 
 	// Create the servers -> parse the info into each ServerInfo class
 	for (size_t i = 0; i < _server_i; i++)
@@ -78,7 +78,7 @@ void	Config::splitServers(std::string &file_content)
 }
 
 /* createServer();
- * - Substract 'key' and 'value' from the file
+ * - Substract 'key' and 'value' from the file (ft_splitParameters())
  * - Looks for matching keyword
  * - Does checks on the 'value' of the 'key'
  * - Pushes the 'value' onto the matching variable on ServerInfo class
@@ -86,46 +86,49 @@ void	Config::splitServers(std::string &file_content)
 void	Config::createServer(std::string &config_string, ServerInfo &server)
 {
 	std::vector<std::vector<std::string>>	parameters;
-	// Define a set of valid error codes
 
 	parameters = ft_splitParameters(config_string);
-	// for (size_t i = 0; i < parameters[0].size(); ++i)	// ----> RM
-	// {				// ----> RM
-    //     std::cout << "Key: " << parameters[0][i] << " -> Value: " << parameters[1][i] << std::endl;
-    // }				// ----> RM
-	// std::cout << std::endl; // ----> RM
-
 	if (parameters[0].size() == 0)
 		throw  Exception_Config("Invalid configuration foramt (3)");
 	for (size_t i = 0; i < parameters[0].size(); i++)
 	{
 		if (parameters[0][i] == "port")
 		{
-			// ft_checkPort(parameters[1][i]);
+			ft_checkPort(parameters[1][i], server);
 			server.setPort(std::stoi(parameters[1][i]));
 		}
 		else if (parameters[0][i] == "host")
 		{
-			// ft_checkHost(parameters[1][i]);
+			ft_checkHost(parameters[1][i], server);
 			server.setHost(parameters[1][i]);
 		}
 		else if (parameters[0][i] == "root")
 		{
-			// ft_checkRoot(parameters[1][i]);
-			server.setRoot(parameters[1][i]);
+			server.setRoot(ft_checkRoot(parameters[1][i], server));
 		}
 		else if (parameters[0][i] == "index")
 		{
-			// ft_checkIndex(parameters[1][i]);
+			ft_checkIndex(parameters[1][i], server);
 			server.setIndex(parameters[1][i]);
+		}
+		else if (parameters[0][i] == "max_client_size")
+		{
+			ft_checkMaxClient((parameters[1][i]), server);
+			server.setMaxClient(std::stoi(parameters[1][i]));
+		}
+		else if (parameters[0][i] == "server_name")
+		{
+			ft_checkServerName(parameters[1][i], server);
+			server.setServerName(parameters[1][i]);
 		}
 		else if (errorPage(parameters[0][i]))
 		{
-			// ft_checkErrorPage(parameters[0][i]), parameters[1][i]))
+			// ft_checkErrorPage(parameters[0][i], parameters[1][i], server);
+			// server.setErrorPage(parameters[1][i]);
 		}
 		else if (location(parameters[0][i]))
 		{
-			// ft_checkLocation(parameters[0][i]), parameters[1][i]));
+			// ft_checkLocation(parameters[0][i], parameters[1][i], server);
 			// std::string	path;
 			// i++;
 			// if (parameters[0][i] == "{" || parameters[0][i] == "}")
@@ -141,27 +144,12 @@ void	Config::createServer(std::string &config_string, ServerInfo &server)
 			// if (i < parameters.size() && parameters[0][i] != "}")
 			// 	throw  Exception_Config("Wrong character in server scope{}");
 		}
-		else if (parameters[0][i] == "max_client_size")
-		{
-			// ft_checkMaxClient(parameters[1][i]);
-			server.setMaxClient(std::stoi(parameters[1][i]));
-		}
-		else if (parameters[0][i] == "server_name")
-		{
-			// ft_checkServerName(parameters[1][i]);
-			server.setServerName(parameters[1][i]);
-		}
 		else
 			throw Exception_Config("Invalid configuration format, invalid keyword");
 	}
 
 	// Check that all important varabiles are filled.
 	ft_checkServerVariables(server);  // ----> need to add some checks !!!!!!!!!!!!!!!!!!!!
-
-	// Question to Adri:
-	/*
-	what if there is no location block?
-	*/
 }
 
 /* getServerBlocks();

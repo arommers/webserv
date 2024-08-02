@@ -7,6 +7,8 @@
 # include <sstream>
 # include <vector>
 # include <algorithm>
+# include <sys/stat.h>
+# include <unistd.h>
 # include "ServerInfo.hpp"
 # include "Location.hpp"
 
@@ -15,6 +17,11 @@
 # define RED "\e[1;91m"
 # define BOLD "\033[1m"
 # define RESET "\033[0m"
+
+// PATH TYPE
+# define FILE 1
+# define FOLDER 2
+# define SOMETHING_ELSE 3
 
 // Configuration file class
 class	Config
@@ -37,14 +44,14 @@ class	Config
 		std::vector<ServerInfo>		getServerBlocks();	// Used for creating the sockets (aka. Server.cpp)
 
 		// Checkers
-		void						ft_checkHost(const std::string &newHost);
-		void						ft_checkPort(int newPort);
-		void						ft_checkRoot(const std::string &newRoot);
-		void						ft_checkMaxClient(int newMaxClient);
-		void						ft_checkIndex(const std::string &newIndex);
-		void						ft_checkServerName(const std::string &newServerName);
-		void						ft_checkLocation(const std::vector<Location> &newLocation);
-		void						ft_checkErrorPage(const std::vector<std::string> &newErrorPage);
+		std::string					ft_checkRoot(const std::string &newRoot, ServerInfo &server);
+		void						ft_checkHost(const std::string &newHost, ServerInfo &server);
+		void						ft_checkPort(const std::string &newPort, ServerInfo &server);
+		void						ft_checkMaxClient(const std::string &newMaxClient, ServerInfo &server);
+		void						ft_checkIndex(const std::string &newIndex, ServerInfo &server);
+		void						ft_checkServerName(const std::string &newServerName, ServerInfo &server);
+		void						ft_checkLocation(const std::vector<Location> &newLocation, ServerInfo &server);
+		void						ft_checkErrorPage(const std::vector<std::string> &newErrorPage, ServerInfo &server);
 
 		// Utils
 		void						ft_printConfigFile();	// for testing purpose
@@ -56,6 +63,7 @@ class	Config
 		size_t						ft_findServerEnd(size_t start, std::string &file_content);
 		bool						errorPage(std::string string);
 		bool						location(std::string string);
+		int							getPathType(std::string const path);
 		std::vector<std::vector<std::string>>	ft_splitParameters(const std::string &config_string);
 
 		// Exception class
