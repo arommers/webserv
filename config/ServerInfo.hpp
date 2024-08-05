@@ -9,6 +9,7 @@
 # include "Location.hpp"
 
 class Config;
+class Location;
 
 class ServerInfo
 {
@@ -28,29 +29,39 @@ class ServerInfo
 		~ServerInfo() {}	// Destructor
 
 		// Setter
-		void setPort(int newPort);
-		void setServerFd(int fd);
-		void setMaxClient(int newMaxClient);
-		void setHost(const std::string &newHost);
-		void setRoot(const std::string &newRoot);
-		void setIndex(const std::string &newIndex);
-		void setServerName(const std::string &newServerName);
-		void setLocations(const std::vector<Location> &newLocation);
-		void setErrorPage(const std::string &newErrorPage);
+		void						setPort(int newPort);
+		void						setServerFd(int fd);
+		void						setMaxClient(int newMaxClient);
+		void						setHost(const std::string &newHost);
+		void						setRoot(const std::string &newRoot);
+		void						setIndex(const std::string &newIndex);
+		void						setServerName(const std::string &newServerName);
+		void						setLocations(std::vector<std::vector<std::string>> &newLocation);
+		void						setErrorPage(const std::string &newErrorPage);
 
 		// Getter
-		int getPort() const;
-		int getServerFd() const;
-		int getMaxClient() const;
-		std::string getHost() const;
-		std::string getRoot() const;
-		std::string getIndex() const;
-		std::string getServerName() const;
-		std::vector<Location> getLocations() const;
-		std::vector<std::string> getErrorPage() const;
+		int							getPort() const;
+		int							getServerFd() const;
+		int							getMaxClient() const;
+		std::string					getHost() const;
+		std::string					getRoot() const;
+		std::string					getIndex() const;
+		std::string					getServerName() const;
+		std::vector<Location>		getLocations() const;
+		std::vector<std::string>	getErrorPage() const;
+
+
+		// Checker
+		std::string					ft_checkLocationRoot(const std::string &newRoot, Location locBlock);
+		void						ft_checkLocationPath(const std::string &newPath, Location locBlock);
+		void						ft_checkLocationIndex(const std::string &newIndex, Location locBlock);
+		void						ft_checkLocationMethods(const std::string &newMethods, Location locBlock);
+		bool						ft_checkLoactionAutoindex(const std::string &newAutoindex);
 
 		// Utils
-		bool hasErrorPage(const std::string &errorPage) const;
+		bool						hasErrorPage(const std::string &errorPage) const;
+		void						createLocation(std::vector<std::vector<std::string>> &locParams, Location &locBlock);
+		int							getPathType(std::string const path);
 
 		// Exception class
 		class Exception_ServerInfo: public std::exception
@@ -65,6 +76,6 @@ class ServerInfo
 					return (_error_msg);
 				}
 		};
-};
+}; 
 
 #endif

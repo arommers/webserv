@@ -3,7 +3,7 @@
 /* 
  *	for testig run:
  *	----------------
- *	c++ main_test.cpp Config.cpp ConfigUtils.cpp ConfigUtils2.cpp ServerInfo.cpp Location.cpp
+ *	c++ main_test.cpp Config.cpp ConfigUtils.cpp ConfigUtils2.cpp ServerInfo.cpp Location.cpp ServerInfoUtils.cpp
  *	./a.out
 */
 

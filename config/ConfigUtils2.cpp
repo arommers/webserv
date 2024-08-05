@@ -6,7 +6,7 @@
 // -------------------------------------------------------------------------------------
 // --- Helper functions ---
 
-// // Helper function to check if a string is a valid number
+// Static helper function to check if a string is a valid number
 static bool	isValidNumber(const std::string &str)
 {
 	for (char c : str)
@@ -16,6 +16,74 @@ static bool	isValidNumber(const std::string &str)
 	}
 	return true;
 }
+
+// Static helper function to trim whitespace from a string
+std::string	trim(const std::string &str)
+{
+	std::string result = str;
+	result.erase(0, result.find_first_not_of(" \t"));
+	result.erase(result.find_last_not_of(" \t") + 1);
+	return result;
+}
+
+// Helper function that splits the loctaion blocks into 'key' and 'value'
+std::vector<std::vector<std::string>> Config::ft_splitLocationParameters(const std::string newLocation0, const std::string &newLocation1)
+{
+	std::vector<std::vector<std::string>> parameters(2);
+	std::vector<std::string> &keys = parameters[0];
+	std::vector<std::string> &values = parameters[1];
+	std::string key;
+	std::string value;
+
+	// -- newLocation0 --
+	// getting the 'key' and 'value' from newLocation0
+	// newLocation0 = 'location /root {' -> first line of a location Block
+	key = newLocation0.substr(0, 8);
+    value = newLocation0.substr(8, newLocation0.size() - 9);
+
+	// Remove whitespace from 'key' and 'value'
+	key = trim(key);
+	value = trim(value);
+
+	// Push on the vector of newLocation0
+	keys.push_back(key);
+	values.push_back(value);
+
+	// -- newLocation1 --
+	std::vector<std::string> lines = ft_splitStringByNewline(newLocation1);
+	for (size_t i = 0; i < lines.size() - 1; i++)
+	{
+		std::string line = lines[i];
+
+		// Check for invalid '==' case
+		if (line.find("==") != std::string::npos)
+			throw Exception_Config("Invalid Location Block format, check '='");
+
+		if (line.find('=') != std::string::npos) 
+		{
+			// Handle key-value pairs
+			size_t pos = line.find('=');
+			key = line.substr(0, pos);
+			value = line.substr(pos + 1);
+
+			// Trim whitespace from key and value
+			key = trim(key);
+			value = trim(value);
+
+			// Check if key or value is empty
+			if (key.empty() || value.empty())
+				throw Exception_Config("Invalid Location Block format (1)");
+		}
+		else
+			throw Exception_Config("Invalid Location Block format (2)");
+
+		// Push on the vector of newLocation1
+		keys.push_back(key);
+		values.push_back(value);
+	}
+	return (parameters);
+}
+
 // -------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------
 // --- Checkers functions ---
@@ -149,9 +217,14 @@ void	Config::ft_checkServerName(const std::string &newServerName, ServerInfo &se
 	}
 }
 
-void	Config::ft_checkLocation(const std::vector<Location> &newLocation, ServerInfo &server)
+std::vector<std::vector<std::string>>	Config::ft_checkLocation(const std::string &newLocation0, const std::string &newLocation1, ServerInfo &server)
 {
-	// Check if variable is already set
+    std::vector<std::vector<std::string>>	locParams;
+
+	locParams = ft_splitLocationParameters(newLocation0, newLocation1);
+	if (locParams[0].size() <= 1)
+		throw  Exception_Config("Invalid Location Block foramt (3)");
+	return (locParams);
 }
 
 void	Config::ft_checkErrorPage(const std::string &key, const std::string &value, ServerInfo &server)
@@ -188,5 +261,4 @@ void	Config::ft_checkErrorPage(const std::string &key, const std::string &value,
 	std::string errorValue = remaining.substr(0, 3);
 	if (errorKey != errorValue)
 		throw  Exception_Config("Invalid Error_page (3)");
-
 }

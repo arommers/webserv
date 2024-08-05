@@ -164,9 +164,9 @@ bool	Config::ft_checkBrackets(std::string &str)
 // --- Utils for createServer(); ---
 
 /* ft_splitStringByNewline();
- * - static helper function to split by 'new line' and remove empty lines
+ * - Helper function to split by 'new line' and remove empty lines
  */
-static	std::vector<std::string> ft_splitStringByNewline(const std::string &input)
+std::vector<std::string> Config::ft_splitStringByNewline(const std::string &input)
 {
 	std::vector<std::string> result;
 	std::istringstream stream(input);
@@ -391,17 +391,17 @@ void	Config::ft_printConfigFile()
 		for (size_t j = 0; j < _serverBlocks[i].getLocations().size(); j++)
 		{
 			Location loc = _serverBlocks[i].getLocations()[j];
-			std::cout << jndex << " : " << std::endl;
-			std::cout << "	Path: " << loc.getPath() << std::endl;
-			std::cout << "  Root: " << loc.getRoot() << std::endl;
-			std::cout << "  Index: " << loc.getIndex() << std::endl;
-			std::cout << "  Allowed Methods: ";
+			std::cout << "	- " << jndex << "):" << std::endl;
+			std::cout << "		Path: " << loc.getPath() << std::endl;
+			std::cout << "		Root: " << loc.getRoot() << std::endl;
+			std::cout << "		Index: " << loc.getIndex() << std::endl;
+			std::cout << "		Allowed Methods: ";
 			for (size_t k = 0; k < loc.getAllowedMethods().size(); k++)
 			{
-				std::cout << "	- " << loc.getAllowedMethods()[k] << std::endl;
+				std::cout << "			- " << loc.getAllowedMethods()[k] << std::endl;
 			}
 			std::cout << std::endl;
-			std::cout << "  Autoindex: " << (loc.getAutoindex() ? "on" : "off") << std::endl;
+			std::cout << "		Autoindex: " << (loc.getAutoindex() ? "off" : "on") << std::endl;
 			index++;
 		}
 

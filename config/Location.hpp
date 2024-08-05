@@ -2,10 +2,11 @@
 
 #include <vector>
 #include <string>
+#include <iostream>
 
 // For directory listing (autoindex)
-# define ON "true"
-# define OFF "false"
+# define ON true
+# define OFF false
 
 class Location
 {
@@ -21,16 +22,16 @@ class Location
         ~Location() {}	// Destructor
 
 		// Setter
-        std::string getPath() const;
-        std::string getRoot() const;
-        std::string getIndex() const;
-        std::vector<std::string> getAllowedMethods() const;
-		bool getAutoindex() const;
+		bool						getAutoindex() const;
+        std::string					getPath() const;
+        std::string 				getRoot() const;
+        std::string 				getIndex() const;
+        std::vector<std::string>	getAllowedMethods() const;
 
 		// Getter
-        void setPath(std::string& path);
-        void setRoot(std::string& root);
-        void setIndex(std::string& index);
-        void setAllowedMethods(std::vector<std::string>& methods);
-		void setAutoindex(bool autoindex);
+        void						setPath(const std::string &path);
+        void						setRoot(const std::string &root);
+        void						setIndex(const std::string &index);
+        void						setAllowedMethods(const std::vector<std::string> &methods);
+		void						setAutoindex(bool autoindex);
 };

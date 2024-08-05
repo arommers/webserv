@@ -34,9 +34,11 @@ void	ServerInfo::setServerName(const std::string &newServerName)
 	_serverName = newServerName;
 }
 
-void ServerInfo::setLocations(const std::vector<Location> &newLocation)
+void ServerInfo::setLocations(std::vector<std::vector<std::string>> &newLocation)
 {
-	_locations = newLocation;
+	Location locBlock;
+	createLocation(newLocation,locBlock);
+	_locations.push_back(locBlock);
 }
 
 void ServerInfo::setErrorPage(const std::string &newErrorPage)
@@ -99,4 +101,44 @@ std::vector<std::string> ServerInfo::getErrorPage() const
 bool ServerInfo::hasErrorPage(const std::string &errorPage) const
 {
     return (std::find(_errorPage.begin(), _errorPage.end(), errorPage) != _errorPage.end());
+}
+
+// Helper function to parse location configuration string into a Location object
+void ServerInfo::createLocation(std::vector<std::vector<std::string>> &locParams, Location &locBlock)
+{
+	bool boolAutoindex = 0;
+	// Check if variable is already set
+	for (size_t i = 0; i < locParams[0].size(); i++)
+	{
+		if (locParams[0][i] == "location")
+		{
+			// ft_checkLocationPath(locParams[1][i], locBlock);
+			locBlock.setPath(locParams[1][i]);
+		}
+		else if (locParams[0][i] == "root")
+		{
+			locBlock.setRoot(ft_checkLocationRoot(locParams[1][i], locBlock));
+		}
+		else if (locParams[0][i] == "index")
+		{
+			ft_checkLocationIndex(locParams[1][i], locBlock);
+			locBlock.setIndex(locParams[1][i]);
+		}
+		else if (locParams[0][i] == "allowed_methods")
+		{
+			// ft_checkLocationMethods(locParams[1][i], locBlock);
+			// locBlock.setAllowedMethods(locParams[1][i], locBlock);
+			std::cout << "IN allowed_methods" << std::endl;
+		}
+		else if (locParams[0][i] == "autoindex")
+		{
+			// Check if variable is already set
+			if (boolAutoindex == 1)
+				throw Exception_ServerInfo("Location_Block: autoindex is duplicated");
+			locBlock.setAutoindex(ft_checkLoactionAutoindex(locParams[1][i]));
+			boolAutoindex = 1;
+		}
+		else
+			throw Exception_ServerInfo("Invalid Location_Block parameter");
+	}
 }

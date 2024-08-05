@@ -50,8 +50,8 @@ class	Config
 		void						ft_checkMaxClient(const std::string &newMaxClient, ServerInfo &server);
 		void						ft_checkIndex(const std::string &newIndex, ServerInfo &server);
 		void						ft_checkServerName(const std::string &newServerName, ServerInfo &server);
-		void						ft_checkLocation(const std::vector<Location> &newLocation, ServerInfo &server);
 		void						ft_checkErrorPage(const std::string &param0, const std::string &param1, ServerInfo &server);
+		std::vector<std::vector<std::string>>	ft_checkLocation(const std::string &newLocation0, const std::string &newLocation1, ServerInfo &server);
 
 		// Utils
 		void						ft_printConfigFile();	// for testing purpose
@@ -64,7 +64,9 @@ class	Config
 		bool						errorPage(std::string string);
 		bool						location(std::string string);
 		int							getPathType(std::string const path);
+		std::vector<std::string>	ft_splitStringByNewline(const std::string &input);
 		std::vector<std::vector<std::string>>	ft_splitParameters(const std::string &config_string);
+		std::vector<std::vector<std::string>>	ft_splitLocationParameters(const std::string newLocation0, const std::string &newLocation1);
 
 		// Exception class
 		class Exception_Config: public std::exception

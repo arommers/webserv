@@ -30,22 +30,22 @@ bool Location::getAutoindex() const
 }
 
 // --- Setter ---
-void Location::setPath(std::string& path)
+void Location::setPath(const std::string &path)
 {
     _path = path;
 }
 
-void Location::setAllowedMethods(std::vector<std::string>& methods)
+void Location::setAllowedMethods(const std::vector<std::string> &methods)
 {
     _allowedMethods = methods;
 }
 
-void Location::setRoot(std::string& root)
+void Location::setRoot(const std::string &root)
 {
     _root = root;
 }
 
-void Location::setIndex(std::string& index)
+void Location::setIndex(const std::string &index)
 {
     _index = index;
 }

@@ -128,21 +128,8 @@ void	Config::createServer(std::string &config_string, ServerInfo &server)
 		}
 		else if (location(parameters[0][i]))
 		{
-			// ft_checkLocation(parameters[0][i], parameters[1][i], server);
-			// std::string	path;
-			// i++;
-			// if (parameters[0][i] == "{" || parameters[0][i] == "}")
-			// 	throw  Exception_Config("Wrong character in server scope{}");
-			// path = parameters[0][i];
-			// std::vector<std::string> codes;
-			// if (parameters[0][++i] != "{")
-			// 	throw  Exception_Config("Wrong character in server scope{}");
-			// i++;
-			// while (i < parameters.size() && parameters[0][i] != "}")
-			// 	codes.push_back(parameters[i++]);
-			// server.setLocation(path, codes);
-			// if (i < parameters.size() && parameters[0][i] != "}")
-			// 	throw  Exception_Config("Wrong character in server scope{}");
+			std::vector<std::vector<std::string>> locParams = ft_checkLocation(parameters[0][i], parameters[1][i], server);
+			server.setLocations(locParams);
 		}
 		else
 			throw Exception_Config("Invalid configuration format, invalid keyword");
