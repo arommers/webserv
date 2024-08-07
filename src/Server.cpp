@@ -117,6 +117,7 @@ void Server::createPollLoop()
             exit(EXIT_FAILURE);
         }
 
+        // possibly use an alternative way to recognize distinction between the different FDs
         for (size_t i = 0; i < _pollFds.size(); ++i)
         {
             if (_pollFds[i].revents & POLLIN)
@@ -126,9 +127,12 @@ void Server::createPollLoop()
                 else if (_clients.count(_pollFds[i].fd))
                     handleClientData(i);
                 else
+                // Do we need a distinction between reading from a pipe vs a file?
                     handleFileRead(i);
             }
             else if (_pollFds[i].revents & POLLOUT)
+            // need to have a check if the fd is a pipe
+            // if so, write to the pipe
                 sendClientData(i);
         }
     }
@@ -189,6 +193,10 @@ void Server::openFile(Client &client)
     int fileFd;
     std::string file;
 
+    // if Error call new function that builds an error Path.
+    // When does the error get detected? if after the path building
+    // needs to be redone after trying to open the original file request
+
     file = client.getRequestMap().at("Path");
     if (file == "/")
         file += client.getServerInfo().getIndex();
@@ -197,7 +205,8 @@ void Server::openFile(Client &client)
     std::cout << "Constructed file path: " << file << std::endl;
     fileFd = open(file.c_str(), O_RDONLY);
     if (fileFd < 0)
-        client.setStatusCode(404);
+    //  build path to 404 file, open it and add fd to Poll loop
+        client.setStatusCode(404); 
     else
     {
         client.setFileFd(fileFd);

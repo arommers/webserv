@@ -4,7 +4,6 @@
 Location::Location() {}
 
 Location::Location(std::string& path, std::string& root, std::string& index, std::vector<std::string>& allowedMethods)
-    : _path(path), _allowedMethods(allowedMethods), _root(root), _index(index)
 {
     _path = path;
     _root = root;
