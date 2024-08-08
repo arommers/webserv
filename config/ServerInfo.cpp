@@ -34,10 +34,10 @@ void	ServerInfo::setServerName(const std::string &newServerName)
 	_serverName = newServerName;
 }
 
-void ServerInfo::setLocations(std::vector<std::vector<std::string>> &newLocation)
+void ServerInfo::setLocations(std::vector<std::vector<std::string>> &newLocation, ServerInfo &server)
 {
 	Location locBlock;
-	createLocation(newLocation,locBlock);
+	createLocation(newLocation,locBlock, server);
 	_locations.push_back(locBlock);
 }
 
@@ -103,8 +103,34 @@ bool ServerInfo::hasErrorPage(const std::string &errorPage) const
     return (std::find(_errorPage.begin(), _errorPage.end(), errorPage) != _errorPage.end());
 }
 
+/* ft_checkLocation();
+* - Checks that all variables are filled
+* - If not filled it will get set to the default value.
+*/
+void	ServerInfo::ft_checkLocationVariables(Location &locBlock, ServerInfo &server)
+{
+	// Check if the Location path is empty, if so, set it to the server root
+	if (locBlock.getPath().empty())
+		locBlock.setPath(server.getRoot());
+
+	// Check if the Location root is empty, if so, set it to the server root
+	if (locBlock.getRoot().empty())
+		locBlock.setRoot(server.getRoot());
+
+	// Check if the Location index is empty, if so, set it to the server index
+	if (locBlock.getIndex().empty())
+		locBlock.setIndex(server.getIndex());
+
+	// Check if the allowed methods are empty, if so, set default methods (DELETE, POST, GET)
+	if (locBlock.getAllowedMethods().empty())
+	{
+		std::vector<std::string> defaultMethods = {"DELETE", "POST", "GET"};
+		locBlock.setAllowedMethods(defaultMethods);
+	}
+}
+
 // Helper function to parse location configuration string into a Location object
-void ServerInfo::createLocation(std::vector<std::vector<std::string>> &locParams, Location &locBlock)
+void ServerInfo::createLocation(std::vector<std::vector<std::string>> &locParams, Location &locBlock, ServerInfo &server)
 {
 	bool boolAutoindex = 0;
 	// Check if variable is already set
@@ -141,4 +167,7 @@ void ServerInfo::createLocation(std::vector<std::vector<std::string>> &locParams
 		else
 			throw Exception_ServerInfo("Invalid Location_Block parameter");
 	}
+	// Check that all important varabiles are filled.
+	ft_checkLocationVariables(locBlock, server); 
+
 }

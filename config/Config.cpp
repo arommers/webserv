@@ -86,6 +86,7 @@ void	Config::splitServers(std::string &file_content)
 void	Config::createServer(std::string &config_string, ServerInfo &server)
 {
 	std::vector<std::vector<std::string>>	parameters;
+	bool		hasLocation = false;
 
 	parameters = ft_splitParameters(config_string);
 	if (parameters[0].size() == 0)
@@ -128,17 +129,28 @@ void	Config::createServer(std::string &config_string, ServerInfo &server)
 		}
 		else if (location(parameters[0][i]))
 		{
+			hasLocation = true;
+
+			// Check that all important varabiles are filled.
+			ft_checkServerVariables(server); 
+
 			std::vector<std::vector<std::string>> locParams = ft_checkLocation(parameters[0][i], parameters[1][i], server);
-			server.setLocations(locParams);
+			for (int i = 0; i )
+			std::cout << "TEST : " << locParams << std::endl;
+			server.setLocations(locParams, server);
 		}
 		else
 			throw Exception_Config("Invalid configuration format, invalid keyword");
 	}
 
-	// Check that all important varabiles are filled.
-	ft_checkServerVariables(server);  // ----> need to add some checks !!!!!!!!!!!!!!!!!!!!
+	// If no Location Block has beed specified -> check that all important varabiles are filled.
+	if (hasLocation == false)
+	{
+		ft_checkServerVariables(server);
+		// std::vector<std::vector<std::string>> locParams = ft_checkLocation("location", "/www", server);
+		// server.setLocations(locParams, server);
+	}
 }
-
 /* getServerBlocks();
  * - A getter for the server blocks (used in the sockets aka. Server.cpp)
  */

@@ -251,31 +251,45 @@ std::vector<std::vector<std::string>>	Config::ft_splitParameters(const std::stri
 }
 
 /* ft_checkServer();
- * - Set _serverFd -> needs to be -1
- * - Checks that all necessary variables are filled
- * - _port and _host will error if not filled
- * - The rest will be filled by default
- */
+* - Set _serverFd -> needs to be -1
+* - Checks that all necessary variables are filled
+* - _port and _host will error if not filled
+* - The rest will be filled by default
+*/
 void	Config::ft_checkServerVariables(ServerInfo &server)
 {
 	if (server.getPort() == 0)
-        throw Exception_Config("Port not found");
-    if (server.getHost().empty())
-        throw Exception_Config("Host not found");
-    if (server.getRoot().empty())
-        server.setRoot("/www");
-    if (server.getIndex().empty())
-        server.setIndex("index.html");
-    if (server.getServerName().empty())
-        server.setServerName("W3bMasters");
-    if (server.getMaxClient() == 0)
-        server.setMaxClient(5000000);
+		throw Exception_Config("Port not found");
+	if (server.getHost().empty())
+		throw Exception_Config("Host not found");
+	if (server.getRoot().empty())
+		server.setRoot("/www");
+	if (server.getIndex().empty())
+		server.setIndex("index.html");
+	if (server.getServerName().empty())
+		server.setServerName("W3bMasters");
+	if (server.getMaxClient() == 0)
+		server.setMaxClient(5000000);
 
-    // // Check _locations and _errorPage if they must not be empty
-    // if (server.getLocations().empty())
-    //     throw Exception_Config("Locations not found");
-    // if (server.getErrorPage().empty())
-    //     throw Exception_Config("Error pages not found");
+	// -- Error page --
+	// Define the default error pages
+	std::map<std::string, std::string> defaultErrorPages = {
+		{"400", "/config/error_page/400.html"},
+		{"403", "/config/error_page/403.html"},
+		{"404", "/config/error_page/404.html"},
+		{"405", "/config/error_page/405.html"},
+		{"406", "/config/error_page/406.html"},
+		{"409", "/config/error_page/409.html"},
+		{"410", "/config/error_page/410.html"},
+		{"500", "/config/error_page/500.html"},
+	};
+
+	// Check and set default error pages if they are not already set
+	for (std::map<std::string, std::string>::iterator it = defaultErrorPages.begin(); it != defaultErrorPages.end(); ++it)
+	{
+		if (!server.hasErrorPage(it->second))
+			server.setErrorPage(it->second);
+	}
 }
 
 // -------------------------------------------------------------------------------------
@@ -395,14 +409,13 @@ void	Config::ft_printConfigFile()
 			std::cout << "		Path: " << loc.getPath() << std::endl;
 			std::cout << "		Root: " << loc.getRoot() << std::endl;
 			std::cout << "		Index: " << loc.getIndex() << std::endl;
-			std::cout << "		Allowed Methods: ";
+			std::cout << "		Autoindex: " << (loc.getAutoindex() ? "off" : "on") << std::endl;
+			std::cout << "		Allowed Methods: " << std::endl;
 			for (size_t k = 0; k < loc.getAllowedMethods().size(); k++)
 			{
 				std::cout << "			- " << loc.getAllowedMethods()[k] << std::endl;
 			}
-			std::cout << std::endl;
-			std::cout << "		Autoindex: " << (loc.getAutoindex() ? "off" : "on") << std::endl;
-			index++;
+			jndex++;
 		}
 
 		std::cout << BOLD << "----------------------------------" << RESET << std::endl;

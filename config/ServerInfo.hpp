@@ -8,9 +8,6 @@
 # include <algorithm>
 # include "Location.hpp"
 
-class Config;
-class Location;
-
 class ServerInfo
 {
 	private:
@@ -36,7 +33,7 @@ class ServerInfo
 		void						setRoot(const std::string &newRoot);
 		void						setIndex(const std::string &newIndex);
 		void						setServerName(const std::string &newServerName);
-		void						setLocations(std::vector<std::vector<std::string>> &newLocation);
+		void						setLocations(std::vector<std::vector<std::string>> &newLocation, ServerInfo &server);
 		void						setErrorPage(const std::string &newErrorPage);
 
 		// Getter
@@ -60,7 +57,8 @@ class ServerInfo
 
 		// Utils
 		bool						hasErrorPage(const std::string &errorPage) const;
-		void						createLocation(std::vector<std::vector<std::string>> &locParams, Location &locBlock);
+		void						createLocation(std::vector<std::vector<std::string>> &locParams, Location &locBlock, ServerInfo &server);
+		void						ft_checkLocationVariables(Location &locBlock, ServerInfo &server);
 		int							getPathType(std::string const path);
 
 		// Exception class

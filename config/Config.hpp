@@ -6,6 +6,7 @@
 # include <fstream>
 # include <sstream>
 # include <vector>
+# include <map>
 # include <algorithm>
 # include <sys/stat.h>
 # include <unistd.h>
@@ -22,6 +23,9 @@
 # define FILE 1
 # define FOLDER 2
 # define SOMETHING_ELSE 3
+
+class ServerInfo;
+class Location;
 
 // Configuration file class
 class	Config

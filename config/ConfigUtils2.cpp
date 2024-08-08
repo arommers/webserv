@@ -224,6 +224,7 @@ std::vector<std::vector<std::string>>	Config::ft_checkLocation(const std::string
 	locParams = ft_splitLocationParameters(newLocation0, newLocation1);
 	if (locParams[0].size() <= 1)
 		throw  Exception_Config("Invalid Location Block foramt (3)");
+	
 	return (locParams);
 }
 
