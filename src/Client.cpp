@@ -301,23 +301,46 @@ void Client::readNextChunk()
     if (bytesRead < 0)
     {
         std::cerr << "Failed to read file: " << strerror(errno) << std::endl;
-        setStatusCode(404);
+        setStatusCode(500);
         close(_fileFd);
         _fd = -1;
-        _responseReady = true;
+        setState(READY);
         return;
     }
     else if (bytesRead == 0)
     {
         close(_fileFd);
-        // _fileFd = -1; // This is commented out, otherwise I can't remove it from the _pollFds
-        _responseReady = true;
+        setState(READY);
         createResponse();
         return;
     }
 
     _fileBuffer.append(buffer, bytesRead);
 
+}
+
+void Client::writeNextChunk()
+{
+    std::string buffer;
+    int bytesWritten;
+
+    buffer = getWriteBuffer().substr(0,BUFFER_SIZE);
+    bytesWritten = write(getFd(), buffer.c_str(), buffer.length());
+    if (bytesWritten < 0)
+    {
+        std::cerr << "Failed to write to fd: " << strerror(errno) << std::endl;
+        setState(500);
+        close(_fileFd);
+        _fd = -1;
+        return ;
+    }
+    getWriteBuffer().erase(0, BUFFER_SIZE);
+
+    if (getWriteBuffer().empty())
+    {
+        close(_fileFd);
+        setState(READY);
+    }
 }
 
 void    Client::resetClientData( void )
@@ -330,16 +353,11 @@ void    Client::resetClientData( void )
     _responseMap.clear();
     _statusCode = 0;
     _fd = -1;
-    _state = -1;
+    _state = START;
     _fileFd = -1;
-    _responseReady = false;
+    // Is all added?? -- Sven
 }
 
-
-bool Client::getResponseStatus()
-{
-    return _responseReady;
-}
 
 std::string Client::getFileBuffer()
 {

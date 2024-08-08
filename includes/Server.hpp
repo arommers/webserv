@@ -28,6 +28,7 @@ class Server
         void                        shutdownServer();
         void                        handleClientData(size_t index);
         void                        sendClientData(size_t index);
+        void                        handleFdWrite(size_t index);
         void                        addClient(int fd);
         Client&                     getClient(int fd);
         void                        removeClient(int fd);

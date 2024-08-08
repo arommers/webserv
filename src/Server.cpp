@@ -68,6 +68,7 @@ void    Server::createPollLoop()
     while (true)
     {
         int pollSize = poll(_pollFds.data(), _pollFds.size(), -1);
+
         if (pollSize == -1)
         {
             std::cerr << RED << "Poll failed: " << strerror(errno) << RESET << std::endl;
@@ -103,7 +104,10 @@ void    Server::createPollLoop()
                     handleFileRead(i);
             } 
             else if (_pollFds[i].revents & POLLOUT){
-                sendClientData(i);
+                if (_clients.count(_pollFds[i].fd))
+                    sendClientData(i);
+                else
+                    handleFdWrite(i);
             }
         }
     }
@@ -119,19 +123,46 @@ void Server::handleFileRead(size_t index)
         if (it->second.getFileFd() == fd)
         {
             it->second.readNextChunk();
-            if (it->second.getResponseStatus() == true)
+            if (it->second.getState() == READY)
             {
                 for (auto& value : _pollFds)
                 {
                     if (value.fd == it->second.getFd()){
                         value.events = POLLOUT;
+                        it->second.setState(WRITING);
                     }
                 }
                 removePollFd(it->second.getFileFd());
+                it->second.setFileFd(-1);
             }
         }
     }
 }
+
+void Server::handleFdWrite(size_t index)
+{
+    int fd = _pollFds[index].fd;
+
+    for (std::unordered_map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it)
+    {
+        if (it->second.getFileFd() == fd)
+        {
+            it->second.writeNextChunk();
+            if (it->second.getState() == READY || it->second.getState() == ERROR)
+            {
+                for (auto& value : _pollFds)
+                {
+                    if (value.fd == it->second.getFd()){
+                        value.events = POLLIN;
+                    }
+                }
+                removePollFd(it->second.getFileFd());
+                it->second.setFileFd(-1);
+            }  
+        }
+    }
+}
+
 
 void    Server::acceptConnection()
 {
@@ -163,39 +194,82 @@ void    Server::closeConnection(size_t index)
     removeClient(fd);
 }
 
+// void Server::handleClientData(size_t index)
+// {
+//     char buffer[BUFFER_SIZE];
+//     int bytesRead = read(_pollFds[index].fd, buffer, BUFFER_SIZE);
+
+//     if (bytesRead < 0)
+//         std::cerr << RED << "Error reading from client socket: " << strerror(errno) << RESET << std::endl;
+//     else if (bytesRead == 0)
+//     {
+//         std::cout << YELLOW << "Client disconnected, socket fd is: " << _pollFds[index].fd << RESET << std::endl;
+//         closeConnection(index);
+//     }
+//     else
+//     {
+//         buffer[bytesRead] = '\0';
+//         Client &client = getClient(_pollFds[index].fd);
+//         client.addToBuffer(buffer);
+
+//         if (client.requestComplete())
+//         {
+//             client.parseBuffer();
+//             if (client.getState() == ERROR){
+//                 client.createResponse();
+//                 return;
+//             }
+//             std::cout << GREEN << "Request Received from socket " << _pollFds[index].fd << ", method: [" << client.getRequestMap()["Method"] << "], version: [" << client.getRequestMap()["Version"] << "], URI: " << client.getRequestMap()["Path"] << RESET << std::endl;
+//             if (_cgi.checkIfCGI(client) == true){
+//                 _cgi.runCGI(*this, client);
+//                 _pollFds[index].events = POLLOUT; // CGI finished, so POLLOUT can be set
+//             }
+//             else{
+//                 openFile(client);
+//             }
+//             if (client.getState() == ERROR)
+//             {
+//                 client.createResponse();
+//                 _pollFds[index].events = POLLOUT;
+//                 return ;
+//             }
+//         }
+//     }
+// }
+
 void    Server::handleClientData(size_t index)
 {
-    char    buffer[BUFFER_SIZE];
-    int     bytesRead = read(_pollFds[index].fd, buffer, BUFFER_SIZE - 1);
-    if (bytesRead < 0)
-            std::cerr << RED << "Error reading from client socket: " << strerror(errno) << RESET << std::endl;
-    else if(bytesRead == 0)
-    {
-        std::cout << YELLOW << "Client disconnected, socket fd is: " << RESET << std::endl;
-        closeConnection(index);
-    }
-    else
-    {
-        buffer[bytesRead] = '\0';
+    Client &client = getClient(_pollFds[index].fd);
 
-        // for (auto& fds : _pollFds)
-        //     std::cout << "List Fds: " << fds.fd << std::endl;
-        // for (auto& client : _clients)
-        //     std::cout << "List Clients: " << client.second.getFd() << std::endl;
-        Client &client = getClient(_pollFds[index].fd);
-        client.addToBuffer(buffer);
-        std::time_t now = std::time(nullptr);
-        std::tm* local_time = std::localtime(&now);
-        if (client.requestComplete())
+    if (client.getState() == START)
+    {
+        char    buffer[BUFFER_SIZE];
+        int     bytesRead = read(_pollFds[index].fd, buffer, BUFFER_SIZE - 1);
+        if (bytesRead < 0)
+                std::cerr << RED << "Error reading from client socket: " << strerror(errno) << RESET << std::endl;
+        else if(bytesRead == 0)
         {
+            std::cout << YELLOW << "Client disconnected, socket fd is: " << RESET << std::endl;
+            closeConnection(index);
+        }
+        else
+        {
+            buffer[bytesRead] = '\0';
 
-            client.parseBuffer();
-            if (client.getState() == ERROR){
-                client.createResponse();
-                return;
+            client.addToBuffer(buffer);
+            std::time_t now = std::time(nullptr);
+            std::tm* local_time = std::localtime(&now);
+            if (client.requestComplete())
+            {
+
+                client.parseBuffer();
+                if (client.getState() != ERROR)
+                    client.setState(READY);
             }
-            // handleClientRequest(client);
-            // We need a check to assess the method
+        }
+    }
+    if (client.getState() != START && client.getState() != ERROR)
+    {
             std::cout << GREEN << "Request Received from socket " << _pollFds[index].fd << ", method: [" << client.getRequestMap()["Method"] << "]" << ", version: [" << client.getRequestMap()["Version"] << "], URI: "<< client.getRequestMap()["Path"] <<  RESET << std::endl;
             if (_cgi.checkIfCGI(client) == true){
                 _cgi.runCGI(*this, client);
@@ -204,16 +278,14 @@ void    Server::handleClientData(size_t index)
             else{
                 openFile(client);
             }
-            if (client.getState() == ERROR)
-            {
-                client.createResponse();
-                _pollFds[index].events = POLLOUT;
-                return ;
-            }
-        }
-
-
     }
+    if (client.getState() == ERROR)
+    {
+        _pollFds[index].events = POLLOUT;
+        return ;
+    }
+  
+    
 
 }
 
@@ -221,10 +293,7 @@ void Server::sendClientData(size_t index)
 {
     Client& client = getClient(_pollFds[index].fd);
 
-    // if(!client.getResponseStatus())
-    //     handleClientRequest(client);
-    // else if (client.getResponseStatus())
-    // {
+    client.createResponse();
     std::string writeBuffer = client.getWriteBuffer();
 
     int bytesSent = send(_pollFds[index].fd, writeBuffer.c_str(), writeBuffer.size(), 0);
@@ -243,43 +312,7 @@ void Server::sendClientData(size_t index)
             closeConnection(index);
         }
     }
-    // }
 }
-
-// void    Server::handleClientRequest(Client &client)
-// {
-//     int         status;
-//     std::string fileContent;
-
-//     // Check method
-//     // Call specific function based on the method
-//     // For now this is just a simple get to read the contents of the file
-//     // status = checkFile(client.getRequestMap().at("File"));
-//     // if (status == -1)
-//     //     return 404
-//     // if status == -2
-//     //     return 403
-//     if (isCGI(client)){
-//         runCGI(*this, client);
-//     }
-//     else{
-//         fileContent = readFile(client);
-//         if (client.getState() == ERROR)
-//         {
-//             client.createResponse();
-//             return ;
-//         }
-//         client.setFileBuffer(fileContent);
-//     }
-//     client.createResponse();
-// }
-
-
-
-// void    Server::sendClientData(size_t index)
-// {
-    
-// }
 
 
 void Server::openFile(Client &client)
@@ -307,6 +340,8 @@ void Server::openFile(Client &client)
     pollFd.fd = fileFd;
     pollFd.events = POLLIN;
     _pollFds.push_back(pollFd);
+
+    client.setState(READING);
 }
 
 // void    Server::readFile(Client &client)
@@ -388,4 +423,5 @@ void Server::removePollFd( int fd )
     }
 
 }
+
 

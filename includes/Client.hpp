@@ -25,10 +25,11 @@
 
 enum    clientState
 {
-    READY = 0, // Reading is finished and the request can be parsed
-    READING = 1, // Reading HTTP request
-    SENDING = 2, // Sending HTTP request
-    ERROR = 3 // Some error occured 
+    START = 0,
+    READING = 1, // Reading from file/pipe
+    WRITING = 2, // Writing to file or pipe
+    ERROR = 3, // Some error occured
+    READY = 4 // Reading/Writing is finished and the request can be parsed
 };
 
 
@@ -43,13 +44,13 @@ enum    clientState
 #define PORT 4040
 #define MAX_CLIENTS 10
 #define TIMEOUT 60
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 100024
 
 class Client
 {
     private:
         int                                     _fd = -1;
-        int                                     _state = -1;
+        int                                     _state = START;
         int                                     _fileFd = -1;
         std::string                             _readBuffer;
         std::string                             _writeBuffer;
@@ -63,7 +64,6 @@ class Client
         int                                     _requestPipe[2];
         int                                     _responsePipe[2];
         
-        bool                                    _responseReady = false;
 
         void    errorCheckRequest( void );
         void    isValidMethod( std::string method );
@@ -101,7 +101,7 @@ class Client
         void                                    resetClientData( void );
         void                                    runCGI( void );        
         void                                    readNextChunk();
-        bool                                    getResponseStatus();
+        void                                    writeNextChunk();
         void                                    setFileFd(int fd);
         int                                     getFileFd();
         bool                                    fileReadComplete();
