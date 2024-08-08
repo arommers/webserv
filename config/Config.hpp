@@ -10,7 +10,7 @@
 # include <algorithm>
 # include <sys/stat.h>
 # include <unistd.h>
-# include "ServerInfo.hpp"
+# include "ServerBlock.hpp"
 # include "Location.hpp"
 
 // COLORS
@@ -24,14 +24,11 @@
 # define FOLDER 2
 # define SOMETHING_ELSE 3
 
-class ServerInfo;
-class Location;
-
 // Configuration file class
 class	Config
 {
 	private:
-		std::vector<ServerInfo>		_serverBlocks;	// Info of each server block
+		std::vector<ServerBlock>	_serverBlocks;	// Info of each server block
 		std::vector<std::string>	_info;			// Save serverBlock string, before they will be parsed correctly 
 		int							_server_i;		// How many servers we have
 
@@ -42,24 +39,24 @@ class	Config
 		// Member functions
 		std::string					readConfigFile(std::string name);
 		void						splitServers(std::string &file_content);
-		void 						createServer(std::string &config_string, ServerInfo &server);
+		void 						createServer(std::string &config_string, ServerBlock &server);
 
 		// Getter
-		std::vector<ServerInfo>		getServerBlocks();	// Used for creating the sockets (aka. Server.cpp)
+		std::vector<ServerBlock>	getServerBlocks();	// Used for creating the sockets (aka. Server.cpp)
 
 		// Checkers
-		std::string					ft_checkRoot(const std::string &newRoot, ServerInfo &server);
-		void						ft_checkHost(const std::string &newHost, ServerInfo &server);
-		void						ft_checkPort(const std::string &newPort, ServerInfo &server);
-		void						ft_checkMaxClient(const std::string &newMaxClient, ServerInfo &server);
-		void						ft_checkIndex(const std::string &newIndex, ServerInfo &server);
-		void						ft_checkServerName(const std::string &newServerName, ServerInfo &server);
-		void						ft_checkErrorPage(const std::string &param0, const std::string &param1, ServerInfo &server);
-		std::vector<std::vector<std::string>>	ft_checkLocation(const std::string &newLocation0, const std::string &newLocation1, ServerInfo &server);
+		std::string					ft_checkRoot(const std::string &newRoot, ServerBlock &server);
+		void						ft_checkHost(const std::string &newHost, ServerBlock &server);
+		void						ft_checkPort(const std::string &newPort, ServerBlock &server);
+		void						ft_checkMaxClient(const std::string &newMaxClient, ServerBlock &server);
+		void						ft_checkIndex(const std::string &newIndex, ServerBlock &server);
+		void						ft_checkServerName(const std::string &newServerName, ServerBlock &server);
+		void						ft_checkErrorPage(const std::string &param0, const std::string &param1, ServerBlock &server);
+		std::vector<std::vector<std::string>>	ft_checkLocation(const std::string &newLocation0, const std::string &newLocation1, ServerBlock &server);
 
 		// Utils
 		void						ft_printConfigFile();	// for testing purpose
-		void						ft_checkServerVariables(ServerInfo &server);
+		void						ft_checkServerVariables(ServerBlock &server);
 		void						ft_removeComments(std::string &file_content);
 		void						ft_removeWhitespace(std::string &file_content);
 		bool						ft_checkBrackets(std::string &str);

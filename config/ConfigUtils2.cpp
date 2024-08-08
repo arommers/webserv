@@ -1,4 +1,4 @@
-#include "ServerInfo.hpp"
+#include "ServerBlock.hpp"
 #include "Location.hpp"
 #include "Config.hpp"
 
@@ -87,7 +87,7 @@ std::vector<std::vector<std::string>> Config::ft_splitLocationParameters(const s
 // -------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------
 // --- Checkers functions ---
-void	Config::ft_checkHost(const std::string &newHost, ServerInfo &server)
+void	Config::ft_checkHost(const std::string &newHost, ServerBlock &server)
 {
 	// Check if variable is already set
 	if (!server.getHost().empty())
@@ -107,7 +107,7 @@ void	Config::ft_checkHost(const std::string &newHost, ServerInfo &server)
  * - Registered Ports (1024 to 49151)
  * - Dynamic or Private Ports (49152 to 65535)
  */
-void	Config::ft_checkPort(const std::string &newPort, ServerInfo &server)
+void	Config::ft_checkPort(const std::string &newPort, ServerBlock &server)
 {
 	// Check if variable is already set
 	if (server.getPort() != 0)
@@ -132,7 +132,7 @@ void	Config::ft_checkPort(const std::string &newPort, ServerInfo &server)
 		throw Exception_Config("Invalid Port: must be between 1 and 65535");
 }
 
-std::string	Config::ft_checkRoot(const std::string &newRoot, ServerInfo &server)
+std::string	Config::ft_checkRoot(const std::string &newRoot, ServerBlock &server)
 {
 	std::string NewFullRoot;
 
@@ -144,7 +144,7 @@ std::string	Config::ft_checkRoot(const std::string &newRoot, ServerInfo &server)
 	if (newRoot[0] != '/')
 		throw Exception_Config("Invalid Root: Wrong syntax");
 
-	// If the path type is a 2 directory
+	// If the path type is a directory -> path needs to be a valid directory
 	if (Config::getPathType(newRoot) == FOLDER)
 		return newRoot;
 	else
@@ -163,7 +163,7 @@ std::string	Config::ft_checkRoot(const std::string &newRoot, ServerInfo &server)
  * MaxClient = File upload limit
  * Our limit is 5MB -> 5000000 bytes
  */
-void	Config::ft_checkMaxClient(const std::string &newMaxClient, ServerInfo &server)
+void	Config::ft_checkMaxClient(const std::string &newMaxClient, ServerBlock &server)
 {
 	// Check if variable is already set
 	if (server.getMaxClient() != 0)
@@ -188,7 +188,7 @@ void	Config::ft_checkMaxClient(const std::string &newMaxClient, ServerInfo &serv
 		throw Exception_Config("Invalid max_client_size: must be between 1 and 5000000");
 }
 
-void	Config::ft_checkIndex(const std::string &newIndex, ServerInfo &server)
+void	Config::ft_checkIndex(const std::string &newIndex, ServerBlock &server)
 {
 	// Check if variable is already set
 	if (!server.getIndex().empty())
@@ -203,7 +203,7 @@ void	Config::ft_checkIndex(const std::string &newIndex, ServerInfo &server)
 		throw Exception_Config("Invalid Index: check your '.html' file");
 }
 
-void	Config::ft_checkServerName(const std::string &newServerName, ServerInfo &server)
+void	Config::ft_checkServerName(const std::string &newServerName, ServerBlock &server)
 {
 	// Check if variable is already set
 	if (!server.getServerName().empty())
@@ -217,7 +217,7 @@ void	Config::ft_checkServerName(const std::string &newServerName, ServerInfo &se
 	}
 }
 
-std::vector<std::vector<std::string>>	Config::ft_checkLocation(const std::string &newLocation0, const std::string &newLocation1, ServerInfo &server)
+std::vector<std::vector<std::string>>	Config::ft_checkLocation(const std::string &newLocation0, const std::string &newLocation1, ServerBlock &server)
 {
     std::vector<std::vector<std::string>>	locParams;
 
@@ -228,7 +228,7 @@ std::vector<std::vector<std::string>>	Config::ft_checkLocation(const std::string
 	return (locParams);
 }
 
-void	Config::ft_checkErrorPage(const std::string &key, const std::string &value, ServerInfo &server)
+void	Config::ft_checkErrorPage(const std::string &key, const std::string &value, ServerBlock &server)
 {
 	// Extract the last three characters from key
 	size_t spacePos = key.find(' ');
@@ -239,14 +239,12 @@ void	Config::ft_checkErrorPage(const std::string &key, const std::string &value,
 	if (value.substr(0, prefix.size()) != prefix)
 		throw  Exception_Config("Invalid Error_page path");
 
-	// Ensure only 8 characters are left after the prefix
+	// Ensure only 8 characters are left after the prefix and the remaining part is one of the valid error pages
 	std::string remaining = value.substr(prefix.size());
 	if (remaining.size() != 8)
 		throw  Exception_Config("Invalid Error_page (1)");
-
-	// Check if the remaining part is one of the valid error pages
 	std::vector<std::string> validErrorPages = {
-		"400.html", "403.html", "404.html", "405.html", "406.html", "409.html", "410.html", "500.html"
+		"400.html", "403.html", "404.html", "405.html", "406.html", "409.html", "410.html", "500.html", "505.html"
 	};
 	if (std::find(validErrorPages.begin(), validErrorPages.end(), remaining) == validErrorPages.end())
 		throw  Exception_Config("Invalid Error_page (2)");

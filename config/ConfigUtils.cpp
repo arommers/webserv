@@ -1,5 +1,5 @@
 #include "Config.hpp"
-#include "ServerInfo.hpp"
+#include "ServerBlock.hpp"
 
 
 // -------------------------------------------------------------------------------------
@@ -256,7 +256,7 @@ std::vector<std::vector<std::string>>	Config::ft_splitParameters(const std::stri
 * - _port and _host will error if not filled
 * - The rest will be filled by default
 */
-void	Config::ft_checkServerVariables(ServerInfo &server)
+void	Config::ft_checkServerVariables(ServerBlock &server)
 {
 	if (server.getPort() == 0)
 		throw Exception_Config("Port not found");
@@ -282,6 +282,7 @@ void	Config::ft_checkServerVariables(ServerInfo &server)
 		{"409", "/config/error_page/409.html"},
 		{"410", "/config/error_page/410.html"},
 		{"500", "/config/error_page/500.html"},
+		{"505", "/config/error_page/505.html"},
 	};
 
 	// Check and set default error pages if they are not already set
@@ -307,9 +308,9 @@ int Config::getPathType(std::string const path)
 	result = stat(path.c_str(), &buffer);
 	if (result == 0) // stat returns 0 on success and -1 on failure
 	{
-		if (buffer.st_mode & S_IFREG) // 'S_IFREG' is a macro that checks if the file is a regular file
+		if (buffer.st_mode & S_IFREG) 		// 'S_IFREG' is a macro that checks if the file is a regular file
 			return (FILE);
-		else if (buffer.st_mode & S_IFDIR) // 'S_IFDIR' is a macro that checks if the file is a directory
+		else if (buffer.st_mode & S_IFDIR)	// 'S_IFDIR' is a macro that checks if the file is a directory
 			return (FOLDER);
 		else
 			return (SOMETHING_ELSE);
@@ -329,7 +330,8 @@ bool Config::errorPage(std::string string)
 		"error_page 406",
 		"error_page 409",
 		"error_page 410",
-		"error_page 500"
+		"error_page 500",
+		"error_page 505"
 	};
 
 	// Check if the input string is in the list of valid error pages
@@ -409,7 +411,7 @@ void	Config::ft_printConfigFile()
 			std::cout << "		Path: " << loc.getPath() << std::endl;
 			std::cout << "		Root: " << loc.getRoot() << std::endl;
 			std::cout << "		Index: " << loc.getIndex() << std::endl;
-			std::cout << "		Autoindex: " << (loc.getAutoindex() ? "off" : "on") << std::endl;
+			std::cout << "		Autoindex: " << (loc.getAutoindex() ? "on" : "off") << std::endl;
 			std::cout << "		Allowed Methods: " << std::endl;
 			for (size_t k = 0; k < loc.getAllowedMethods().size(); k++)
 			{

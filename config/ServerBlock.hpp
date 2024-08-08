@@ -1,5 +1,5 @@
-#ifndef SERVERINFO_HPP
-# define SERVERINFO_HPP
+#ifndef ServerBlock_HPP
+# define ServerBlock_HPP
 
 # include <iostream>
 # include <string>
@@ -8,7 +8,7 @@
 # include <algorithm>
 # include "Location.hpp"
 
-class ServerInfo
+class ServerBlock
 {
 	private:
 		int							_port;			// A vector of ports the server listens on.
@@ -22,8 +22,8 @@ class ServerInfo
 		std::vector<std::string>	_errorPage;		// Error Pages
 
 	public:
-		ServerInfo();		// Constructor
-		~ServerInfo() {}	// Destructor
+		ServerBlock();		// Constructor
+		~ServerBlock() {}	// Destructor
 
 		// Setter
 		void						setPort(int newPort);
@@ -33,7 +33,7 @@ class ServerInfo
 		void						setRoot(const std::string &newRoot);
 		void						setIndex(const std::string &newIndex);
 		void						setServerName(const std::string &newServerName);
-		void						setLocations(std::vector<std::vector<std::string>> &newLocation, ServerInfo &server);
+		void						setLocations(std::vector<std::vector<std::string>> &newLocation, ServerBlock &server);
 		void						setErrorPage(const std::string &newErrorPage);
 
 		// Getter
@@ -49,26 +49,26 @@ class ServerInfo
 
 
 		// Checker
-		std::string					ft_checkLocationRoot(const std::string &newRoot, Location locBlock);
-		void						ft_checkLocationPath(const std::string &newPath, Location locBlock);
+		std::vector<std::string>	ft_checkLocationMethods(const std::string &newMethods, Location locBlock);
+		std::string					ft_checkLocationRoot(const std::string &newRoot, Location locBlock, std::string path);
+		std::string					ft_checkLocationPath(const std::string &newPath, Location locBlock);
 		void						ft_checkLocationIndex(const std::string &newIndex, Location locBlock);
-		void						ft_checkLocationMethods(const std::string &newMethods, Location locBlock);
-		bool						ft_checkLoactionAutoindex(const std::string &newAutoindex);
+		bool						ft_checkLoactionAutoindex(const std::string &newAutoindex, std::string path);
 
 		// Utils
 		bool						hasErrorPage(const std::string &errorPage) const;
-		void						createLocation(std::vector<std::vector<std::string>> &locParams, Location &locBlock, ServerInfo &server);
-		void						ft_checkLocationVariables(Location &locBlock, ServerInfo &server);
+		void						createLocation(std::vector<std::vector<std::string>> &locParams, Location &locBlock, ServerBlock &server);
+		void						ft_checkLocationVariables(Location &locBlock, ServerBlock &server);
 		int							getPathType(std::string const path);
 
 		// Exception class
-		class Exception_ServerInfo: public std::exception
+		class Exception_ServerBlock: public std::exception
 		{
 			private:
 				const char *_error_msg;
 
 			public:
-				Exception_ServerInfo(const char *error_msg) : _error_msg(error_msg) {}	// Constructor
+				Exception_ServerBlock(const char *error_msg) : _error_msg(error_msg) {}	// Constructor
 				const char *what() const noexcept										// Overriding the what() method
 				{
 					return (_error_msg);

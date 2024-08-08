@@ -8,12 +8,12 @@ Config::Config(std::string file_name) : _server_i(0), _info(0), _serverBlocks(0)
 	file_content = readConfigFile(file_name);	// read config file
 	splitServers(file_content);					// Split the Servers (to have each server block)
 
-	// Create the servers -> parse the info into each ServerInfo class
+	// Create the servers -> parse the info into each ServerBlock class
 	for (size_t i = 0; i < _server_i; i++)
 	{
-		ServerInfo server;
+		ServerBlock server;
 		createServer(_info[i], server);		// We create server
-		_serverBlocks.push_back(server);	// We push serverInfo into _serverBlocks, so we can excess it later
+		_serverBlocks.push_back(server);	// We push ServerBlock into _serverBlocks, so we can excess it later
 	}
 	ft_printConfigFile();	// for testing -> do we have everything
 }
@@ -81,19 +81,33 @@ void	Config::splitServers(std::string &file_content)
  * - Substract 'key' and 'value' from the file (ft_splitParameters())
  * - Looks for matching keyword
  * - Does checks on the 'value' of the 'key'
- * - Pushes the 'value' onto the matching variable on ServerInfo class
+ * - Pushes the 'value' onto the matching variable on ServerBlock class
  */
-void	Config::createServer(std::string &config_string, ServerInfo &server)
+void	Config::createServer(std::string &config_string, ServerBlock &server)
 {
 	std::vector<std::vector<std::string>>	parameters;
-	bool		hasLocation = false;
+	bool	locationEncountered = false;
 
 	parameters = ft_splitParameters(config_string);
 	if (parameters[0].size() == 0)
 		throw  Exception_Config("Invalid configuration foramt (3)");
+
 	for (size_t i = 0; i < parameters[0].size(); i++)
 	{
-		if (parameters[0][i] == "port")
+		if (location(parameters[0][i]))
+		{
+			/* Needs to be at the top, so once a location block is encountered.
+			 * But there are more variables after the location block, it is invalid. */
+			locationEncountered = true;
+			std::vector<std::vector<std::string>> locParams = ft_checkLocation(parameters[0][i], parameters[1][i], server);
+			server.setLocations(locParams, server);
+		}
+		else if (locationEncountered)
+		{
+			// Throw an exception if any non-location parameters are encountered after a location block.
+			throw Exception_Config("Invalid configuration format: non-location parameter after location block");
+		}
+		else if (parameters[0][i] == "port")
 		{
 			ft_checkPort(parameters[1][i], server);
 			server.setPort(std::stoi(parameters[1][i]));
@@ -127,34 +141,18 @@ void	Config::createServer(std::string &config_string, ServerInfo &server)
 			ft_checkErrorPage(parameters[0][i], parameters[1][i], server);
 			server.setErrorPage(parameters[1][i]);
 		}
-		else if (location(parameters[0][i]))
-		{
-			hasLocation = true;
-
-			// Check that all important varabiles are filled.
-			ft_checkServerVariables(server); 
-
-			std::vector<std::vector<std::string>> locParams = ft_checkLocation(parameters[0][i], parameters[1][i], server);
-			for (int i = 0; i )
-			std::cout << "TEST : " << locParams << std::endl;
-			server.setLocations(locParams, server);
-		}
 		else
 			throw Exception_Config("Invalid configuration format, invalid keyword");
 	}
 
-	// If no Location Block has beed specified -> check that all important varabiles are filled.
-	if (hasLocation == false)
-	{
-		ft_checkServerVariables(server);
-		// std::vector<std::vector<std::string>> locParams = ft_checkLocation("location", "/www", server);
-		// server.setLocations(locParams, server);
-	}
+	// Check that all important varabiles are filled.
+	ft_checkServerVariables(server);
 }
+
 /* getServerBlocks();
  * - A getter for the server blocks (used in the sockets aka. Server.cpp)
  */
-std::vector<ServerInfo> Config::getServerBlocks()
+std::vector<ServerBlock> Config::getServerBlocks()
 {
 	return (_serverBlocks);
 }
