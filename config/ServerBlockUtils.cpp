@@ -33,8 +33,6 @@ int ServerBlock::getPathType(std::string const path)
 
 std::string ServerBlock::ft_checkLocationPath(const std::string &newPath, Location locBlock)
 {
-	std::string NewFullPath;
-
 	// Check if variable is already set
 	if (!locBlock.getPath().empty())
 		throw  Exception_ServerBlock("Location_Block: Path is duplicated");
@@ -43,25 +41,11 @@ std::string ServerBlock::ft_checkLocationPath(const std::string &newPath, Locati
 	if (newPath[0] != '/')
 		throw Exception_ServerBlock("Invalid Location_Block Path: Wrong syntax");
 
-	// If the path type is a directory -> path needs to be a valid directory  
-	if (ServerBlock::getPathType(newPath) == FOLDER)
-		return newPath;
-	else
-	{
-		// Concatenates the current working directory (dir) with the given NewRoot path, resulting in a full path
-		char dir[1024];
-		getcwd(dir, 1024);
-		NewFullPath = dir + newPath;
-		if (ServerBlock::getPathType(NewFullPath) != FOLDER) // If the path type is not a directory
-			throw Exception_ServerBlock("Invalid Loction_Block Path");
-	}
-	return NewFullPath;
+	return newPath;
 }
 
-std::string ServerBlock::ft_checkLocationRoot(const std::string &newRoot, Location locBlock, std::string path)
+std::string ServerBlock::ft_checkLocationRoot(const std::string &newRoot, Location locBlock)
 {
-	std::string NewFullRoot;
-
 	// Check if variable is already set
 	if (!locBlock.getRoot().empty())
 		throw  Exception_ServerBlock("Loction_Block: Root is duplicated");
@@ -70,16 +54,10 @@ std::string ServerBlock::ft_checkLocationRoot(const std::string &newRoot, Locati
 	if (newRoot[0] != '/')
 		throw Exception_ServerBlock("Invalid Loction_Block Root: Wrong syntax");
 
-	// If the path type is a directory -> path needs to be a valid directory
 	if (ServerBlock::getPathType(newRoot) == FOLDER)
 		return newRoot;
 	else
-	{
-		NewFullRoot = path + newRoot;;
-		if (ServerBlock::getPathType(NewFullRoot) != FOLDER) // If the path type is not a directory
-			throw Exception_ServerBlock("Invalid Loction_Block Root");
-	}
-	return NewFullRoot;
+		return (_root + newRoot);
 }
 
 void ServerBlock::ft_checkLocationIndex(const std::string &newIndex, Location locBlock)
@@ -99,18 +77,32 @@ void ServerBlock::ft_checkLocationIndex(const std::string &newIndex, Location lo
 
 std::vector<std::string> ServerBlock::ft_checkLocationMethods(const std::string &newMethods, Location locBlock)
 {
-
-	// NOT WORKING YET !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	// Split the input string by whitespace
-	std::istringstream iss(newMethods);
-	std::vector<std::string> methods;
-	std::string word;
+	std::istringstream	iss(newMethods);
+	std::vector<std::string>	methods;
+	std::string	word;
+	bool		oneDELETE	= false;
+	bool		oneGET		= false;
+	bool 		onePOST		= false;
 
 	while (iss >> word)
 	{
 		// Check if the word is one of the allowed methods
-		if (word == "DELETE" || word == "GET" || word == "POST")
+		if ((word == "DELETE" ) && (oneDELETE == false))
+		{
+			oneDELETE = true;
 			methods.push_back(word);
+		}
+		else if ((word == "GET") && (oneGET == false))
+		{
+			oneGET = true;
+			methods.push_back(word);
+		}
+		else if ((word == "POST") && (onePOST == false))
+		{
+			onePOST = true;
+			methods.push_back(word);
+		}
 		else
 			throw Exception_ServerBlock("Invalid Location_Block Method");
 	}
@@ -119,6 +111,9 @@ std::vector<std::string> ServerBlock::ft_checkLocationMethods(const std::string 
 
 bool	ServerBlock::ft_checkLoactionAutoindex(const std::string &newAutoindex, std::string path)
 {
+	/* '/cgi-bin' should not have autoindex ON
+	 * - Security Risks: would expose these scripts to users, potentially revealing sensitive information or 
+	 *					 leading to security vulnerabilities. */
 	if (path == "/cgi-bin")
 		throw Exception_ServerBlock("Invalid Location_Block Autoindex: Parametr autoindex not allow for CGI");
 	if (newAutoindex == "on")
@@ -128,5 +123,3 @@ bool	ServerBlock::ft_checkLoactionAutoindex(const std::string &newAutoindex, std
 	else
 		throw Exception_ServerBlock("Invalid Location_Block Autoindex");
 }
-
-

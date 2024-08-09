@@ -109,14 +109,10 @@ bool ServerBlock::hasErrorPage(const std::string &errorPage) const
 */
 void	ServerBlock::ft_checkLocationVariables(Location &locBlock, ServerBlock &server)
 {
-	if (locBlock.getPath().empty())
-		locBlock.setPath(server.getRoot());
 	if (locBlock.getRoot().empty())
 		locBlock.setRoot(server.getRoot());
 	if (locBlock.getIndex().empty())
 		locBlock.setIndex(server.getIndex());
-
-	// THINK THERE IS SOMETHIGN WRONG WITH THIS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	if (locBlock.getAllowedMethods().empty())
 	{
 		std::vector<std::string> defaultMethods = {"DELETE", "POST", "GET"};
@@ -128,6 +124,8 @@ void	ServerBlock::ft_checkLocationVariables(Location &locBlock, ServerBlock &ser
 void ServerBlock::createLocation(std::vector<std::vector<std::string>> &locParams, Location &locBlock, ServerBlock &server)
 {
 	bool boolAutoindex = 0;
+	bool boolMethods = 0;
+
 	// Check if variable is already set
 	for (size_t i = 0; i < locParams[0].size(); i++)
 	{
@@ -137,7 +135,7 @@ void ServerBlock::createLocation(std::vector<std::vector<std::string>> &locParam
 		}
 		else if (locParams[0][i] == "root")
 		{
-			locBlock.setRoot(ft_checkLocationRoot(locParams[1][i], locBlock, locBlock.getPath()));
+			locBlock.setRoot(ft_checkLocationRoot(locParams[1][i], locBlock));
 		}
 		else if (locParams[0][i] == "index")
 		{
@@ -146,8 +144,11 @@ void ServerBlock::createLocation(std::vector<std::vector<std::string>> &locParam
 		}
 		else if (locParams[0][i] == "allowed_methods")
 		{
-			// NOT WORKING CORRECTLY !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			// Check if variable is already set
+			if (boolMethods == 1)
+				throw Exception_ServerBlock("Location_Block: allowed_method is duplicated");
 			locBlock.setAllowedMethods(ft_checkLocationMethods(locParams[1][i], locBlock));
+			boolMethods = 1;
 		}
 		else if (locParams[0][i] == "autoindex")
 		{
@@ -160,7 +161,7 @@ void ServerBlock::createLocation(std::vector<std::vector<std::string>> &locParam
 		else
 			throw Exception_ServerBlock("Invalid Location_Block parameter");
 	}
+
 	// Check that all important varabiles are filled.
 	ft_checkLocationVariables(locBlock, server); 
-
 }
