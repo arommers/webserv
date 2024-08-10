@@ -115,7 +115,7 @@ bool	ServerBlock::ft_checkLoactionAutoindex(const std::string &newAutoindex, std
 	 * - Security Risks: would expose these scripts to users, potentially revealing sensitive information or 
 	 *					 leading to security vulnerabilities. */
 	if (path == "/cgi-bin")
-		throw Exception_ServerBlock("Invalid Location_Block Autoindex: Parametr autoindex not allow for CGI");
+		throw Exception_ServerBlock("Invalid Location_Block Autoindex: Parametr autoindex not allow for cgi-bin");
 	if (newAutoindex == "on")
 		return ON;
 	else if (newAutoindex == "off")

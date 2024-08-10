@@ -23,7 +23,7 @@ class ServerBlock
 
 	public:
 		// ---- RM This later / don't need this once the configuration file is used. -----
-		ServerBlock(int port, std::string& host, int maxClient, std::string& root, std::string& index);
+		// ServerBlock(int port, std::string& host, int maxClient, std::string& root, std::string& index);
 		// -------------------------------------------------------------------------------
 		ServerBlock();		// Constructor
 		~ServerBlock() {}	// Destructor

@@ -19,9 +19,9 @@ class Location
 
 	public:
 		// ---- RM This later / don't need this once the configuration file is used. -----
-		Location(std::string& path, std::string& root, std::string& index, std::vector<std::string>& allowedMethods);
-        Location(Location& rhs);
-        Location& operator=(const Location& rhs);
+		// Location(std::string& path, std::string& root, std::string& index, std::vector<std::string>& allowedMethods);
+        // Location(Location& rhs);
+        // Location& operator=(const Location& rhs);
 		// -------------------------------------------------------------------------------
 		Location();		// Constructor
 		~Location() {}	// Destructor

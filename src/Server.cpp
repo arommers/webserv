@@ -136,6 +136,7 @@ void Server::createPollLoop()
                 sendClientData(i);
         }
     }
+
 }
 
 // Accept a new connection from a client and add it to the poll loop
@@ -182,8 +183,24 @@ void Server::handleClientData(size_t index)
         if (client.requestComplete())
         {
             client.parseBuffer();
+            if (client.getState() == ERROR){
+                client.createResponse();
+                return;
+            }
             std::cout << GREEN << "Request Received from socket " << _pollFds[index].fd << ", method: [" << client.getRequestMap()["Method"] << "], version: [" << client.getRequestMap()["Version"] << "], URI: " << client.getRequestMap()["Path"] << RESET << std::endl;
-            openFile(client);
+            if (_cgi.checkIfCGI(client) == true){
+                _cgi.runCGI(*this, client);
+                _pollFds[index].events = POLLOUT; // CGI finished, so POLLOUT can be set
+            }
+            else{
+                openFile(client);
+            }
+            if (client.getState() == ERROR)
+            {
+                client.createResponse();
+                _pollFds[index].events = POLLOUT;
+                return ;
+            }
         }
     }
 }
@@ -233,13 +250,7 @@ void Server::handleFileRead(size_t index)
                     if (value.fd == it->second.getFd())
                         value.events = POLLOUT;
                 }
-                int i = 0;
-                for (auto& value : _pollFds)
-                {
-                    if (value.fd == it->second.getFileFd())
-                        _pollFds.erase(_pollFds.begin() + i);
-                    i++;
-                }
+                removePollFd(it->second.getFileFd());
             }
         }
     }
@@ -265,28 +276,11 @@ void Server::sendClientData(size_t index)
         if (client.getWriteBuffer().empty())
         {
             std::cout << GREEN << "Response sent to client: " << _pollFds[index].fd << RESET << std::endl;
+            client.resetClientData(); // Resetting all data of client. Right location?
             closeConnection(index);
         }
     }
-    // }
 }
-
-// void Server::handleClientRequest(Client &client)
-// {
-//     std::map<std::string, std::string> requestMap = client.getRequestMap();
-//     std::map<std::string, std::string>::iterator it = requestMap.find("Method");
-
-//     if (it != requestMap.end()) {
-//         std::string method = it->second;
-//         if (method == "GET")
-//             readFile(client);
-//         // Handle other methods (POST, DELETE) as needed
-//     } else {
-//         std::cerr << RED << "Request missing Method key." << RESET << std::endl;
-//         client.setStatusCode(400); // Bad Request
-//         client.createResponse();
-//     }
-// }
 
 void    Server::checkTimeout(int time)
 {
@@ -336,6 +330,24 @@ void Server::removeClient(int fd)
     _clients.erase(fd);
 }
 
+std::vector<struct pollfd>  Server::getPollFds()
+{
+    return (_pollFds);
+}
+
+void Server::removePollFd( int fd )
+{
+    int i = 0;
+    for (auto& value : _pollFds)
+    {
+        if (value.fd == fd){
+            _pollFds.erase(_pollFds.begin() + i);
+            return ;
+        }
+        i++;
+    }
+
+}
 // Retrieve the ServerBlock object corresponding to a given file descriptor
 
 ServerBlock& Server::getServerBlockByFd(int fd)

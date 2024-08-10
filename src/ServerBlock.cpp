@@ -3,16 +3,16 @@
 // --- Constructor ---
 ServerBlock::ServerBlock() : _port(0), _serverFd(-1), _maxClient(0), _host(""), _root(""), _index(""), _serverName("") {}
 
-// ---- RM This later / don't need this once the configuration file is used. -----
-ServerBlock::ServerBlock(int port, std::string& host, int maxClient, std::string& root, std::string& index)
-{
-    _port = port;
-    _serverFd = -1;
-    _maxClient = maxClient;
-    _host = host;
-    _root = root;
-    _index = index;
-}
+// // ---- RM This later / don't need this once the configuration file is used. -----
+// ServerBlock::ServerBlock(int port, std::string& host, int maxClient, std::string& root, std::string& index)
+// {
+//     _port = port;
+//     _serverFd = -1;
+//     _maxClient = maxClient;
+//     _host = host;
+//     _root = root;
+//     _index = index;
+// }
 // ---------------------------------------------------------------------------------
 
 // --- Setter ---
@@ -44,6 +44,11 @@ void	ServerBlock::setIndex(const std::string &newIndex)
 void	ServerBlock::setServerName(const std::string &newServerName)
 {
 	_serverName = newServerName;
+}
+
+void	ServerBlock::setServerFd(int fd)
+{
+    _serverFd = fd;
 }
 
 void ServerBlock::setLocations(std::vector<std::vector<std::string>> &newLocation, ServerBlock &server)
@@ -138,7 +143,7 @@ void ServerBlock::createLocation(std::vector<std::vector<std::string>> &locParam
 	bool boolAutoindex = 0;
 	bool boolMethods = 0;
 
-	// Check if variable is already set
+	// Set variables
 	for (size_t i = 0; i < locParams[0].size(); i++)
 	{
 		if (locParams[0][i] == "location")

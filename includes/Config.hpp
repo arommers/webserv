@@ -14,10 +14,10 @@
 # include "Location.hpp"
 
 // COLORS
-# define BLUE "\e[1;34m"
-# define RED "\e[1;91m"
-# define BOLD "\033[1m"
-# define RESET "\033[0m"
+# define BLUE	"\e[1;34m"
+# define RED	"\033[31m"
+# define BOLD	"\033[1m"
+# define RESET	"\033[0m"
 
 // PATH TYPE
 # define FILE 1
