@@ -8,4 +8,5 @@
 *.obj
 
 # Executables
+*.exe
 *.out
