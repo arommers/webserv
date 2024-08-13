@@ -296,20 +296,20 @@ void Client::createResponse ( void )
 void Client::readNextChunk()
 {
     char buffer[BUFFER_SIZE];
-    int bytesRead = read(_fileFd, buffer, BUFFER_SIZE);
+    int bytesRead = read(_readWriteFd, buffer, BUFFER_SIZE);
 
     if (bytesRead < 0)
     {
         std::cerr << "Failed to read file: " << strerror(errno) << std::endl;
         setStatusCode(500);
-        close(_fileFd);
+        close(_readWriteFd);
         _fd = -1;
         setState(READY);
         return;
     }
     else if (bytesRead == 0)
     {
-        close(_fileFd);
+        close(_readWriteFd);
         setState(READY);
         createResponse();
         return;
@@ -330,7 +330,7 @@ void Client::writeNextChunk()
     {
         std::cerr << "Failed to write to fd: " << strerror(errno) << std::endl;
         setState(500);
-        close(_fileFd);
+        close(_readWriteFd);
         _fd = -1;
         return ;
     }
@@ -338,7 +338,7 @@ void Client::writeNextChunk()
 
     if (getWriteBuffer().empty())
     {
-        close(_fileFd);
+        close(_readWriteFd);
         setState(READY);
     }
 }
@@ -354,7 +354,7 @@ void    Client::resetClientData( void )
     _statusCode = 0;
     _fd = -1;
     _state = START;
-    _fileFd = -1;
+    _readWriteFd = -1;
     // Is all added?? -- Sven
 }
 
@@ -364,14 +364,14 @@ std::string Client::getFileBuffer()
     return _fileBuffer;
 }
 
-void Client::setFileFd(int fd)
+void Client::setReadWriteFd(int fd)
 {
-    _fileFd = fd;
+    _readWriteFd = fd;
 }
 
-int Client::getFileFd()
+int Client::getReadWriteFd()
 {
-    return _fileFd;
+    return _readWriteFd;
 }
 
 int* Client::getRequestPipe()

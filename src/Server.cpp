@@ -76,20 +76,6 @@ void    Server::createPollLoop()
             exit(EXIT_FAILURE);
         }
 
-        // checkTimeout(TIMEOUT);
-
-        // for (size_t i = 0; i < _pollFds.size(); ++i)
-        // {
-        //     if (_pollFds[i].revents & POLLIN)
-        //     {
-        //         if (_pollFds[i].fd == _serverSocket)
-        //             acceptConnection();
-        //         else
-        //             handleClientData(i);
-        //     }
-        //     else if (_pollFds[i].revents & POLLOUT)
-        //         sendClientData(i);
-
         for (size_t i = 0; i < _pollFds.size(); ++i)
         {
 
@@ -120,7 +106,7 @@ void Server::handleFileRead(size_t index)
 
     for (std::unordered_map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it)
     {
-        if (it->second.getFileFd() == fd)
+        if (it->second.getReadWriteFd() == fd)
         {
             it->second.readNextChunk();
             if (it->second.getState() == READY)
@@ -132,8 +118,8 @@ void Server::handleFileRead(size_t index)
                         it->second.setState(WRITING);
                     }
                 }
-                removePollFd(it->second.getFileFd());
-                it->second.setFileFd(-1);
+                removePollFd(it->second.getReadWriteFd());
+                it->second.setReadWriteFd(-1);
             }
         }
     }
@@ -145,7 +131,7 @@ void Server::handleFdWrite(size_t index)
 
     for (std::unordered_map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it)
     {
-        if (it->second.getFileFd() == fd)
+        if (it->second.getReadWriteFd() == fd)
         {
             it->second.writeNextChunk();
             if (it->second.getState() == READY || it->second.getState() == ERROR)
@@ -156,8 +142,8 @@ void Server::handleFdWrite(size_t index)
                         value.events = POLLIN;
                     }
                 }
-                removePollFd(it->second.getFileFd());
-                it->second.setFileFd(-1);
+                removePollFd(it->second.getReadWriteFd());
+                it->second.setReadWriteFd(-1);
             }  
         }
     }
@@ -193,49 +179,6 @@ void    Server::closeConnection(size_t index)
     _pollFds.erase(_pollFds.begin() + index);
     removeClient(fd);
 }
-
-// void Server::handleClientData(size_t index)
-// {
-//     char buffer[BUFFER_SIZE];
-//     int bytesRead = read(_pollFds[index].fd, buffer, BUFFER_SIZE);
-
-//     if (bytesRead < 0)
-//         std::cerr << RED << "Error reading from client socket: " << strerror(errno) << RESET << std::endl;
-//     else if (bytesRead == 0)
-//     {
-//         std::cout << YELLOW << "Client disconnected, socket fd is: " << _pollFds[index].fd << RESET << std::endl;
-//         closeConnection(index);
-//     }
-//     else
-//     {
-//         buffer[bytesRead] = '\0';
-//         Client &client = getClient(_pollFds[index].fd);
-//         client.addToBuffer(buffer);
-
-//         if (client.requestComplete())
-//         {
-//             client.parseBuffer();
-//             if (client.getState() == ERROR){
-//                 client.createResponse();
-//                 return;
-//             }
-//             std::cout << GREEN << "Request Received from socket " << _pollFds[index].fd << ", method: [" << client.getRequestMap()["Method"] << "], version: [" << client.getRequestMap()["Version"] << "], URI: " << client.getRequestMap()["Path"] << RESET << std::endl;
-//             if (_cgi.checkIfCGI(client) == true){
-//                 _cgi.runCGI(*this, client);
-//                 _pollFds[index].events = POLLOUT; // CGI finished, so POLLOUT can be set
-//             }
-//             else{
-//                 openFile(client);
-//             }
-//             if (client.getState() == ERROR)
-//             {
-//                 client.createResponse();
-//                 _pollFds[index].events = POLLOUT;
-//                 return ;
-//             }
-//         }
-//     }
-// }
 
 void    Server::handleClientData(size_t index)
 {
@@ -334,7 +277,7 @@ void Server::openFile(Client &client)
         return;
     }
 
-    client.setFileFd(fileFd);
+    client.setReadWriteFd(fileFd);
 
     struct pollfd pollFd;
     pollFd.fd = fileFd;
@@ -408,6 +351,15 @@ void Server::removeClient(int fd)
 std::vector<struct pollfd>  Server::getPollFds()
 {
     return (_pollFds);
+}
+
+void Server::addPollFd( int fd, int events )
+{
+    struct pollfd pollFdStruct;
+
+    pollFdStruct.fd = fd;
+    pollFdStruct.events = events;
+    getPollFds().push_back(pollFdStruct);
 }
 
 void Server::removePollFd( int fd )

@@ -51,7 +51,7 @@ class Client
     private:
         int                                     _fd = -1;
         int                                     _state = START;
-        int                                     _fileFd = -1;
+        int                                     _readWriteFd = -1;
         std::string                             _readBuffer;
         std::string                             _writeBuffer;
         std::string                             _fileBuffer;
@@ -102,8 +102,8 @@ class Client
         void                                    runCGI( void );        
         void                                    readNextChunk();
         void                                    writeNextChunk();
-        void                                    setFileFd(int fd);
-        int                                     getFileFd();
+        void                                    setReadWriteFd(int fd);
+        int                                     getReadWriteFd();
         bool                                    fileReadComplete();
         int*                                    getRequestPipe();
         int*                                    getReponsePipe();

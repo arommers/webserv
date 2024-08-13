@@ -35,6 +35,7 @@ class Server
         void                        checkTimeout(int time);
         int                         getServerSocket();
         std::vector<struct pollfd>  getPollFds();
+        void                        addPollFd( int fd, int events );
         void                        removePollFd( int fd );
 
         void            handleClientRequest();

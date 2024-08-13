@@ -34,7 +34,24 @@ bool Cgi::checkIfCGI( Client &client )
 void Cgi::runCGI( Server& server, Client& client)
 {
     // client.printRequestMap();
-    createFork(server, client);
+
+    if (client.getState() == START)
+    {
+        if (client.getRequestMap().at("Method") == "POST"){    
+            createPipe(server, client, client.getRequestPipe());
+            writeBodyToPipe(server, client);
+        }
+        createPipe(server, client, client.getReponsePipe());
+
+        client.setWriteBuffer(client.getRequestMap().at("Body"));
+        client.setReadWriteFd(client.getRequestPipe()[1]);
+        server.addPollFd(client.getRequestPipe()[1], POLLOUT); 
+        
+
+        return ;
+    }
+    else if ((client.getState() == READY))
+        createFork(server, client);
 }
 
 
@@ -66,12 +83,6 @@ void Cgi::createPipe(Server& server, Client& client, int* fdPipe)
         perror("pipe");
         exit(1);
     }
-    pipeFdRead.fd = fdPipe[0];
-    pipeFdRead.events = POLLIN;
-    pipeFdWrite.fd = fdPipe[1];
-    pipeFdWrite.events = POLLOUT;
-    server.getPollFds().push_back(pipeFdRead);
-    server.getPollFds().push_back(pipeFdWrite);
 }
 
 void Cgi::readClosePipes(Server& server, Client& client)
@@ -114,14 +125,7 @@ void Cgi::createFork(Server& server, Client& client)
 {
     pid_t   pid;
 
-    if (client.getRequestMap().at("Method") == "POST"){    
-        createPipe(server, client, client.getRequestPipe());
-        writeBodyToPipe(server, client);
-    }
-
-    createPipe(server, client, client.getReponsePipe());
-    std::cout << "Test!\n";
-    
+   
     pid = fork();
     if (pid == -1){
         perror("fork");
