@@ -1,37 +1,36 @@
-#pragma once
+#ifndef SERVERINFO_HPP
+# define SERVERINFO_HPP
 
-#include "Location.hpp"
+# include <iostream>
+# include <string.h>
+# include <fstream>
+# include <vector>
+
+class Config;
 
 class ServerInfo
 {
-    private:
-        int                     _port;
-        int                     _serverFd;
-        int                     _maxClient;
-        // std::string             _serverName;
-        std::string             _host;
-        std::string             _root;
-        std::string             _index;
-        std::vector<Location>   _locations;
+	private:
+		std::string			_serverName;	// The name/number of the server.
+		std::string			_host;			// The host of the server. 				   
+		std::vector<int>	_ports;			// A vector of ports the server listens on.
+		std::string			_rootPath;		// The root directory path for the server.  
 
-    public:
-        ServerInfo();
-        ServerInfo(int port, std::string& host, int maxClient, std::string& root, std::string& index);
-        ~ServerInfo();
+	public:
+		ServerInfo();		// Constructor
+		~ServerInfo();		// Destructor
 
-        int                     getPort() const;
-        int                     getServerFd() const;
-        int                     getMaxClient() const;
-        std::string             getHost() const;
-        std::string             getRoot() const;
-        std::string             getIndex() const;
-        std::vector<Location>   getLocations();
+		// Setter
+		void setName(const std::string &newName);
+		void setHost(const std::string &newHost);
+		void setPort(const std::vector<int> &newPort);
+		void setRoot(const std::string &newRoot);
 
-        void                    setPort(int port);
-        void                    setServerFd(int fd);
-        void                    setMaxClient(int maxClient);
-        void                    setHost(const std::string& host);
-        void                    setRoot(const std::string& root);
-        void                    setIndex(const std::string& index);
-        void                    addLocation(Location& location);
+		// Getter
+		std::string getName() const;
+		std::string getHost() const;
+		std::vector<int> getPort() const;
+		std::string getRoot() const;
 };
+
+#endif

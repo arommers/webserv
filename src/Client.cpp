@@ -14,37 +14,94 @@ const std::map<int, std::string> Client::_ErrorMap = {
 
 Client::Client() {}
 
-Client::~Client() {}
+Client::~Client() { }
 
-Client::Client(int fd, ServerInfo& serverInfo): _fd(fd), _serverInfo(serverInfo) {}
+Client::Client( int fd ): _fd(fd) {}
 
-// Client::Client(const Client& rhs)
-// {
-//     _fd = rhs._fd;
-//     _serverInfo = rhs._serverInfo;
-//     _readBuffer = rhs._readBuffer;
-//     _writeBuffer = rhs._writeBuffer;
-//     _writePos = rhs._writePos;
-//     _time = rhs._time;
-// }
+Client::Client(const Client& rhs)
+{
+    _fd = rhs._fd;
+    _readBuffer = rhs._readBuffer;
+    _writeBuffer = rhs._writeBuffer;
+    _writePos = rhs._writePos;
+    _time = rhs._time;
+}
 
-// Client& Client::operator=(const Client& rhs)
-// {
-//     if (this != &rhs)
-//     {
-//         _fd = rhs._fd;
-//         _serverInfo = rhs._serverInfo;
-//         _readBuffer = rhs._readBuffer;
-//         _writeBuffer = rhs._writeBuffer;
-//         _writePos = rhs._writePos;
-//         _time = rhs._time;
-//     }
-//     return (*this);
-// }
+Client& Client::operator=(const Client& rhs)
+{
+    if (this != &rhs)
+    {
+        _fd = rhs._fd;
+        _readBuffer = rhs._readBuffer;
+        _writeBuffer = rhs._writeBuffer;
+        _writePos = rhs._writePos;
+        _time = rhs._time;
+    }
+    return *this;
+}
 
 void    Client::addToBuffer( std::string bufferNew )
 {
     _readBuffer += bufferNew;
+}
+
+std::string    Client::getReadBuffer( void )
+{
+    return (_readBuffer);
+}
+
+void Client::setFd ( int fd )
+{
+    _fd = fd;
+}
+
+int Client::getFd()
+{
+    return (_fd);
+}
+
+size_t      Client::getWritePos()
+{
+    return (_writePos);
+}
+
+void        Client::setWritePos( size_t pos )
+{
+    _writePos = pos;
+}
+
+std::string Client::getWriteBuffer()
+{
+    return (_writeBuffer);
+}
+
+void        Client::setWriteBuffer( std::string buffer )
+{
+    _writeBuffer = buffer;
+}
+
+void        Client::setFileBuffer(std::string buffer)
+{
+    _fileBuffer = buffer;
+}
+
+int Client::getState()
+{
+    return (_state);
+}
+
+void Client::setState (const int state)
+{
+    _state = state;
+}
+
+void Client::setStatusCode( const int statusCode )
+{
+    std::vector<int>     statusCheck = {400, 401, 404, 405, 500, 503};
+    if (std::find(statusCheck.begin(), statusCheck.end(), statusCode) != statusCheck.end()){
+        setState(ERROR);
+    }
+    _statusCode = statusCode;
 }
 
 bool    Client::requestComplete()
@@ -67,7 +124,7 @@ bool    Client::requestComplete()
     size_t bodyBegin = pos + 4;
     size_t bodyLength = bodyBegin + contentLength;
 
-    return _readBuffer.size() >= bodyLength;
+    return  _readBuffer.size() >= bodyLength;
 }
 
 void    Client::updateTime()
@@ -78,85 +135,6 @@ void    Client::updateTime()
 std::time_t Client::getTime()
 {
     return _time;
-}
-
-std::map<std::string, std::string> Client::getRequestMap( void )
-{
-    return (_requestMap);
-}
-
-
-
-// Getters and Setters
-
-ServerInfo& Client::getServerInfo()
-{
-    return _serverInfo;
-}
-
-std::string Client::getFileBuffer()
-{
-    return _fileBuffer;
-}
-
-
-std::string    Client::getReadBuffer( void )
-{
-    return (_readBuffer);
-}
-
-void Client::setFd ( int fd )
-{
-    _fd = fd;
-}
-
-int Client::getFd()
-{
-    return (_fd);
-}
-
-size_t  Client::getWritePos()
-{
-    return (_writePos);
-}
-
-void    Client::setWritePos( size_t pos )
-{
-    _writePos = pos;
-}
-
-std::string Client::getWriteBuffer()
-{
-    return (_writeBuffer);
-}
-
-void    Client::setWriteBuffer( std::string buffer )
-{
-    _writeBuffer = buffer;
-}
-
-void    Client::setFileBuffer(std::string buffer)
-{
-    _fileBuffer = buffer;
-}
-
-int Client::getState()
-{
-    return (_state);
-}
-
-void Client::setState (const int state)
-{
-    _state = state;
-}
-
-void Client::setStatusCode( const int statusCode )
-{
-    std::vector<int>     statusCheck = {400, 401, 404, 405, 500, 503};
-    if (std::find(statusCheck.begin(), statusCheck.end(), statusCode) != statusCheck.end()){
-        setState(ERROR);
-    }
-    _statusCode = statusCode;
 }
 
 void    Client::parseBuffer ( void )
@@ -204,6 +182,11 @@ void    Client::printRequestMap( void )
         std::cout << pair.first << ":" << pair.second << std::endl;
     }
     std::cout << "\n------- Content of header map -------\n";
+}
+
+std::map<std::string, std::string> Client::getRequestMap( void )
+{
+    return (_requestMap);
 }
 
 void   Client::isValidMethod( std::string method )
@@ -373,6 +356,12 @@ void    Client::resetClientData( void )
     _state = START;
     _fileFd = -1;
     // Is all added?? -- Sven
+}
+
+
+std::string Client::getFileBuffer()
+{
+    return _fileBuffer;
 }
 
 void Client::setFileFd(int fd)

@@ -1,114 +1,72 @@
 #include "../includes/Server.hpp"
 
-Server::Server() {}
+// int _shutdownRequest = false;
+
+Server::Server() {
+
+}
 Server::~Server() {}
-Server::Server(const Server &rhs)
+// Server::Server(const Server &rhs) {}
+// Server& Server::operator=(const Server& rhs) {}
+
+
+int     Server::getServerSocket()
 {
-    _servers = rhs._servers;
-    _pollFds = rhs._pollFds;
-    _clients = rhs._clients;
+    return (_serverSocket);
 }
 
-Server& Server::operator=(const Server& rhs)
+/*  CREATES A SERVERSOCKET, INITIALIZES THE POLLFD ARRAY
+    AND STARTS LISTENING FOR CONNECTIONS    */
+
+void    Server::createServerSocket()
 {
-    if (this != &rhs)
-        _servers = rhs._servers;
-        _pollFds = rhs._pollFds;
-        _clients = rhs._clients;
-    return (*this);
-}
-
-/*********  Hardcoded serverblocks for testing purposes   ************/
-
-void Server::createServerInstances()
-{
-    ServerInfo server1;
-    server1.setPort(4040);
-    server1.setIndex("index.html");
-    server1.setRoot("./html");
-    server1.setHost("127.0.0.1");
-
-    ServerInfo server2;
-    server2.setPort(8080);
-    server2.setIndex("index.html");
-    server2.setRoot("./html1");
-    server2.setHost("127.0.0.1");
-
-    _servers.push_back(server1);
-    _servers.push_back(server2);
-}
-
-/*********************************************************************/
-
-// Adds a new server instance to the server list
-
-void    Server::addServer(const ServerInfo& serverInfo)
-{
-    _servers.push_back(serverInfo);
-}
-
-// Creates server sockets and adds them to the poll loop
-
-void Server::createServerSockets()
-{
-    struct sockaddr_in address;
-    int addrLen = sizeof(address);
+    int addrLen = sizeof(_address);
+    struct pollfd serverFd;
     int opt = 1;
 
-    for (ServerInfo& serverInfo : _servers)
+    if ((_serverSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
-        int serverSocket;
-
-        if ((serverSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-        {
-            std::cerr << RED << "Socket creation failed: " << strerror(errno) << RESET << std::endl;
-            exit(EXIT_FAILURE);
-        }
-        std::cout << GREEN << "Socket created successfully: " << serverSocket << RESET << std::endl;
-
-        setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt));
-
-        address.sin_family = AF_INET;
-        address.sin_addr.s_addr = inet_addr(serverInfo.getHost().c_str());
-        address.sin_port = htons(serverInfo.getPort());
-
-        if (bind(serverSocket, reinterpret_cast<struct sockaddr*>(&address), addrLen) < 0)
-        {
-            std::cerr << RED << "Bind failed: " << strerror(errno) << RESET << std::endl;
-            close(serverSocket);
-            exit(EXIT_FAILURE);
-        }
-        std::cout << GREEN <<"Bind successful on port: " << serverInfo.getPort() << RESET << std::endl;
-
-        if (listen(serverSocket, serverInfo.getMaxClient()) < 0)
-        {
-            std::cerr << RED << "Listen failed: " << strerror(errno) << RESET << std::endl;
-            close(serverSocket);
-            exit(EXIT_FAILURE);
-        }
-        std::cout << GREEN << "Listening on port: " << serverInfo.getPort() << GREEN << std::endl;
-
-        struct pollfd serverFd;
-        serverFd.fd = serverSocket;
-        serverFd.events = POLLIN;
-        _pollFds.push_back(serverFd);
-
-        serverInfo.setServerFd(serverSocket);
+        std::cerr << RED << "Socket failed: " << strerror(errno) << RESET << std::endl;
+        exit(EXIT_FAILURE);
     }
+    setsockopt(getServerSocket(), SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt));
+
+    _address.sin_family = AF_INET; // address family
+    _address.sin_addr.s_addr = INADDR_ANY; // accepts connections from any IP on the host
+    _address.sin_port = htons(PORT); // ensures the port number is correctly formatted
+
+    if (bind(_serverSocket, reinterpret_cast<struct sockaddr*>(&_address), addrLen) < 0)
+    {
+        std::cerr << RED << "Bind failed: " << strerror(errno) << RESET << std::endl;
+        close(_serverSocket);
+        exit(EXIT_FAILURE);
+    }
+
+    if (listen(_serverSocket, MAX_CLIENTS) < 0)
+    {
+        std::cerr << RED << "Listen failed: " << strerror(errno) << RESET << std::endl;
+        close(_serverSocket);
+        exit(EXIT_FAILURE);
+    }
+
+    serverFd.fd = _serverSocket;
+    serverFd.events = POLLIN;
+    _pollFds.push_back(serverFd);
 }
 
-// Creates the poll loop to handle events in a non-blocking manner
+/*  START A POLL LOOP AND CHECKS FOR REVENTS THAT TRIGGERED
+    POLLIN
+    - IF IT'S A SERVER SOCKET A NEW CLIENT SOCKET GETS CREATED AND ADDED TO THE POLLFD ARRAY
+    - IF IT'S A CLIENT SOCKET 'x' GET READ FROM THE FD AND STORED IN A STRING UNTIL THE REQUEST IS COMPLETE
+    - IF IT'S A FILE FD, READ FROM THE FILE UNTILL WE REACH EOF 
+    POLLOUT
+    - SEND DATA */
+     
 
-void Server::createPollLoop()
+void    Server::createPollLoop()
 {
     while (true)
     {
-        if (_pollFds.empty())
-        {
-            std::cerr << RED << "No file descriptors to poll." << RESET << std::endl;
-            break;
-        }
-
         int pollSize = poll(_pollFds.data(), _pollFds.size(), -1);
 
         if (pollSize == -1)
@@ -118,12 +76,28 @@ void Server::createPollLoop()
             exit(EXIT_FAILURE);
         }
 
+        // checkTimeout(TIMEOUT);
+
+        // for (size_t i = 0; i < _pollFds.size(); ++i)
+        // {
+        //     if (_pollFds[i].revents & POLLIN)
+        //     {
+        //         if (_pollFds[i].fd == _serverSocket)
+        //             acceptConnection();
+        //         else
+        //             handleClientData(i);
+        //     }
+        //     else if (_pollFds[i].revents & POLLOUT)
+        //         sendClientData(i);
+
         for (size_t i = 0; i < _pollFds.size(); ++i)
         {
+
+            std::cout << "FD: " << _pollFds[i].fd << " revent: " << _pollFds[i].revents << std::endl;
             if (_pollFds[i].revents & POLLIN)
             {
-                if (i < _servers.size())
-                    acceptConnection(_pollFds[i].fd);
+                if (_pollFds[i].fd == _serverSocket)
+                    acceptConnection();
                 else if (_clients.count(_pollFds[i].fd))
                     handleClientData(i);
                 else
@@ -135,13 +109,10 @@ void Server::createPollLoop()
                 else
                     handleFdWrite(i);
             }
-            else if (_pollFds[i].revents & POLLOUT)
-                sendClientData(i);
         }
     }
 
 }
-
 
 void Server::handleFileRead(size_t index)
 {
@@ -156,7 +127,7 @@ void Server::handleFileRead(size_t index)
             {
                 for (auto& value : _pollFds)
                 {
-                    if (value.fd == it->second.getFd())
+                    if (value.fd == it->second.getFd()){
                         value.events = POLLOUT;
                         it->second.setState(WRITING);
                     }
@@ -373,6 +344,27 @@ void Server::openFile(Client &client)
     client.setState(READING);
 }
 
+// void    Server::readFile(Client &client)
+// {
+//     int         fileFd;      
+//     std::string file;
+
+//     client.setStatusCode(200);
+//     file =  client.getRequestMap().at("Path");
+//     if (file == "/")
+//         file += "index.html";
+//     file = "./html" + file;
+//     fileFd = open(file.c_str(), O_RDONLY);
+//     if (fileFd < 0)
+//     {
+//         client.setStatusCode(404);
+//         std::cerr << "failed to open file: " << file << ": " << strerror(errno) << std::endl;
+//     }
+//     client.setFd(fileFd);
+//     client.readNextChunk();
+//     // close(fileFd);
+// }
+
 void    Server::checkTimeout(int time)
 {
     std::time_t currentTime = std::time(nullptr);
@@ -390,21 +382,22 @@ void    Server::checkTimeout(int time)
     }
 }
 
-void Server::shutdownServer()
+void    Server::shutdownServer()
 {
-    // Close all client connections first
-    while (_pollFds.size() > _servers.size())
-        closeConnection(_servers.size());
-    // Close all server sockets
-    for (auto& serverInfo : _servers)
-    {
-        if (serverInfo.getServerFd() != -1)
-            close(serverInfo.getServerFd());
-    }
-    
-    // For now just an insurance to. Probably redundant
-    _pollFds.clear();
-    _clients.clear();
+    while (_pollFds.size() > 1)
+        closeConnection(1);
+    if (_serverSocket != -1)
+    close(_serverSocket);
+}
+
+void Server::addClient(int fd)
+{
+    _clients.emplace(fd, Client(fd));
+}
+
+Client& Server::getClient(int fd)
+{
+    return (_clients.at(fd));
 }
 
 void Server::removeClient(int fd)
@@ -430,27 +423,5 @@ void Server::removePollFd( int fd )
     }
 
 }
-// Retrieve the ServerInfo object corresponding to a given file descriptor
-
-ServerInfo& Server::getServerInfoByFd(int fd)
-{
-    for (size_t i = 0; i < _servers.size(); ++i)
-    {
-        if (_servers[i].getServerFd() == fd)
-            return _servers[i];
-    }
-    throw std::runtime_error("ServerInfo with the given fd not found");
-}
-
-void Server::addClient(int fd, ServerInfo& serverInfo)
-{
-    _clients.emplace(fd, Client(fd, serverInfo));
-}
-
-Client& Server::getClient(int fd)
-{
-    return _clients.at(fd);
-}
-
 
 

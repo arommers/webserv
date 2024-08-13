@@ -2,14 +2,14 @@
 
 #include "../includes/Client.hpp"
 #include "../includes/Cgi.hpp" 
-#include "../includes/ServerInfo.hpp"
 
 class Cgi;
 
 class Server
 {
     private:
-        std::vector <ServerInfo>        _servers;
+        int                             _serverSocket;
+        struct sockaddr_in              _address;
         std::vector<struct pollfd>      _pollFds;
         std::unordered_map<int, Client> _clients;
         Cgi                             _cgi;
@@ -20,12 +20,10 @@ class Server
         Server& operator=(const Server& rhs);
         ~Server();
 
-        void    createServerInstances();
 
-        void                        addServer(const ServerInfo& serverInfo);
-        void                        createServerSockets();
+        void                        createServerSocket();
         void                        createPollLoop();
-        void                        acceptConnection(int serverSocket);
+        void                        acceptConnection();
         void                        closeConnection(size_t index);
         void                        shutdownServer();
         void                        handleClientData(size_t index);
@@ -38,13 +36,16 @@ class Server
         int                         getServerSocket();
         std::vector<struct pollfd>  getPollFds();
         void                        removePollFd( int fd );
-        void                        handleClientRequest();
-        int                         checkFile(std::string &file);
-        std::string                 readFile(Client &client);
-        void                        openFile(Client& client);
-        void                        handleFileRead(size_t index);
-        ServerInfo&                 getServerInfoByFd(int fd);
 
-        // currently not implemented
-        // void        handleClientRequest(Client &client);
+        void            handleClientRequest();
+        int             checkFile(std::string &file);
+        std::string     readFile(Client &client);
+        void            openFile(Client& client);
+        void            handleClientRequest(Client &client);
+
+        // void    handleGetRequest(Client &client);
+        // void    handlePostRequest(Client &client);
+        // void    handleDeleteRequest(Client &client);
+
+        void    handleFileRead(size_t index);
 };
