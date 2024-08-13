@@ -15,13 +15,11 @@
 #include <csignal>
 #include <fstream>        // Temporary for testing  
 #include <algorithm>
-#include <string>
+#include <string> // Needed? cstring or string library
 #include <sstream>
-#include <ctime>
 #include <regex>
 
-
-
+#include "ServerInfo.hpp"
 
 enum    clientState
 {
@@ -31,8 +29,6 @@ enum    clientState
     ERROR = 3, // Some error occured
     READY = 4 // Reading/Writing is finished and the request can be parsed
 };
-
-
 
 #define RESET   "\033[0m"
 #define RED     "\033[31m"
@@ -64,17 +60,17 @@ class Client
         int                                     _requestPipe[2];
         int                                     _responsePipe[2];
         
+        ServerInfo                              _serverInfo;
 
-        void    errorCheckRequest( void );
         void    isValidMethod( std::string method );
         void    isValidPath( std::string path );
         void    isValidVersion( std::string version );
 
     public:
         Client();
-        Client(int fd);
-        Client(const Client& rhs);
-        Client& operator=(const Client& rhs); // Update!
+        Client(int fd, ServerInfo& serverInfo);
+        // Client(const Client& rhs);
+        // Client& operator=(const Client& rhs);
         ~Client();
 
         void                                    addToBuffer( std::string bufferNew );
@@ -108,6 +104,7 @@ class Client
         int*                                    getRequestPipe();
         int*                                    getReponsePipe();
         std::string                             readFile ( std::string file );
+        ServerInfo&                             getServerInfo();
 };
 
 std::string trimWhiteSpace(std::string& string);

@@ -1,49 +1,83 @@
 #include "../includes/ServerInfo.hpp"
 
-// Constructor
 ServerInfo::ServerInfo() {}
-
-// Destructor
-ServerInfo::~ServerInfo() {}
-
-// --- Setter ---
-void	ServerInfo::setName(const std::string &newName)
+ServerInfo::ServerInfo(int port, std::string& host, int maxClient, std::string& root, std::string& index)
 {
-	_serverName = newName;
+    _port = port;
+    _serverFd = -1;
+    _maxClient = maxClient;
+    _host = host;
+    _root = root;
+    _index = index;
 }
 
-void	ServerInfo::setHost(const std::string &newHost)
+ServerInfo::~ServerInfo(){}
+
+int ServerInfo::getPort() const
 {
-	_host = newHost;
+    return _port;
 }
 
-void	ServerInfo::setPort(const std::vector<int> &newPort)
+int ServerInfo::getMaxClient() const
 {
-	_ports = newPort;
+    return _maxClient;
 }
 
-void	ServerInfo::setRoot(const std::string &newRoot)
+std::string ServerInfo::getHost() const
 {
-	_rootPath = newRoot;
+    return _host;
+}
+std::string ServerInfo::getRoot() const
+{
+    return _root;
 }
 
-// --- Getter ---
-std::string	ServerInfo::getName() const
+std::string ServerInfo::getIndex() const
 {
-	return _serverName;
+    return _index;
 }
 
-std::string	ServerInfo::getHost() const
+int ServerInfo::getServerFd() const
 {
-	return _host;
+    return _serverFd;
 }
 
-std::vector<int> ServerInfo::getPort() const
+void ServerInfo::addLocation(Location& location)
 {
-	return _ports;
+    _locations.push_back(location);
 }
 
-std::string	ServerInfo::getRoot() const
+void ServerInfo::setServerFd(int fd)
 {
-	return _rootPath;
+    _serverFd = fd;
+}
+
+void ServerInfo::setPort(int port)
+{
+    _port = port;
+}
+
+void ServerInfo::setMaxClient(int maxClient)
+{
+    _maxClient = maxClient;
+}
+
+void ServerInfo::setHost(const std::string& host)
+{
+    _host = host;
+}
+
+void ServerInfo::setRoot(const std::string& root)
+{
+    _root = root;
+}
+
+void ServerInfo::setIndex(const std::string& index)
+{
+    _index = index;
+}
+
+std::vector<Location> ServerInfo::getLocations()
+{
+    return _locations;
 }
