@@ -1,0 +1,11 @@
+server {
+    root html;
+    cgi_allowed off;
+    location /cgi-bin {
+        cgi_allowed on;
+    }
+    location /images {
+        root html/img;
+    }
+}
+/images/ben.jpg > html/img/ben.jpg

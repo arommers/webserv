@@ -190,25 +190,49 @@ void Server::handleClientData(size_t index)
 
 void Server::openFile(Client &client)
 {
-    int fileFd;
+    int         fileFd;
     std::string file;
-
-    // if Error call new function that builds an error Path.
-    // When does the error get detected? if after the path building
-    // needs to be redone after trying to open the original file request
+    ServerInfo& serverInfo = client.getServerInfo();
+    bool        locationFound = false;
 
     file = client.getRequestMap().at("Path");
-    if (file == "/")
-        file += client.getServerInfo().getIndex();
-    file = client.getServerInfo().getRoot() + file;
+
+    for (const Location& location : serverInfo.getLocations())
+    {
+        // Check if the file path starts with the location path
+        if (file.find(location.getPath()) == 0)
+        {
+            file = location.getRoot() + file.substr(location.getPath().length());
+            // Next check is not complete.
+            // We need to check auto-index
+            // If auto-index == false, server location index?
+            if (file.back() == '/')
+                file += location.getIndex(); // Use the index if the path ends with "/"
+            locationFound = true;
+            break;
+        }
+    }
+
+    // If no matching location was found, use the server root
+    // I'm not sure about this part yet, maybe we just serve an error page
+    if (!locationFound)
+    {
+        if (file == "/")
+            file += serverInfo.getIndex();
+        file = serverInfo.getRoot() + file;
+    }
 
     std::cout << "Constructed file path: " << file << std::endl;
+
     fileFd = open(file.c_str(), O_RDONLY);
     if (fileFd < 0)
-    //  build path to 404 file, open it and add fd to Poll loop
+    {
         client.setStatusCode(404); 
+        // call function to open error file
+    }
     else
     {
+        // If file is successfully opened, add it to the poll loop
         client.setFileFd(fileFd);
         struct pollfd filePollFd;
         filePollFd.fd = fileFd;
@@ -216,6 +240,35 @@ void Server::openFile(Client &client)
         _pollFds.push_back(filePollFd);
     }
 }
+
+// void Server::openFile(Client &client)
+// {
+//     int fileFd;
+//     std::string file;
+
+//     // if Error call new function that builds an error Path.
+//     // When does the error get detected? if after the path building
+//     // needs to be redone after trying to open the original file request
+
+//     file = client.getRequestMap().at("Path");
+//     if (file == "/")
+//         file += client.getServerInfo().getIndex();
+//     file = client.getServerInfo().getRoot() + file;
+
+//     std::cout << "Constructed file path: " << file << std::endl;
+//     fileFd = open(file.c_str(), O_RDONLY);
+//     if (fileFd < 0)
+//     //  build path to 404 file, open it and add fd to Poll loop
+//         client.setStatusCode(404); 
+//     else
+//     {
+//         client.setFileFd(fileFd);
+//         struct pollfd filePollFd;
+//         filePollFd.fd = fileFd;
+//         filePollFd.events = POLLIN;
+//         _pollFds.push_back(filePollFd);
+//     }
+// }
 
 void Server::handleFileRead(size_t index)
 {
