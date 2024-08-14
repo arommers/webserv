@@ -39,19 +39,33 @@ void Cgi::runCGI( Server& server, Client& client)
     {
         if (client.getRequestMap().at("Method") == "POST"){    
             createPipe(server, client, client.getRequestPipe());
-            writeBodyToPipe(server, client);
+            std::cout << "Requestpipe read+write: " << client.getRequestPipe()[0] << " " << client.getRequestPipe()[1] << std::endl;
+            client.setWriteBuffer(client.getRequestMap().at("Body"));
+            client.setReadWriteFd(client.getRequestPipe()[1]);
+            std::cout << "Set readwritefd to: " << client.getReadWriteFd() << std::endl;
+            std::cout << "Size of poll before: " << server.getPollFds().size() << std::endl;
+            // server.addPollFd(client.getRequestPipe()[1], POLLOUT);
+            struct pollfd pollFd;
+            pollFd.fd = client.getRequestPipe()[1];
+            pollFd.events = POLLOUT;
+            server.addPollFd(pollFd);
+            std::cout << "Size of poll after : " << server.getPollFds().size() << std::endl;
+            client.setState(WRITING);
+            return ;
         }
-        createPipe(server, client, client.getReponsePipe());
-
-        client.setWriteBuffer(client.getRequestMap().at("Body"));
-        client.setReadWriteFd(client.getRequestPipe()[1]);
-        server.addPollFd(client.getRequestPipe()[1], POLLOUT); 
-        
+        else
+            client.setState(READY); 
 
         return ;
     }
-    else if ((client.getState() == READY))
+    else if ((client.getState() == READY)){
+        std::cout << "Creating reponse pipe!!!!!!!!!!!!\n";
+        char buf[5000];
+        int readbytes = read(client.getRequestPipe()[0], buf, 5000);
+        std::cout << "In Request pipe: " << client.getRequestPipe()[0] << std::endl << buf << std::endl;
+        createPipe(server, client, client.getReponsePipe());
         createFork(server, client);
+    }
 }
 
 
@@ -76,9 +90,6 @@ char** Cgi::createEnv(Server& server, Client& client)
 
 void Cgi::createPipe(Server& server, Client& client, int* fdPipe)
 {
-    struct pollfd pipeFdRead;
-    struct pollfd pipeFdWrite;
-
     if (pipe(fdPipe) == -1){
         perror("pipe");
         exit(1);
@@ -97,7 +108,8 @@ void Cgi::readClosePipes(Server& server, Client& client)
     }
     buffer[bytesRead] = '\0';
     client.setFileBuffer(buffer);
-    client.createResponse();
+    // std::cout << "Buffer: " << buffer << std::endl;
+    // client.createResponse();
     
     // server.removePollFd(client.getRequestPipe()[0]);
     // server.removePollFd(client.getRequestPipe()[1]);
@@ -109,23 +121,11 @@ void Cgi::readClosePipes(Server& server, Client& client)
     // close (client.getReponsePipe()[1]);
 }
 
-void Cgi::writeBodyToPipe(Server& server, Client& client)
-{
-    int             writeFd;
-    struct pollfd   pollFd;
-
-    writeFd = write(client.getRequestPipe()[1], client.getRequestMap().at("Body").c_str(), client.getRequestMap().at("Body").length());
-    if (writeFd < 0){
-        perror("write");
-        exit(1);
-    }
-}
-
 void Cgi::createFork(Server& server, Client& client)
 {
     pid_t   pid;
 
-   
+    std::cout << "At CreateFork\n";
     pid = fork();
     if (pid == -1){
         perror("fork");
@@ -140,6 +140,7 @@ void Cgi::createFork(Server& server, Client& client)
         _childForks.push_back(pid);
         waitpid(pid, nullptr, 0); // Is this correct? Will the server hang if a child is hanging?
         readClosePipes(server, client);
+        client.setState(RESPONSE);
     }
 }
 

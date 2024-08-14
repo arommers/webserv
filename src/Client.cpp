@@ -325,6 +325,7 @@ void Client::writeNextChunk()
     int bytesWritten;
 
     buffer = getWriteBuffer().substr(0,BUFFER_SIZE);
+    std::cout << "Going to write to pipe: " << getFd() << std::endl << buffer << std::endl;
     bytesWritten = write(getFd(), buffer.c_str(), buffer.length());
     if (bytesWritten < 0)
     {
@@ -334,10 +335,14 @@ void Client::writeNextChunk()
         _fd = -1;
         return ;
     }
-    getWriteBuffer().erase(0, BUFFER_SIZE);
+    std::cout << "Write buffer before: " << getWriteBuffer() << std::endl;
+    _writeBuffer.erase(0, BUFFER_SIZE);
+    std::cout << "Write buffer after: " << getWriteBuffer() << std::endl;
+
 
     if (getWriteBuffer().empty())
     {
+        std::cout  << "Buffer empty\n";
         close(_readWriteFd);
         setState(READY);
     }
@@ -353,7 +358,7 @@ void    Client::resetClientData( void )
     _responseMap.clear();
     _statusCode = 0;
     _fd = -1;
-    _state = START;
+    _state = PARSE;
     _readWriteFd = -1;
     // Is all added?? -- Sven
 }

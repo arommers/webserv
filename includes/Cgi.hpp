@@ -25,7 +25,6 @@ public:
     void    runCGI( Server& server, Client& client);
     char**  createEnv(Server& server, Client& client );
     void    createPipe(Server& server, Client& client, int* fdPipe);
-    void    writeBodyToPipe(Server& server, Client& client);
     void    createFork(Server& server, Client& client);
     void    launchScript(Server& server, Client& client);
     void    readClosePipes(Server& server, Client& client);

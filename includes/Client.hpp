@@ -25,11 +25,13 @@
 
 enum    clientState
 {
-    START = 0,
-    READING = 1, // Reading from file/pipe
-    WRITING = 2, // Writing to file or pipe
-    ERROR = 3, // Some error occured
-    READY = 4 // Reading/Writing is finished and the request can be parsed
+    PARSE = 0,
+    START = 1,
+    READING = 2, // Reading from file/pipe
+    WRITING = 3, // Writing to file or pipe
+    ERROR = 4, // Some error occured
+    READY = 5, // Reading/Writing is finished and the process can continue
+    RESPONSE = 6 // Everything has been done and the reponse can be build
 };
 
 
@@ -50,7 +52,7 @@ class Client
 {
     private:
         int                                     _fd = -1;
-        int                                     _state = START;
+        int                                     _state = PARSE;
         int                                     _readWriteFd = -1;
         std::string                             _readBuffer;
         std::string                             _writeBuffer;
