@@ -206,8 +206,15 @@ void Server::openFile(Client &client)
             // Next check is not complete.
             // We need to check auto-index
             // If auto-index == false, server location index?
-            if (file.back() == '/')
+            if (file.back() == '/' && location.getAutoIndex() == true)
+            {
+                client.setWriteBuffer(generateFolderContent(file));
+                return;
+            }
+
+            // else if (file.back() == '/')  * check here if there is an index specified within the location block
                 file += location.getIndex(); // Use the index if the path ends with "/"
+            // else Error is found so set the Error status to 404
             locationFound = true;
             break;
         }
@@ -239,6 +246,48 @@ void Server::openFile(Client &client)
         filePollFd.events = POLLIN;
         _pollFds.push_back(filePollFd);
     }
+}
+
+std:: string Server::generateFolderContent(std::string path)
+{
+    std::ostringstream  html;
+    struct dirent       *entry;
+    DIR                 *folder;
+    
+    html << "<!DOCTYPE html>";  // Include the DOCTYPE declaration
+    html << "<html><head>";
+    html << "<meta charset=\"UTF-8\">";  // Define the character set
+    html << "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">";  // Responsive design
+    html << "<title>Index of " << path << "</title>";  // Set the title
+    html << "</head><body>";
+    html << "<h1>Index of " << path << "</h1>";
+    html << "<ul>";
+
+    if (folder = opendir(path.c_str()))
+    {
+        while (entry = readdir(folder))
+        {
+            std::string name = entry->d_name;
+            
+            if (name == "." || name == "..")
+                continue;
+
+            std::string fullPath = path + (path.back() == '/' ? "" : "/") + name;
+
+            if (entry->d_type == DT_DIR)
+                name += "/";
+            
+            html << "<li><a href=\"" << name << "\">" << name << "</a></li>";
+        }
+        closedir(folder);
+    }
+    else
+        html << "<li>Unable to open directory</li>";
+    
+    html << "<ul>";
+    html << "</body></hmtl>";
+
+    return html.str();
 }
 
 // void Server::openFile(Client &client)

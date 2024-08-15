@@ -17,6 +17,7 @@
 #include <csignal>
 #include <fstream>        // Temporary for testing  
 #include "ServerInfo.hpp"
+#include <dirent.h>       // Provides functions for using DIR directory stream like opendir(), readdir()
 
 
 #define RESET   "\033[0m"

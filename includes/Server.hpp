@@ -33,6 +33,7 @@ class Server
         ServerInfo& getServerInfoByFd(int fd);
         void        addClient(int fd, ServerInfo& serverInfo);
         Client&     getClient(int fd);
+        std:: string Server::generateFolderContent(std::string path);
 
         // currently not implemented
         // void        handleClientRequest(Client &client);

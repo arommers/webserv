@@ -30,6 +30,11 @@ Location& Location::operator=(const Location& rhs)
 
 Location::~Location() {}
 
+bool    Location::getAutoIndex() const
+{
+    return _autoIndex;
+}
+
 std::string Location::getPath() const
 {
     return _path;
@@ -48,6 +53,11 @@ std::string Location::getRoot() const
 std::string Location::getIndex() const
 {
     return _index;
+}
+
+void    Location::setAutoindex(bool autoindex)
+{
+    _autoIndex = autoindex;
 }
 
 void Location::setPath(std::string& path)

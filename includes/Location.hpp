@@ -9,6 +9,7 @@ class Location
         std::string _path; // This relates to the part of the url thats being requested >> location "/" {}
         std::string _root; // Local pathing to what directory should be served
         std::string _index; // what specific file should be served
+        bool        _autoIndex;
         std::vector<std::string> _allowedMethods;
 
     public:
@@ -18,6 +19,7 @@ class Location
         Location& operator=(const Location& rhs);
         ~Location();
 
+        bool getAutoIndex() const;
         std::string getPath() const;
         std::string getRoot() const;
         std::string getIndex() const;
@@ -26,5 +28,6 @@ class Location
         void setPath(std::string& path);
         void setRoot(std::string& root);
         void setIndex(std::string& index);
+        void setAutoindex(bool autoindex);
         void setAllowedMethods(std::vector<std::string>& methods);
 };
