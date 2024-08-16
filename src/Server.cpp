@@ -265,33 +265,27 @@ void Server::openFile(Client &client)
     int fileFd;
     std::string file;
     
-    if (client.getState() != READING)
+    file = client.getRequestMap().at("Path");
+    if (file == "/")
+        file += "index.html";
+    file = "./html" + file;
+    
+    fileFd = open(file.c_str(), O_RDONLY);
+    if (fileFd < 0)
     {
-        file = client.getRequestMap().at("Path");
-        if (file == "/")
-            file += "index.html";
-        file = "./html" + file;
-        
-        fileFd = open(file.c_str(), O_RDONLY);
-        if (fileFd < 0)
-        {
-            client.setStatusCode(404);
-            std::cerr << "Failed to open file: " << file << ": " << strerror(errno) << std::endl;
-            return;
-        }
-
-        client.setReadWriteFd(fileFd);
-
-        struct pollfd pollFd;
-        pollFd.fd = fileFd;
-        pollFd.events = POLLIN;
-        _pollFds.push_back(pollFd);
-
-        client.setState(READING);
+        client.setStatusCode(404);
+        std::cerr << "Failed to open file: " << file << ": " << strerror(errno) << std::endl;
+        return;
     }
-    else if (client.getState() == READY)
-        client.setState(RESPONSE);
 
+    client.setReadWriteFd(fileFd);
+
+    struct pollfd pollFd;
+    pollFd.fd = fileFd;
+    pollFd.events = POLLIN;
+    _pollFds.push_back(pollFd);
+
+    client.setState(READING);
 }
 
 void    Server::checkTimeout(int time)
