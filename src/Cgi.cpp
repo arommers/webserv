@@ -110,7 +110,6 @@ void Cgi::readClosePipes(Server& server, Client& client)
 
 void Cgi::createFork(Server& server, Client& client)
 {
-    std::cout << "At CreateFork\n";
     _pid = fork();
     if (_pid == -1){
         perror("fork");

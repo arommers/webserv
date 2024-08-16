@@ -20,7 +20,6 @@ class Server
         Server& operator=(const Server& rhs);
         ~Server();
 
-        int                         test_i = 0;
         void                        createServerSocket();
         void                        createPollLoop();
         void                        acceptConnection();
@@ -48,5 +47,6 @@ class Server
         // void    handlePostRequest(Client &client);
         // void    handleDeleteRequest(Client &client);
 
-        void    handleFileRead(size_t index);
+        void    handleFileRead( size_t index );
+        void    removePipe( size_t index );
 };

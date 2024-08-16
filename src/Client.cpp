@@ -328,7 +328,6 @@ void Client::writeNextChunk()
 
     buffer = getWriteBuffer().substr(0,BUFFER_SIZE);
     bytesWritten = write(getReadWriteFd(), buffer.c_str(), buffer.length());
-    std::cout << "Bytes written: " << bytesWritten << std::endl;
     if (bytesWritten < 0)
     {
         std::cerr << "Failed to write to fd: " << strerror(errno) << std::endl;
