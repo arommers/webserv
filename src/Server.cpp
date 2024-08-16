@@ -1,4 +1,5 @@
 #include "../includes/Server.hpp"
+#include "../includes/Config.hpp"
 
 Server::Server() {}
 Server::~Server() {}
@@ -20,23 +21,23 @@ Server& Server::operator=(const Server& rhs)
 
 /*********  Hardcoded serverblocks for testing purposes   ************/
 
-void Server::createServerInstances()
-{
-    ServerBlock server1;
-    server1.setPort(4040);
-    server1.setIndex("index.html");
-    server1.setRoot("./html");
-    server1.setHost("127.0.0.1");
+// void Server::createServerInstances()
+// {
+//     ServerBlock server1;
+//     server1.setPort(4040);
+//     server1.setIndex("index.html");
+//     server1.setRoot("./html");
+//     server1.setHost("127.0.0.1");
 
-    ServerBlock server2;
-    server2.setPort(8080);
-    server2.setIndex("index.html");
-    server2.setRoot("./html1");
-    server2.setHost("127.0.0.1");
+//     ServerBlock server2;
+//     server2.setPort(8080);
+//     server2.setIndex("index.html");
+//     server2.setRoot("./html1");
+//     server2.setHost("127.0.0.1");
 
-    _servers.push_back(server1);
-    _servers.push_back(server2);
-}
+//     _servers.push_back(server1);
+//     _servers.push_back(server2);
+// }
 
 /*********************************************************************/
 
@@ -207,25 +208,76 @@ void Server::handleClientData(size_t index)
 
 void Server::openFile(Client &client)
 {
-    int fileFd;
+    int         fileFd;
     std::string file;
-
-    // if Error call new function that builds an error Path.
-    // When does the error get detected? if after the path building
-    // needs to be redone after trying to open the original file request
+    ServerBlock& serverBlock = client.getServerBlock();
+    bool        locationFound = false;
 
     file = client.getRequestMap().at("Path");
-    if (file == "/")
-        file += client.getServerBlock().getIndex();
-    file = client.getServerBlock().getRoot() + file;
+
+    for (const Location& location : serverBlock.getLocations())
+    {
+        // Check if the file path starts with the location path
+        if (file.find(location.getPath()) == 0)
+        {
+            std::string locationRoot = location.getRoot();
+            std::string locationPath = location.getPath();
+            
+            // Ensure no trailing slash on root before appending the file
+            if (!locationRoot.empty() && locationRoot.back() == '/')
+                locationRoot.pop_back();
+            
+            // Avoid double slash by removing the first slash if present
+            if (!locationPath.empty() && locationPath.back() == '/' && file[locationPath.length()] == '/')
+                file = locationRoot + file.substr(locationPath.length() + 1);
+            else
+                file = locationRoot + file.substr(locationPath.length());
+
+            if (file.back() == '/' && location.getAutoindex() == true)
+            {
+                client.setWriteBuffer(generateFolderContent(file));
+                return;
+            }
+            if (file.back() == '/' && !location.getIndex().empty())
+                file += location.getIndex();
+
+            locationFound = true;
+            break;
+        }
+    }
+
+    // If no matching location was found, use the server root
+    // ************* We probably just want to serve a 404 error here ****************
+    if (!locationFound)
+    {
+        if (file.back() == '/')
+            file += serverBlock.getIndex();
+
+        std::string serverRoot = serverBlock.getRoot();
+        if (!serverRoot.empty() && serverRoot.back() == '/')
+            serverRoot.pop_back();
+
+        if (file.front() == '/')
+            file = serverRoot + file;
+        else
+            file = serverRoot + "/" + file;
+    }
+
+    // Normalize path: Replace multiple slashes with a single slash
+    // not sure if this is still necessary
+    file = std::regex_replace(file, std::regex("//+"), "/");
 
     std::cout << "Constructed file path: " << file << std::endl;
+
     fileFd = open(file.c_str(), O_RDONLY);
     if (fileFd < 0)
-    //  build path to 404 file, open it and add fd to Poll loop
+    {
         client.setStatusCode(404); 
+        // call function to open error file
+    }
     else
     {
+        // If file is successfully opened, add it to the poll loop
         client.setFileFd(fileFd);
         struct pollfd filePollFd;
         filePollFd.fd = fileFd;
@@ -233,6 +285,77 @@ void Server::openFile(Client &client)
         _pollFds.push_back(filePollFd);
     }
 }
+
+std:: string Server::generateFolderContent(std::string path)
+{
+    std::ostringstream  html;
+    struct dirent       *entry;
+    DIR                 *folder;
+    
+    html << "<!DOCTYPE html>";  // Include the DOCTYPE declaration
+    html << "<html><head>";
+    html << "<meta charset=\"UTF-8\">";  // Define the character set
+    html << "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">";  // Responsive design
+    html << "<title>Index of " << path << "</title>";  // Set the title
+    html << "</head><body>";
+    html << "<h1>Index of " << path << "</h1>";
+    html << "<ul>";
+
+    if (folder == opendir(path.c_str()))
+    {
+        while (entry == readdir(folder))
+        {
+            std::string name = entry->d_name;
+            
+            if (name == "." || name == "..")
+                continue;
+
+            std::string fullPath = path + (path.back() == '/' ? "" : "/") + name;
+
+            if (entry->d_type == DT_DIR)
+                name += "/";
+            
+            html << "<li><a href=\"" << name << "\">" << name << "</a></li>";
+        }
+        closedir(folder);
+    }
+    else
+        html << "<li>Unable to open directory</li>";
+    
+    html << "<ul>";
+    html << "</body></hmtl>";
+
+    return html.str();
+}
+
+// void Server::openFile(Client &client)
+// {
+//     int fileFd;
+//     std::string file;
+
+//     // if Error call new function that builds an error Path.
+//     // When does the error get detected? if after the path building
+//     // needs to be redone after trying to open the original file request
+
+//     file = client.getRequestMap().at("Path");
+//     if (file == "/")
+//         file += client.getServerInfo().getIndex();
+//     file = client.getServerInfo().getRoot() + file;
+
+//     std::cout << "Constructed file path: " << file << std::endl;
+//     fileFd = open(file.c_str(), O_RDONLY);
+//     if (fileFd < 0)
+//     //  build path to 404 file, open it and add fd to Poll loop
+//         client.setStatusCode(404); 
+//     else
+//     {
+//         client.setFileFd(fileFd);
+//         struct pollfd filePollFd;
+//         filePollFd.fd = fileFd;
+//         filePollFd.events = POLLIN;
+//         _pollFds.push_back(filePollFd);
+//     }
+// }
 
 void Server::handleFileRead(size_t index)
 {
@@ -370,4 +493,8 @@ Client& Server::getClient(int fd)
     return _clients.at(fd);
 }
 
+void            Server::setServer(std::vector<ServerBlock> serverBlocks)
+{
+    _servers = serverBlocks;
+}
 

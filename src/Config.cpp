@@ -15,7 +15,7 @@ Config::Config(std::string file_name) : _server_i(0), _info(0), _serverBlocks(0)
 		createServer(_info[i], server);		// We create server
 		_serverBlocks.push_back(server);	// We push ServerBlock into _serverBlocks, so we can excess it later
 	}
-	ft_printConfigFile();	// for testing -> do we have everything
+	// ft_printConfigFile();	// for testing -> do we have everything
 }
 
 // -------------------------------------------------------------------------------------
@@ -152,7 +152,7 @@ void	Config::createServer(std::string &config_string, ServerBlock &server)
 /* getServerBlocks();
  * - A getter for the server blocks (used in the sockets aka. Server.cpp)
  */
-std::vector<ServerBlock> Config::getServerBlocks()
+std::vector<ServerBlock> Config::getServerBlocks() const
 {
 	return (_serverBlocks);
 }

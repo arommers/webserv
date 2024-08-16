@@ -18,7 +18,10 @@
 #include <string> // Needed? cstring or string library
 #include <sstream>
 #include <regex>
+#include <dirent.h>       // Provides functions for using DIR directory stream like opendir(), readdir()
 #include "ServerBlock.hpp"
+
+
 
 enum    clientState
 {

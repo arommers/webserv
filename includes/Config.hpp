@@ -33,6 +33,7 @@ class	Config
 		int							_server_i;		// How many servers we have
 
 	public:
+		Config() {};
 		Config(std::string file_name);				// Constructor
 		~Config() {}								// Destructor
 
@@ -42,7 +43,7 @@ class	Config
 		void 						createServer(std::string &config_string, ServerBlock &server);
 
 		// Getter
-		std::vector<ServerBlock>	getServerBlocks();	// Used for creating the sockets (aka. Server.cpp)
+		std::vector<ServerBlock>	getServerBlocks() const;	// Used for creating the sockets (aka. Server.cpp)
 
 		// Checkers
 		std::string					ft_checkRoot(const std::string &newRoot, ServerBlock &server);

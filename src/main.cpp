@@ -26,19 +26,20 @@ int	main(int argc, char **argv)
 		// Step 1:
 		try {
 			Config config(configFile);
+			Server server;
+			server.setServer(config.getServerBlocks());
+			// server.createServerInstances();
+			server.createServerSockets();
+
+			// std::cout << GREEN << "Webserv started and listening on port: " << PORT << RESET << std::endl;
+			server.createPollLoop();
 		} catch (const std::exception &e)
 		{
 			std::cerr << "Error: " << e.what() << std::endl;
 			return 1;
 		}
-
 		// Step 2:
-		Server server;
-		server.createServerInstances();
-		server.createServerSockets();
 
-		std::cout << GREEN << "Webserv started and listening on port: " << PORT << RESET << std::endl;
-		server.createPollLoop();
 	}
 	else
 	{

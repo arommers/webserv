@@ -22,28 +22,28 @@ class Server
 
         void    createServerInstances();
 
-        void                        addServer(const ServerBlock& ServerBlock);
-        void                        createServerSockets();
-        void                        createPollLoop();
-        void                        acceptConnection(int serverSocket);
-        void                        closeConnection(size_t index);
-        void                        shutdownServer();
-        void                        handleClientData(size_t index);
-        void                        sendClientData(size_t index);
-        void                        addClient(int fd, ServerBlock& ServerBlock);
-        Client&                     getClient(int fd);
-        void                        removeClient(int fd);
-        void                        checkTimeout(int time);
-        int                         getServerSocket();
-        std::vector<struct pollfd>  getPollFds();
-        void                        removePollFd( int fd );
-        void                        handleClientRequest();
-        int                         checkFile(std::string &file);
-        std::string                 readFile(Client &client);
-        void                        openFile(Client& client);
-        void                        handleFileRead(size_t index);
-        ServerBlock&                 getServerBlockByFd(int fd);
+        void            addServer(const ServerBlock& serverInfo);
+        void            createServerSockets();
+        void            createPollLoop();
+        void            acceptConnection(int serverSocket);
+        void            handleClientData(size_t index);
+        void            openFile(Client& client);
+        void            handleFileRead(size_t index);
+        void            sendClientData(size_t index);
+        void            checkTimeout(int time);
+        void            shutdownServer();
+        void            closeConnection(size_t index);
+        void            removeClient(int fd);
+        ServerBlock&    getServerBlockByFd(int fd);
+        void            addClient(int fd, ServerBlock& serverInfo);
+        Client&         getClient(int fd);
+        std::string     generateFolderContent(std::string path);
 
         // currently not implemented
         // void        handleClientRequest(Client &client);
+
+        void            removePollFd( int fd );
+        std::vector<struct pollfd>      getPollFds();
+        void            setServer(std::vector<ServerBlock> serverBlocks);
+
 };
