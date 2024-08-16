@@ -46,7 +46,7 @@ enum    clientState
 #define PORT 4040
 #define MAX_CLIENTS 10
 #define TIMEOUT 60
-#define BUFFER_SIZE 100024
+#define BUFFER_SIZE 1024
 
 class Client
 {
@@ -108,7 +108,7 @@ class Client
         int                                     getReadWriteFd();
         bool                                    fileReadComplete();
         int*                                    getRequestPipe();
-        int*                                    getReponsePipe();
+        int*                                    getResponsePipe();
         std::string                             readFile ( std::string file );
 };
 

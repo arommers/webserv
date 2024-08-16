@@ -20,7 +20,7 @@ class Server
         Server& operator=(const Server& rhs);
         ~Server();
 
-
+        int                         test_i = 0;
         void                        createServerSocket();
         void                        createPollLoop();
         void                        acceptConnection();

@@ -124,6 +124,8 @@ bool    Client::requestComplete()
     size_t bodyBegin = pos + 4;
     size_t bodyLength = bodyBegin + contentLength;
 
+    // std::cout << "Readbuffer.size: " << _readBuffer.size() << " bodyLength: " << bodyLength << std::endl;
+
     return  _readBuffer.size() >= bodyLength;
 }
 
@@ -273,7 +275,9 @@ void Client::createResponse ( void )
 
     if (_statusCode == 0)
         setStatusCode(200);
-    if (getState() == ERROR)
+    // if (getState() == ERROR)
+    std::vector<int>     statusCheck = {400, 401, 404, 405, 500, 503};
+    if (std::find(statusCheck.begin(), statusCheck.end(), _statusCode) != statusCheck.end())
     {
         _writeBuffer = createErrorResponse();
         setState(READY);
@@ -311,10 +315,8 @@ void Client::readNextChunk()
     {
         close(_readWriteFd);
         setState(READY);
-        createResponse();
         return;
     }
-
     _fileBuffer.append(buffer, bytesRead);
 
 }
@@ -325,8 +327,8 @@ void Client::writeNextChunk()
     int bytesWritten;
 
     buffer = getWriteBuffer().substr(0,BUFFER_SIZE);
-    std::cout << "Going to write to pipe: " << getFd() << std::endl << buffer << std::endl;
-    bytesWritten = write(getFd(), buffer.c_str(), buffer.length());
+    bytesWritten = write(getReadWriteFd(), buffer.c_str(), buffer.length());
+    std::cout << "Bytes written: " << bytesWritten << std::endl;
     if (bytesWritten < 0)
     {
         std::cerr << "Failed to write to fd: " << strerror(errno) << std::endl;
@@ -335,15 +337,9 @@ void Client::writeNextChunk()
         _fd = -1;
         return ;
     }
-    std::cout << "Write buffer before: " << getWriteBuffer() << std::endl;
     _writeBuffer.erase(0, BUFFER_SIZE);
-    std::cout << "Write buffer after: " << getWriteBuffer() << std::endl;
-
-
     if (getWriteBuffer().empty())
     {
-        std::cout  << "Buffer empty\n";
-        close(_readWriteFd);
         setState(READY);
     }
 }
@@ -384,7 +380,7 @@ int* Client::getRequestPipe()
     return (_requestPipe);
 }
 
-int* Client::getReponsePipe()
+int* Client::getResponsePipe()
 {
     return (_responsePipe);
 }

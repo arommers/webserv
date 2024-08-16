@@ -3,13 +3,25 @@
 import os
 import sys
 import cgi
+import io
 import cgitb
 
 
 cgitb.enable()
 
+buffer_size = int(os.environ.get('BUFFER_SIZE'))
+received_data = []
 
-form = cgi.FieldStorage()
+while True:
+    chunk = sys.stdin.read(buffer_size)
+    received_data.append(chunk)
+    if not chunk:
+        break
+
+input_data = ''.join(received_data)
+input_stream = io.BytesIO(input_data.encode())
+
+form = cgi.FieldStorage(fp=input_stream, environ=os.environ, keep_blank_values=True)
 
 
 fileitem = form['fileToUpload']

@@ -13,8 +13,7 @@ class Server;
 class Cgi
 {
 private:
-    std::vector<pid_t>   _childForks;
-
+    pid_t   _pid;
 public:
     Cgi();
     Cgi(const Cgi& rhs);

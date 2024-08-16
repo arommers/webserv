@@ -71,7 +71,6 @@ void    Server::createPollLoop()
         int pollSize = poll(_pollFds.data(), _pollFds.size(), -1);
         std::cout << "After Poll\n";
 
-
         if (pollSize == -1)
         {
             std::cerr << RED << "Poll failed: " << strerror(errno) << RESET << std::endl;
@@ -81,7 +80,6 @@ void    Server::createPollLoop()
 
         for (size_t i = 0; i < _pollFds.size(); ++i)
         {
-
             std::cout << "FD: " << _pollFds[i].fd << " revent: " << _pollFds[i].revents << std::endl;
             if (_pollFds[i].revents & POLLIN)
             {
@@ -91,7 +89,7 @@ void    Server::createPollLoop()
                     handleClientData(i);
                 else
                     handleFileRead(i);
-            } 
+            }
             else if (_pollFds[i].revents & POLLOUT){
                 if (_clients.count(_pollFds[i].fd)){
                     if (getClient(_pollFds[i].fd).getState() == RESPONSE)
@@ -101,6 +99,19 @@ void    Server::createPollLoop()
                 }
                 else
                     handleFdWrite(i);
+            }
+            else if (_pollFds[i].revents & 16)
+            {
+                for (std::unordered_map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it)
+                {
+                    if (it->second.getReadWriteFd() == _pollFds[i].fd)
+                    {
+                        it->second.setState(RESPONSE);
+                        removePollFd(it->second.getReadWriteFd());
+                        it->second.setReadWriteFd(-1);
+
+                    }
+                }
             }
         }
     }
@@ -136,10 +147,10 @@ void Server::handleFdWrite(size_t index)
 {
     int fd = _pollFds[index].fd;
 
+    test_i++;
     std::cout << "At handleFdWrite\n";
     for (std::unordered_map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it)
     {
-        std::cout << "Fd: " << fd << " " << it->second.getReadWriteFd() << std::endl;
         if (it->second.getReadWriteFd() == fd)
         {
             it->second.writeNextChunk();
@@ -153,9 +164,10 @@ void Server::handleFdWrite(size_t index)
                 }
                 removePollFd(it->second.getReadWriteFd());
                 it->second.setReadWriteFd(-1);
-            }  
+            }
         }
     }
+  
 
 }
 
@@ -211,14 +223,12 @@ void    Server::handleClientData(size_t index)
         else
         {
             buffer[bytesRead] = '\0';
-
             client.addToBuffer(buffer);
             std::time_t now = std::time(nullptr);
             std::tm* local_time = std::localtime(&now);
             if (client.requestComplete())
             {
-
-                client.parseBuffer();
+                 client.parseBuffer();
                 if (client.getState() != ERROR)
                     client.setState(START);
                 _pollFds[index].events = POLLOUT;
@@ -226,8 +236,9 @@ void    Server::handleClientData(size_t index)
             }
         }
     }
-    if (client.getState() != PARSE && client.getState() != ERROR)
+    if (client.getState() == START || client.getState() == READY)
     {
+            std::cout << "Client state: " << client.getState() << std::endl;
             std::cout << GREEN << "Request Received from socket " << _pollFds[index].fd << ", method: [" << client.getRequestMap()["Method"] << "]" << ", version: [" << client.getRequestMap()["Version"] << "], URI: "<< client.getRequestMap()["Path"] <<  RESET << std::endl;
             if (_cgi.checkIfCGI(client) == true){
                 _cgi.runCGI(*this, client);
@@ -239,11 +250,8 @@ void    Server::handleClientData(size_t index)
     if (client.getState() == ERROR)
     {
         _pollFds[index].events = POLLOUT;
-        return ;
+        client.setState(RESPONSE);
     }
-  
-    
-
 }
 
 void Server::sendClientData(size_t index)
@@ -306,27 +314,6 @@ void Server::openFile(Client &client)
         client.setState(RESPONSE);
 
 }
-
-// void    Server::readFile(Client &client)
-// {
-//     int         fileFd;      
-//     std::string file;
-
-//     client.setStatusCode(200);
-//     file =  client.getRequestMap().at("Path");
-//     if (file == "/")
-//         file += "index.html";
-//     file = "./html" + file;
-//     fileFd = open(file.c_str(), O_RDONLY);
-//     if (fileFd < 0)
-//     {
-//         client.setStatusCode(404);
-//         std::cerr << "failed to open file: " << file << ": " << strerror(errno) << std::endl;
-//     }
-//     client.setFd(fileFd);
-//     client.readNextChunk();
-//     // close(fileFd);
-// }
 
 void    Server::checkTimeout(int time)
 {
