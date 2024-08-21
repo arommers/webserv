@@ -34,14 +34,15 @@ class Server
         void                        checkTimeout(int time);
         int                         getServerSocket();
         std::vector<struct pollfd>  getPollFds();
-        void                        addPollFd( pollfd pollFd );
+        void                        addPollFd( int fd, short int events );
         void                        removePollFd( int fd );
+        void                        addFileToPoll( Client& client, std::string file );
 
         void            handleClientRequest();
         int             checkFile(std::string &file);
-        std::string     readFile(Client &client);
         void            openFile(Client& client);
         void            handleClientRequest(Client &client);
+        void            handleDeleteRequest(Client& client);
 
         // void    handleGetRequest(Client &client);
         // void    handlePostRequest(Client &client);

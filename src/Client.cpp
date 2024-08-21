@@ -1,6 +1,6 @@
 #include "../includes/Client.hpp"
 
-const std::map<int, std::string> Client::_ErrorMap = {
+const std::map<int, std::string> Client::_ReasonPhraseMap = {
     {200, "OK"},
     {201, "Created"},
     {204, "No Content"},
@@ -97,11 +97,10 @@ void Client::setState (const int state)
 
 void Client::setStatusCode( const int statusCode )
 {
-    std::vector<int>     statusCheck = {400, 401, 404, 405, 500, 503};
-    if (std::find(statusCheck.begin(), statusCheck.end(), statusCode) != statusCheck.end()){
+    _statusCode = statusCode;
+    if (detectError()){
         setState(ERROR);
     }
-    _statusCode = statusCode;
 }
 
 bool    Client::requestComplete()
@@ -109,23 +108,36 @@ bool    Client::requestComplete()
     size_t pos = _readBuffer.find("\r\n\r\n");
 
     if (pos == std::string::npos)
-        return false;
-    
+        return false;    
     std::string headers = _readBuffer.substr(0, pos + 4);
+    size_t chunked = headers.find("Transfer-Encoding: chunked");
+    std::cout << headers << std::endl;
+    if(chunked != std::string::npos){
+        std::cout << "Chunked!\n";
+        chunked = true;
+    }
+    if (chunked == true){
+        if (headers.find("0\r\n\r\n") != std::string::npos){
+            std::cout << "End!\n";
+            exit(1);
+        }
+        else
+            return false;
+    }
+
+       
+
     size_t posContent = headers.find("Content-Length:");
 
-    if (posContent == std::string::npos)
+    if (posContent == std::string::npos){
         return true;
-    
+    }
     size_t contentEnd = headers.find("\r\n", posContent);
     std::string content = headers.substr(posContent + 15, contentEnd - posContent - 15);
     int contentLength = std::stoi(content);
 
     size_t bodyBegin = pos + 4;
     size_t bodyLength = bodyBegin + contentLength;
-
-    // std::cout << "Readbuffer.size: " << _readBuffer.size() << " bodyLength: " << bodyLength << std::endl;
-
     return  _readBuffer.size() >= bodyLength;
 }
 
@@ -230,94 +242,43 @@ std::string trimWhiteSpace(std::string& string)
     return string.substr(start, end - start + 1);
 }
 
-std::string Client::readFile ( std::string file )
-{
-    int     fileFd;
-    int     bytesRead;
-    int     bufferSize = 2000;
-    char    buffer[bufferSize];
-
-    fileFd = open(file.c_str(), O_RDONLY);
-    if (fileFd == -1)
-    {
-        perror("file open");
-        exit (1);
-    }
-    bytesRead = read(fileFd, buffer, bufferSize - 1);
-    if (bytesRead == -1){
-        perror("read");
-        exit (1);
-    }
-    buffer[bytesRead] = '\0';
-    close(fileFd);
-    return (buffer);
-}
-
-std::string Client::createErrorResponse( void )
-{
-    std::string errorResponse;
-    std::string file = "./config/error_page/" + std::to_string(_statusCode) + ".html";
-    std::string errorPage = readFile(file);
-    
-    _responseMap["Content-Type"] = "text/html";
-    if (!_requestMap.count("Version"))
-        _requestMap["Version"] = "HTTP/1.1";
-    errorResponse = _requestMap.at("Version") + " " + std::to_string(_statusCode) + " " + _ErrorMap.at(_statusCode) + "\r\n";
-    errorResponse += "Content-Type: " + _responseMap.at("Content-Type") + "\r\n";
-    errorResponse += "Content-Length: " + std::to_string(errorPage.size()) + "\r\n\r\n";
-    errorResponse += errorPage;
-    return (errorResponse);
-}
-
 void Client::createResponse ( void )
 {
     std::string responseMessage;
 
     if (_statusCode == 0)
         setStatusCode(200);
-    // if (getState() == ERROR)
-    std::vector<int>     statusCheck = {400, 401, 404, 405, 500, 503};
-    if (std::find(statusCheck.begin(), statusCheck.end(), _statusCode) != statusCheck.end())
-    {
-        _writeBuffer = createErrorResponse();
-        setState(READY);
+    _responseMap["Content-Type"] = "text/html";
+    responseMessage = _requestMap.at("Version") + " " + std::to_string(_statusCode) + " " + _ReasonPhraseMap.at(_statusCode) + "\r\n";
+    responseMessage += "Content-Type: " + _responseMap.at("Content-Type") + "\r\n";
+    if (!_fileBuffer.empty()){
+        responseMessage += "Content-Length: " + std::to_string(_fileBuffer.size()) + "\r\n\r\n";
+        responseMessage += _fileBuffer;
     }
-    else {
-        _responseMap["Content-Type"] = "text/html";
-        responseMessage = _requestMap.at("Version") + " " + std::to_string(_statusCode) + " " + _ErrorMap.at(_statusCode) + "\r\n";
-        responseMessage += "Content-Type: " + _responseMap.at("Content-Type") + "\r\n";
-        if (!_fileBuffer.empty()){
-            responseMessage += "Content-Length: " + std::to_string(_fileBuffer.size()) + "\r\n\r\n";
-            responseMessage += _fileBuffer;
-        }
-        else{
-            responseMessage += "\r\n";
-        }
-        _writeBuffer = responseMessage;
+    else{
+        responseMessage += "\r\n";
     }
+    _writeBuffer = responseMessage;
 }
 
 void Client::readNextChunk()
 {
     char buffer[BUFFER_SIZE];
     int bytesRead = read(_readWriteFd, buffer, BUFFER_SIZE);
-
     if (bytesRead < 0)
     {
         std::cerr << "Failed to read file: " << strerror(errno) << std::endl;
-        setStatusCode(500);
         close(_readWriteFd);
+        setStatusCode(500);
         _fd = -1;
-        setState(READY);
-        return;
     }
     else if (bytesRead == 0)
     {
         close(_readWriteFd);
         setState(READY);
-        return;
     }
-    _fileBuffer.append(buffer, bytesRead);
+    else
+        _fileBuffer.append(buffer, bytesRead);
 
 }
 
@@ -331,16 +292,14 @@ void Client::writeNextChunk()
     if (bytesWritten < 0)
     {
         std::cerr << "Failed to write to fd: " << strerror(errno) << std::endl;
-        setState(500);
         close(_readWriteFd);
+        setState(500);
         _fd = -1;
         return ;
     }
-    _writeBuffer.erase(0, BUFFER_SIZE);
+    _writeBuffer.erase(0, bytesWritten);
     if (getWriteBuffer().empty())
-    {
         setState(READY);
-    }
 }
 
 void    Client::resetClientData( void )
@@ -382,4 +341,16 @@ int* Client::getRequestPipe()
 int* Client::getResponsePipe()
 {
     return (_responsePipe);
+}
+
+bool    Client::detectError()
+{
+    if (std::find(_statusCheck.begin(), _statusCheck.end(), _statusCode) != _statusCheck.end())
+        return (true);
+    return (false);
+}
+
+int Client::getStatusCode()
+{
+    return (_statusCode);
 }

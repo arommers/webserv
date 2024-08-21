@@ -26,6 +26,5 @@ public:
     void    createPipe(Server& server, Client& client, int* fdPipe);
     void    createFork(Server& server, Client& client);
     void    launchScript(Server& server, Client& client);
-    void    readClosePipes(Server& server, Client& client);
     void    redirectToPipes(Server& server, Client& client);
 };

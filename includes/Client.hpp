@@ -60,11 +60,12 @@ class Client
         size_t                                  _writePos = 0;
         std::map<std::string, std::string>      _requestMap;
         std::map<std::string, std::string>      _responseMap;
-        static const std::map<int, std::string> _ErrorMap;
+        static const std::map<int, std::string> _ReasonPhraseMap;
         int                                     _statusCode = 0;
         std::time_t                             _time = std::time(nullptr);
         int                                     _requestPipe[2];
         int                                     _responsePipe[2];
+        std::vector<int>                        _statusCheck = {400, 401, 404, 405, 500, 503};
         
 
         void    errorCheckRequest( void );
@@ -78,6 +79,8 @@ class Client
         Client(const Client& rhs);
         Client& operator=(const Client& rhs); // Update!
         ~Client();
+        
+        bool                                    chunked = false;
 
         void                                    addToBuffer( std::string bufferNew );
         std::string                             getReadBuffer();
@@ -99,7 +102,6 @@ class Client
         bool                                    requestComplete();
         std::time_t                             getTime();
         void                                    updateTime();
-        std::string                             createErrorResponse( void );
         void                                    resetClientData( void );
         void                                    runCGI( void );        
         void                                    readNextChunk();
@@ -109,7 +111,8 @@ class Client
         bool                                    fileReadComplete();
         int*                                    getRequestPipe();
         int*                                    getResponsePipe();
-        std::string                             readFile ( std::string file );
+        bool                                    detectError();
+        int                                     getStatusCode();
 };
 
 std::string trimWhiteSpace(std::string& string);

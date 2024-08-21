@@ -97,8 +97,10 @@ void    Server::createPollLoop()
                 else
                     handleFdWrite(i);
             }
-            else if (_pollFds[i].revents & POLLHUP)
+            else if (_pollFds[i].revents & POLLHUP){
                 removePipe(i);
+                break;
+            }
         }
     }
 
@@ -113,7 +115,7 @@ void Server::handleFileRead(size_t index)
         if (it->second.getReadWriteFd() == fd)
         {
             it->second.readNextChunk();
-            if (it->second.getState() == READY)
+            if (it->second.getState() == READY || it->second.getState() == ERROR)
             {
                 for (auto& value : _pollFds)
                 {
@@ -193,7 +195,7 @@ void    Server::handleClientData(size_t index)
     if (client.getState() == PARSE)
     {
         char    buffer[BUFFER_SIZE];
-        int     bytesRead = read(_pollFds[index].fd, buffer, BUFFER_SIZE - 1);
+        int     bytesRead = read(_pollFds[index].fd, buffer, BUFFER_SIZE);
         if (bytesRead < 0)
                 std::cerr << RED << "Error reading from client socket: " << strerror(errno) << RESET << std::endl;
         else if(bytesRead == 0)
@@ -203,17 +205,15 @@ void    Server::handleClientData(size_t index)
         }
         else
         {
-            buffer[bytesRead] = '\0';
-            client.addToBuffer(buffer);
+            client.addToBuffer(std::string(buffer, bytesRead));
             std::time_t now = std::time(nullptr);
             std::tm* local_time = std::localtime(&now);
             if (client.requestComplete())
             {
-                 client.parseBuffer();
+                client.parseBuffer();
                 if (client.getState() != ERROR)
                     client.setState(START);
                 _pollFds[index].events = POLLOUT;
-                
             }
         }
     }
@@ -223,14 +223,17 @@ void    Server::handleClientData(size_t index)
             if (_cgi.checkIfCGI(client) == true){
                 _cgi.runCGI(*this, client);
             }
-            else{
+            else if(client.getRequestMap().at("Method") == "GET"){
                 openFile(client);
+            }
+            else if(client.getRequestMap().at("Method") == "DELETE"){
+                handleDeleteRequest(client);
             }
     }
     else if (client.getState() == ERROR)
     {
-        _pollFds[index].events = POLLOUT;
-        client.setState(RESPONSE);
+        addFileToPoll(client, "./config/error_page/" + std::to_string(client.getStatusCode()) + ".html");
+        client.setState(READING);
     }
 }
 
@@ -279,12 +282,7 @@ void Server::openFile(Client &client)
     }
 
     client.setReadWriteFd(fileFd);
-
-    struct pollfd pollFd;
-    pollFd.fd = fileFd;
-    pollFd.events = POLLIN;
-    _pollFds.push_back(pollFd);
-
+    addPollFd(fileFd, POLLIN);
     client.setState(READING);
 }
 
@@ -333,13 +331,13 @@ std::vector<struct pollfd>  Server::getPollFds()
     return (_pollFds);
 }
 
-void Server::addPollFd( pollfd pollFd )
+void Server::addPollFd( int fd, short int events )
 {
-    // struct pollfd pollFdStruct;
+    struct pollfd pollFdStruct;
 
-    // pollFdStruct.fd = fd;
-    // pollFdStruct.events = events;
-    _pollFds.push_back(pollFd);
+    pollFdStruct.fd = fd;
+    pollFdStruct.events = events;
+    _pollFds.push_back(pollFdStruct);
 }
 
 void Server::removePollFd( int fd )
@@ -348,6 +346,7 @@ void Server::removePollFd( int fd )
     for (auto& value : _pollFds)
     {
         if (value.fd == fd){
+            close(fd);
             _pollFds.erase(_pollFds.begin() + i);
             return ;
         }
@@ -365,9 +364,35 @@ void    Server:: removePipe( size_t index )
             it->second.setState(RESPONSE);
             removePollFd(it->second.getReadWriteFd());
             it->second.setReadWriteFd(-1);
+            return ;
         }
     }
 }
 
 
+void    Server::addFileToPoll( Client& client, std::string file )
+{
+    int fileFd;
 
+    fileFd = open(file.c_str(), O_RDONLY);
+    if (fileFd == -1)
+    {
+        perror("file open");
+        exit (1);
+    }
+    client.setReadWriteFd(fileFd);
+    addPollFd(fileFd, POLLIN);
+}
+
+void Server::handleDeleteRequest(Client& client)
+{
+    std::string toDelete = client.getRequestMap().at("Path");
+    toDelete.erase(0, 1);
+    if (remove(toDelete.c_str()) < 0)
+    {
+        client.setStatusCode(404);
+        std::cout << "Error removing file: " << client.getRequestMap().at("Path").c_str() << std::endl;
+        return ;
+    }
+    client.setState(RESPONSE);
+}

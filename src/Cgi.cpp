@@ -39,10 +39,7 @@ void Cgi::runCGI( Server& server, Client& client)
             createPipe(server, client, client.getRequestPipe());
             client.setWriteBuffer(client.getRequestMap().at("Body"));
             client.setReadWriteFd(client.getRequestPipe()[1]);
-            struct pollfd pollFd;
-            pollFd.fd = client.getRequestPipe()[1];
-            pollFd.events = POLLOUT;
-            server.addPollFd(pollFd);
+            server.addPollFd(client.getRequestPipe()[1], POLLOUT);
             client.setState(WRITING);
         }
         else
@@ -52,9 +49,12 @@ void Cgi::runCGI( Server& server, Client& client)
 
     }
     if (client.getState() == READY){
-        close(client.getRequestPipe()[1]);
         waitpid(_pid, nullptr, 0); // Is this correct? Will the server hang if a child is hanging?
-        readClosePipes(server, client);
+        client.setReadWriteFd(client.getResponsePipe()[0]);
+        close(client.getResponsePipe()[1]);
+        if (client.getRequestMap().at("Method") == "POST")
+            close(client.getRequestPipe()[0]);
+        server.addPollFd(client.getResponsePipe()[0], POLLIN);
         client.setState(READING);
     }
 }
@@ -88,26 +88,6 @@ void Cgi::createPipe(Server& server, Client& client, int* fdPipe)
     }
 }
 
-void Cgi::readClosePipes(Server& server, Client& client)
-{
-    // int     bufferSize = 2000;
-    // char    buffer[bufferSize];
-
-    // size_t bytesRead = read(client.getResponsePipe()[0], buffer, bufferSize - 1);
-    // if (bytesRead == -1){
-    //     perror("read");
-    //     exit(1);
-    // }
-    // buffer[bytesRead] = '\0';
-    // client.setFileBuffer(buffer);
-    struct pollfd pollFdStruct;
-
-    pollFdStruct.fd = client.getResponsePipe()[0];
-    pollFdStruct.events = POLLIN;
-    client.setReadWriteFd(client.getResponsePipe()[0]);
-    server.addPollFd(pollFdStruct);
-}
-
 void Cgi::createFork(Server& server, Client& client)
 {
     _pid = fork();
@@ -118,11 +98,6 @@ void Cgi::createFork(Server& server, Client& client)
     else if (_pid == 0) // Entering child process
     {
         launchScript(server, client);
-    }
-    else // In parent
-    {
-        close(client.getRequestPipe()[0]);
-        close(client.getResponsePipe()[1]);
     }
 }
 
