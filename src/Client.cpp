@@ -108,30 +108,13 @@ bool    Client::requestComplete()
     size_t pos = _readBuffer.find("\r\n\r\n");
 
     if (pos == std::string::npos)
-        return false;    
+        return false;
+    
     std::string headers = _readBuffer.substr(0, pos + 4);
-    size_t chunked = headers.find("Transfer-Encoding: chunked");
-    std::cout << headers << std::endl;
-    if(chunked != std::string::npos){
-        std::cout << "Chunked!\n";
-        chunked = true;
-    }
-    if (chunked == true){
-        if (headers.find("0\r\n\r\n") != std::string::npos){
-            std::cout << "End!\n";
-            exit(1);
-        }
-        else
-            return false;
-    }
-
-       
-
     size_t posContent = headers.find("Content-Length:");
 
-    if (posContent == std::string::npos){
+    if (posContent == std::string::npos)
         return true;
-    }
     size_t contentEnd = headers.find("\r\n", posContent);
     std::string content = headers.substr(posContent + 15, contentEnd - posContent - 15);
     int contentLength = std::stoi(content);

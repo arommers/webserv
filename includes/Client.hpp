@@ -79,8 +79,6 @@ class Client
         Client(const Client& rhs);
         Client& operator=(const Client& rhs); // Update!
         ~Client();
-        
-        bool                                    chunked = false;
 
         void                                    addToBuffer( std::string bufferNew );
         std::string                             getReadBuffer();
