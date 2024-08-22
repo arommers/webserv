@@ -5,7 +5,7 @@ import sys
 
 sys.stdout.flush()
 
-DATA_FILE = "html/form_data.json"
+DATA_FILE = "www/html/form_data.json"
 
 # Load data from the JSON file
 if os.path.exists(DATA_FILE):

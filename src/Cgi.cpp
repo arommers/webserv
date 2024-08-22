@@ -123,11 +123,51 @@ void Cgi::redirectToPipes(Server& server, Client& client)
 
 void Cgi::launchScript(Server& server, Client& client)
 {
-    std::string path = "." + client.getRequestMap().at("Path");
+    std::string path = findPath(server, client);
     char * pathArray[] = {const_cast<char *>(path.c_str()), nullptr};
     char** env = createEnv(server, client);
     redirectToPipes(server, client);
     execve(pathArray[0], pathArray, env);
     perror("execve");
     exit(1);
+}
+
+std::string Cgi::findPath(Server& server, Client& client)
+{
+    std::string             path;
+    ServerBlock&            serverBlock = client.getServerBlock();
+    std::vector<Location>   matchingLocations;
+    bool                    locationFound = false;
+
+    path = client.getRequestMap().at("Path");
+
+    for (const Location& location : serverBlock.getLocations())
+    {
+        if (path.find(location.getPath()) == 0)
+            matchingLocations.push_back(location);
+    }
+
+    std::sort(matchingLocations.begin(), matchingLocations.end(), sortLocations);
+
+    for (const Location& location : matchingLocations)
+    {
+        std::string locationRoot = location.getRoot();
+        std::string locationPath = location.getPath();
+
+        if (locationRoot.empty())
+            locationRoot = serverBlock.getRoot();
+        
+        if (!locationRoot.empty() && locationRoot.back() == '/')
+            locationRoot.pop_back();
+
+        std::string fileName = path.substr(locationPath.length());
+        if (!fileName.empty() && fileName.front() == '/')
+            fileName.erase(fileName.begin());
+
+        path = locationRoot + "/" + fileName;
+
+        locationFound = true;
+        break;
+    }
+    return (path);
 }

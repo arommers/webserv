@@ -27,4 +27,5 @@ public:
     void    createFork(Server& server, Client& client);
     void    launchScript(Server& server, Client& client);
     void    redirectToPipes(Server& server, Client& client);
+    std::string findPath(Server& server, Client& client);
 };

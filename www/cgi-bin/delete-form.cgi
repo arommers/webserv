@@ -11,7 +11,7 @@ line = form_data[5:].strip()
 
 # Load existing data
 try:
-    with open('html/form_data.json', 'r') as file:
+    with open('www/html/form_data.json', 'r') as file:
         data = json.load(file)
 except FileNotFoundError:
     data = []
@@ -20,7 +20,7 @@ except FileNotFoundError:
 data = [entry for entry in data if entry['id'] != line]
 
 # Save the updated data back to the file
-with open('html/form_data.json', 'w') as file:
+with open('www/html/form_data.json', 'w') as file:
     json.dump(data, file, indent=4)
 
 # Output a success message

@@ -8,7 +8,7 @@ import cgitb
 import json
 import uuid 
 
-file_path = "html/form_data.json"
+file_path = "www/html/form_data.json"
 try:
     if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
         with open(file_path, 'r') as file:
