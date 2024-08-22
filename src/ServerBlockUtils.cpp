@@ -63,7 +63,6 @@ std::string ServerBlock::ft_checkLocationRoot(const std::string &newRoot, Locati
 		char dir[1024];
 		getcwd(dir, 1024);
 		NewFullRoot = dir + newRoot + path;
-		std::cout << "TEST1 : " << NewFullRoot << std::endl;
 		if (ServerBlock::getPathType(NewFullRoot) != FOLDER) // If the path type is not a directory or can't be found
 			throw Exception_ServerBlock("Loction_Block: Invalid Root");
 	}
