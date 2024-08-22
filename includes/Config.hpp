@@ -33,7 +33,6 @@ class	Config
 		int							_server_i;		// How many servers we have
 
 	public:
-		Config() {};
 		Config(std::string file_name);				// Constructor
 		~Config() {}								// Destructor
 

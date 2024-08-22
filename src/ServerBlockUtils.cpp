@@ -44,8 +44,10 @@ std::string ServerBlock::ft_checkLocationPath(const std::string &newPath, Locati
 	return newPath;
 }
 
-std::string ServerBlock::ft_checkLocationRoot(const std::string &newRoot, Location locBlock)
+std::string ServerBlock::ft_checkLocationRoot(const std::string &newRoot, Location locBlock, std::string path)
 {
+	std::string NewFullRoot;
+
 	// Check if variable is already set
 	if (!locBlock.getRoot().empty())
 		throw  Exception_ServerBlock("Loction_Block: Root is duplicated");
@@ -57,7 +59,15 @@ std::string ServerBlock::ft_checkLocationRoot(const std::string &newRoot, Locati
 	if (ServerBlock::getPathType(newRoot) == FOLDER)
 		return newRoot;
 	else
-		return (_root + newRoot);
+	{
+		char dir[1024];
+		getcwd(dir, 1024);
+		NewFullRoot = dir + newRoot + path;
+		std::cout << "TEST1 : " << NewFullRoot << std::endl;
+		if (ServerBlock::getPathType(NewFullRoot) != FOLDER) // If the path type is not a directory or can't be found
+			throw Exception_ServerBlock("Loction_Block: Invalid Root");
+	}
+	return NewFullRoot;
 }
 
 void ServerBlock::ft_checkLocationIndex(const std::string &newIndex, Location locBlock)
@@ -115,7 +125,7 @@ bool	ServerBlock::ft_checkLoactionAutoindex(const std::string &newAutoindex, std
 	 * - Security Risks: would expose these scripts to users, potentially revealing sensitive information or 
 	 *					 leading to security vulnerabilities. */
 	if (path == "/cgi-bin")
-		throw Exception_ServerBlock("Invalid Location_Block Autoindex: Parametr autoindex not allow for cgi-bin");
+		throw Exception_ServerBlock("Invalid Location_Block Autoindex: Parameter autoindex not allow for cgi-bin");
 	if (newAutoindex == "on")
 		return ON;
 	else if (newAutoindex == "off")

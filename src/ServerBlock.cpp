@@ -1,19 +1,9 @@
 #include "ServerBlock.hpp"
+#include "Location.hpp"
+#include "Config.hpp"
 
 // --- Constructor ---
 ServerBlock::ServerBlock() : _port(0), _serverFd(-1), _maxClient(0), _host(""), _root(""), _index(""), _serverName("") {}
-
-// // ---- RM This later / don't need this once the configuration file is used. -----
-// ServerBlock::ServerBlock(int port, std::string& host, int maxClient, std::string& root, std::string& index)
-// {
-//     _port = port;
-//     _serverFd = -1;
-//     _maxClient = maxClient;
-//     _host = host;
-//     _root = root;
-//     _index = index;
-// }
-// ---------------------------------------------------------------------------------
 
 // --- Setter ---
 void	ServerBlock::setHost(const std::string &newHost)
@@ -120,6 +110,22 @@ bool ServerBlock::hasErrorPage(const std::string &errorPage) const
     return (std::find(_errorPage.begin(), _errorPage.end(), errorPage) != _errorPage.end());
 }
 
+// Helper function that checks for that checks for the correct root
+void ServerBlock::checkRootRound2(Location locBlock, std::string path)
+{
+	if (path == "/")
+	{
+		std::string NewFullRoot;
+
+		char dir[1024];
+		getcwd(dir, 1024);
+			NewFullRoot = dir;
+		locBlock.setRoot(NewFullRoot);
+	}
+	else	
+		throw Exception_ServerBlock("Location_Block: needs a root");
+}
+
 /* ft_checkLocation();
 * - Checks that all variables are filled
 * - If not filled it will get set to the default value.
@@ -127,7 +133,7 @@ bool ServerBlock::hasErrorPage(const std::string &errorPage) const
 void	ServerBlock::ft_checkLocationVariables(Location &locBlock, ServerBlock &server)
 {
 	if (locBlock.getRoot().empty())
-		locBlock.setRoot(server.getRoot());
+		checkRootRound2(locBlock, locBlock.getPath());
 	if (locBlock.getIndex().empty())
 		locBlock.setIndex(server.getIndex());
 	if (locBlock.getAllowedMethods().empty())
@@ -152,7 +158,7 @@ void ServerBlock::createLocation(std::vector<std::vector<std::string>> &locParam
 		}
 		else if (locParams[0][i] == "root")
 		{
-			locBlock.setRoot(ft_checkLocationRoot(locParams[1][i], locBlock));
+			locBlock.setRoot(ft_checkLocationRoot(locParams[1][i], locBlock, locBlock.getPath()));
 		}
 		else if (locParams[0][i] == "index")
 		{

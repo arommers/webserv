@@ -23,22 +23,20 @@ int	main(int argc, char **argv)
 		if (argc == 2)
 			configFile = argv[1];
 
-		// Step 1:
 		try {
+			// Step 1:
 			Config config(configFile);
+
+			// Step 2:
 			Server server;
 			server.setServer(config.getServerBlocks());
-			// server.createServerInstances();
 			server.createServerSockets();
-
-			// std::cout << GREEN << "Webserv started and listening on port: " << PORT << RESET << std::endl;
 			server.createPollLoop();
 		} catch (const std::exception &e)
 		{
 			std::cerr << "Error: " << e.what() << std::endl;
 			return 1;
 		}
-		// Step 2:
 
 	}
 	else
@@ -48,44 +46,3 @@ int	main(int argc, char **argv)
 	}
     return 0;
 }
-
-// ---- ADRIS TEST MAIN ----
-// int main()
-// {
-//     int opt = 1;
-//     Server server;
-
-//     server.createServerInstances();
-
-//     server.createServerSockets();
-//     std::cout << GREEN << "Webserv started and listening on port: " << PORT << RESET << std::endl;
-//     server.createPollLoop();
-    
-//     return 0;
-// }
-
-
-// --------------------------------------------------------------------------------------------------------------------
-// --------------------------------------------------------------------------------------------------------------------
-// -------------------------- REMOVE LATER -- THIS IS ONLY FOR TESTING ------------------------------------------------
-// /* 
-//  *	for testig run:
-//  *	----------------
-//  *	c++ main_test.cpp Config.cpp ConfigUtils.cpp ConfigUtils2.cpp ServerBlock.cpp Location.cpp ServerBlockUtils.cpp
-//  *	./a.out
-// */
-// // Test main
-// int main()
-// {
-//     try
-//     {
-//         // Config config("config_file.conf");
-// 		Config config("config/test.conf");
-// 		// SOKETS here
-//     }
-//     catch (const std::exception &e)
-//     {
-//         std::cerr << "Error: " << e.what() << std::endl;
-//     }
-//     return 0;
-// }

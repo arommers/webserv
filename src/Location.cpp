@@ -3,33 +3,6 @@
 // --- Constructor ---
 Location::Location() : _path(""), _root(""), _index(""), _allowedMethods(0), _autoindex(OFF) {}
 
-// // ---- RM This later / don't need this once the configuration file is used. -----
-// Location::Location(std::string& path, std::string& root, std::string& index, std::vector<std::string>& allowedMethods)
-// {
-//     _path = path;
-//     _root = root;
-//     _index = index;
-//     _allowedMethods = allowedMethods;
-// }
-
-// Location::Location(Location& rhs)
-// {
-//     _path = rhs._path;
-//     _root = rhs._root;
-//     _index = rhs._index;
-//     _allowedMethods = rhs._allowedMethods;
-// }
-// Location& Location::operator=(const Location& rhs)
-// {
-//     if (this != &rhs)
-//         _path = rhs._path;
-//         _root = rhs._root;
-//         _index = rhs._index;
-//         _allowedMethods = rhs._allowedMethods;
-//     return (*this);
-// }
-// --------------------------------------------------------------------------------
-
 // --- Getter ---
 std::string Location::getPath() const
 {
