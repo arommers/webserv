@@ -6,6 +6,7 @@
 # include <fstream>
 # include <vector>
 # include <algorithm>
+# include <limits.h>
 # include "Location.hpp"
 
 class ServerBlock
@@ -53,7 +54,7 @@ class ServerBlock
 
 		// Checker
 		std::vector<std::string>	ft_checkLocationMethods(const std::string &newMethods, Location locBlock);
-		std::string					ft_checkLocationRoot(const std::string &newRoot, Location locBlock);
+		std::string					ft_checkLocationRoot(const std::string &newRoot, Location locBlock, std::string path);
 		std::string					ft_checkLocationPath(const std::string &newPath, Location locBlock);
 		void						ft_checkLocationIndex(const std::string &newIndex, Location locBlock);
 		bool						ft_checkLoactionAutoindex(const std::string &newAutoindex, std::string path);
@@ -62,6 +63,7 @@ class ServerBlock
 		bool						hasErrorPage(const std::string &errorPage) const;
 		void						createLocation(std::vector<std::vector<std::string>> &locParams, Location &locBlock, ServerBlock &server);
 		void						ft_checkLocationVariables(Location &locBlock, ServerBlock &server);
+		void						checkRootRound2(Location locBlock, std::string path);
 		int							getPathType(std::string const path);
 
 		// Exception class

@@ -44,8 +44,10 @@ std::string ServerBlock::ft_checkLocationPath(const std::string &newPath, Locati
 	return newPath;
 }
 
-std::string ServerBlock::ft_checkLocationRoot(const std::string &newRoot, Location locBlock)
+std::string ServerBlock::ft_checkLocationRoot(const std::string &newRoot, Location locBlock, std::string path)
 {
+	std::string NewFullRoot;
+
 	// Check if variable is already set
 	if (!locBlock.getRoot().empty())
 		throw  Exception_ServerBlock("Loction_Block: Root is duplicated");
@@ -57,7 +59,14 @@ std::string ServerBlock::ft_checkLocationRoot(const std::string &newRoot, Locati
 	if (ServerBlock::getPathType(newRoot) == FOLDER)
 		return newRoot;
 	else
-		return (_root + newRoot);
+	{
+		char dir[1024];
+		getcwd(dir, 1024);
+		NewFullRoot = dir + newRoot + path;
+		if (ServerBlock::getPathType(NewFullRoot) != FOLDER) // If the path type is not a directory or can't be found
+			throw Exception_ServerBlock("Loction_Block: Invalid Root");
+	}
+	return NewFullRoot;
 }
 
 void ServerBlock::ft_checkLocationIndex(const std::string &newIndex, Location locBlock)

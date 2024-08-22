@@ -45,5 +45,7 @@ class Server
         void            removePollFd( int fd );
         std::vector<struct pollfd>      getPollFds();
         void            setServer(std::vector<ServerBlock> serverBlocks);
-
 };
+
+        bool            sortLocations(const Location& a, const Location& b);
+

@@ -208,46 +208,52 @@ void Server::handleClientData(size_t index)
 
 void Server::openFile(Client &client)
 {
-    int         fileFd;
-    std::string file;
-    ServerBlock& serverBlock = client.getServerBlock();
-    bool        locationFound = false;
+    int                     fileFd;
+    std::string             file;
+    ServerBlock&            serverBlock = client.getServerBlock();
+    std::vector<Location>   matchingLocations;
+    bool                    locationFound = false;
 
     file = client.getRequestMap().at("Path");
 
     for (const Location& location : serverBlock.getLocations())
     {
-        // Check if the file path starts with the location path
         if (file.find(location.getPath()) == 0)
+            matchingLocations.push_back(location);
+    }
+
+    std::sort(matchingLocations.begin(), matchingLocations.end(), sortLocations);
+
+    for (const Location& location : matchingLocations)
+    {
+        std::string locationRoot = location.getRoot();
+        std::string locationPath = location.getPath();
+
+        if (locationRoot.empty())
+            locationRoot = serverBlock.getRoot();
+        
+        if (!locationRoot.empty() && locationRoot.back() == '/')
+            locationRoot.pop_back();
+
+        std::string fileName = file.substr(locationPath.length());
+        if (!fileName.empty() && fileName.front() == '/')
+            fileName.erase(fileName.begin());
+
+        file = locationRoot + "/" + fileName;
+
+        if (file.back() == '/' && location.getAutoindex())
         {
-            std::string locationRoot = location.getRoot();
-            std::string locationPath = location.getPath();
-            
-            // Ensure no trailing slash on root before appending the file
-            if (!locationRoot.empty() && locationRoot.back() == '/')
-                locationRoot.pop_back();
-            
-            // Avoid double slash by removing the first slash if present
-            if (!locationPath.empty() && locationPath.back() == '/' && file[locationPath.length()] == '/')
-                file = locationRoot + file.substr(locationPath.length() + 1);
-            else
-                file = locationRoot + file.substr(locationPath.length());
-
-            if (file.back() == '/' && location.getAutoindex() == true)
-            {
-                client.setWriteBuffer(generateFolderContent(file));
-                return;
-            }
-            if (file.back() == '/' && !location.getIndex().empty())
-                file += location.getIndex();
-
-            locationFound = true;
-            break;
+            client.setWriteBuffer(generateFolderContent(file));
+            return;
         }
+        if (file.back() == '/' && !location.getIndex().empty())
+            file += location.getIndex();
+
+        locationFound = true;
+        break;
     }
 
     // If no matching location was found, use the server root
-    // ************* We probably just want to serve a 404 error here ****************
     if (!locationFound)
     {
         if (file.back() == '/')
@@ -264,7 +270,6 @@ void Server::openFile(Client &client)
     }
 
     // Normalize path: Replace multiple slashes with a single slash
-    // not sure if this is still necessary
     file = std::regex_replace(file, std::regex("//+"), "/");
 
     std::cout << "Constructed file path: " << file << std::endl;
@@ -273,7 +278,7 @@ void Server::openFile(Client &client)
     if (fileFd < 0)
     {
         client.setStatusCode(404); 
-        // call function to open error file
+        // Call function to open error file (not implemented here)
     }
     else
     {
@@ -285,6 +290,93 @@ void Server::openFile(Client &client)
         _pollFds.push_back(filePollFd);
     }
 }
+
+// void Server::openFile(Client &client)
+// {
+//     int         fileFd;
+//     std::string file;
+//     ServerBlock& serverBlock = client.getServerBlock();
+//     bool        locationFound = false;
+
+//     file = client.getRequestMap().at("Path");
+
+//     std::cout << RED << serverBlock.getLocations().size() << RESET << std::endl;
+
+//     for (const Location& location : serverBlock.getLocations())
+//     {
+//         // Check if the file path starts with the location path
+//         if (file.find(location.getPath()) == 0)
+//         {
+//             std::string locationRoot = location.getRoot();
+//             std::string locationPath = location.getPath();
+//             std::cout << RED << locationRoot << "\n" << locationPath << RESET << std::endl;
+
+            
+//             // Ensure no trailing slash on root before appending the file
+//             if (!locationRoot.empty() && locationRoot.back() == '/')
+//                 locationRoot.pop_back();
+            
+//             // Avoid double slash by removing the first slash if present
+//             if (!locationPath.empty() && locationPath.back() == '/' && file[locationPath.length()] == '/')
+//                 file = locationRoot + file.substr(locationPath.length() + 1);
+//             else
+//             {
+//                file = locationRoot + file.substr(locationPath.length());
+//                 std::cout << RED << "TEST" << RESET << std::endl;
+//             }
+
+//             if (file.back() == '/' && location.getAutoindex() == true)
+//             {
+//                 client.setWriteBuffer(generateFolderContent(file));
+//                 return;
+//             }
+//             if (file.back() == '/' && !location.getIndex().empty())
+//                 file += location.getIndex();
+
+//             locationFound = true;
+//             break;
+//         }
+//     }
+
+//     // If no matching location was found, use the server root
+//     // ************* We probably just want to serve a 404 error here ****************
+//     if (!locationFound)
+//     {
+//         if (file.back() == '/')
+//             file += serverBlock.getIndex();
+
+//         std::string serverRoot = serverBlock.getRoot();
+//         if (!serverRoot.empty() && serverRoot.back() == '/')
+//             serverRoot.pop_back();
+
+//         if (file.front() == '/')
+//             file = serverRoot + file;
+//         else
+//             file = serverRoot + "/" + file;
+//     }
+
+//     // Normalize path: Replace multiple slashes with a single slash
+//     // not sure if this is still necessary
+//     file = std::regex_replace(file, std::regex("//+"), "/");
+
+//     std::cout << "Constructed file path: " << file << std::endl;
+
+//     fileFd = open(file.c_str(), O_RDONLY);
+//     if (fileFd < 0)
+//     {
+//         client.setStatusCode(404); 
+//         // call function to open error file
+//     }
+//     else
+//     {
+//         // If file is successfully opened, add it to the poll loop
+//         client.setFileFd(fileFd);
+//         struct pollfd filePollFd;
+//         filePollFd.fd = fileFd;
+//         filePollFd.events = POLLIN;
+//         _pollFds.push_back(filePollFd);
+//     }
+// }
 
 std:: string Server::generateFolderContent(std::string path)
 {
@@ -498,3 +590,7 @@ void            Server::setServer(std::vector<ServerBlock> serverBlocks)
     _servers = serverBlocks;
 }
 
+bool    sortLocations(const Location& a, const Location& b)
+{
+    return (a.getPath().length()> b.getPath().length());
+}
