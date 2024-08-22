@@ -1,36 +1,36 @@
-#include "../includes/Location.hpp"
+#include "Location.hpp"
 
+// --- Constructor ---
+Location::Location() : _path(""), _root(""), _index(""), _allowedMethods(0), _autoindex(OFF) {}
 
-Location::Location() {}
+// // ---- RM This later / don't need this once the configuration file is used. -----
+// Location::Location(std::string& path, std::string& root, std::string& index, std::vector<std::string>& allowedMethods)
+// {
+//     _path = path;
+//     _root = root;
+//     _index = index;
+//     _allowedMethods = allowedMethods;
+// }
 
-Location::Location(std::string& path, std::string& root, std::string& index, std::vector<std::string>& allowedMethods)
-    : _path(path), _allowedMethods(allowedMethods), _root(root), _index(index)
-{
-    _path = path;
-    _root = root;
-    _index = index;
-    _allowedMethods = allowedMethods;
-}
+// Location::Location(Location& rhs)
+// {
+//     _path = rhs._path;
+//     _root = rhs._root;
+//     _index = rhs._index;
+//     _allowedMethods = rhs._allowedMethods;
+// }
+// Location& Location::operator=(const Location& rhs)
+// {
+//     if (this != &rhs)
+//         _path = rhs._path;
+//         _root = rhs._root;
+//         _index = rhs._index;
+//         _allowedMethods = rhs._allowedMethods;
+//     return (*this);
+// }
+// --------------------------------------------------------------------------------
 
-Location::Location(Location& rhs)
-{
-    _path = rhs._path;
-    _root = rhs._root;
-    _index = rhs._index;
-    _allowedMethods = rhs._allowedMethods;
-}
-Location& Location::operator=(const Location& rhs)
-{
-    if (this != &rhs)
-        _path = rhs._path;
-        _root = rhs._root;
-        _index = rhs._index;
-        _allowedMethods = rhs._allowedMethods;
-    return (*this);
-}
-
-Location::~Location() {}
-
+// --- Getter ---
 std::string Location::getPath() const
 {
     return _path;
@@ -51,22 +51,33 @@ std::string Location::getIndex() const
     return _index;
 }
 
-void Location::setPath(std::string& path)
+bool Location::getAutoindex() const
+{
+	return _autoindex;
+}
+
+// --- Setter ---
+void Location::setPath(const std::string &path)
 {
     _path = path;
 }
 
-void Location::setAllowedMethods(std::vector<std::string>& methods)
+void Location::setAllowedMethods(const std::vector<std::string> &methods)
 {
-    _allowedMethods = methods;
+	_allowedMethods = methods;
 }
 
-void Location::setRoot(std::string& root)
+void Location::setRoot(const std::string &root)
 {
     _root = root;
 }
 
-void Location::setIndex(std::string& index)
+void Location::setIndex(const std::string &index)
 {
     _index = index;
+}
+
+void Location::setAutoindex(bool autoindex)
+{
+	_autoindex = autoindex;
 }

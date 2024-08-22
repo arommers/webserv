@@ -1,7 +1,13 @@
-# VScode
+# Ignore stuff
 *.vscode
-
-# DS_Store
 **/.DS_Store
-
 .prettierrc
+
+# Object files
+*.o
+*.obj
+
+# Executables
+*.exe
+*.out
+*webserv

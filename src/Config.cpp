@@ -1,37 +1,22 @@
-#include "../includes/Config.hpp"
+#include "Config.hpp"
 
-// Constructor
-Config::Config(std::string file_name)
+// --- Constructor ---
+Config::Config(std::string file_name) : _server_i(0), _info(0), _serverBlocks(0)
 {
 	std::string file_content;
-	_server_i = 0;
 
-	// read config file
-	file_content = readConfigFile(file_name);
-	// std::cout << "READ : " << file_content << std::endl << std::endl; // ---> RM
+	file_content = readConfigFile(file_name);	// read config file
+	splitServers(file_content);					// Split the Servers (to have each server block)
 
-	// Split the Servers (you have each server block)
-	splitServers(file_content);
-	// std::cout << "Server_i : " << _server_i << std::endl;	// ---> RM
-	// for (size_t i = 0; i < _server_i; ++i)		// ---> RM 
-	// {														// ---> RM
-	// 	std::cout << "Server_Block [" << i << "]: " << _info[i] << std::endl << std::endl; // ---> RM
-	// }														// ---> RM
-
-	// Create the servers -> parse the info into each ServerInfo class
+	// Create the servers -> parse the info into each ServerBlock class
 	for (size_t i = 0; i < _server_i; i++)
 	{
-		ServerInfo server;
+		ServerBlock server;
 		createServer(_info[i], server);		// We create server
-		_serverBlocks.push_back(server);	// We put serverInfo into _serverBlocks, so we can excess it later
+		_serverBlocks.push_back(server);	// We push ServerBlock into _serverBlocks, so we can excess it later
 	}
-	// if (_nb_server > 1)
-	// 	checkServers();
-	// printConfigFile();	// for testing -> do we have everything
+	ft_printConfigFile();	// for testing -> do we have everything
 }
-
-// Destructor
-Config::~Config() {}
 
 // -------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------
@@ -54,25 +39,14 @@ std::string	Config::readConfigFile(std::string name)
 		throw Exception_Config(strerror(errno));
 	}
 	getline(file, file_content, '\0');
-	removeComments(file_content);
-	removeWhitespace(file_content);
+	ft_removeComments(file_content);
+	ft_removeWhitespace(file_content);
 	if (file_content.size() == 0)
 	{
 		throw Exception_Config("Config format is empty");
 	}
 	file.close();
 	return file_content;
-}
-
-// // 
-// std::vector<ServerInfo> Config::getServerBlocks()
-// {
-// 	return (_serverBlocks);
-// }
-
-void	Config::createServer(std::string &config, ServerInfo &server)
-{
-	std::cout << "HERE" << std::endl << std::endl; // ---> RM
 }
 
 /* splitServers();
@@ -103,191 +77,82 @@ void	Config::splitServers(std::string &file_content)
 	}
 }
 
-// -------------------------------------------------------------------------------------
-// -------------------------------------------------------------------------------------
-// --- Utils for Config ---
-
-/* ft_findServerStart();
- * - Checks for keyword 'server'
- * - Puts start position at '{'
+/* createServer();
+ * - Substract 'key' and 'value' from the file (ft_splitParameters())
+ * - Looks for matching keyword
+ * - Does checks on the 'value' of the 'key'
+ * - Pushes the 'value' onto the matching variable on ServerBlock class
  */
-size_t	Config::ft_findServerStart(size_t start, std::string &file_content)
+void	Config::createServer(std::string &config_string, ServerBlock &server)
 {
-	size_t i = start;
+	std::vector<std::vector<std::string>>	parameters;
+	bool	locationEncountered = false;
 
-	// Check if "server" keyword exists in the content
-	while (file_content[i])
+	parameters = ft_splitParameters(config_string);
+	if (parameters[0].size() == 0)
+		throw  Exception_Config("Invalid configuration foramt (3)");
+
+	for (size_t i = 0; i < parameters[0].size(); i++)
 	{
-		if (file_content[i] == 's')
-			break ;
-		i++;
-	}
-	if (file_content.compare(i, 6, "server") != 0)
-		throw Exception_Config("No 'server' found in the configuration file");
-
-	// Move past "server" keyword and skip whitespace
-	i += 6;
-	while (file_content[i] && isspace(file_content[i]))
-		i++;
-
-	// Check if the server configuration starts with '{'
-	if (file_content[i] == '{')
-		return i;
-	else
-		throw  Exception_Config("Invalid server scope{}");
-}
-
-/* ft_findServerEnd();
- * - If an opening brace '{' is found, increment the scope.
- * - If a closing brace '}' is found:
- *    - If scope is 0 we have found the matching closing brace.
- *    - If scope is not 0, decrement scope to indicate leaving a nested block.
- */
-size_t	Config::ft_findServerEnd(size_t start, std::string &file_content)
-{
-	size_t	i = start + 1;
-	size_t	scope = 0;
-
-	// Iterate from start index to find the end of a server configuration
-	while (file_content[i])
-	{
-		if (file_content[i] == '{')
-			scope++;
-		if (file_content[i] == '}')
+		if (location(parameters[0][i]))
 		{
-			if (!scope)
-				return i;
-			scope--;
+			/* Needs to be at the top, so once a location block is encountered.
+			 * But there are more variables after the location block, it is invalid. */
+			locationEncountered = true;
+			std::vector<std::vector<std::string>> locParams = ft_checkLocation(parameters[0][i], parameters[1][i], server);
+			server.setLocations(locParams, server);
 		}
-		i++;
-	}
-	return start;
-}
-
-/* ft_checkBrackets();
- * - Checks if every '{' is closed 
- */
-bool	Config::ft_checkBrackets(std::string &str) 
-{
-	int stack[100];		// Stack to store open brackets
-	int top = -1;		// Initialize stack top to -1
-	int openBracket;	// Variable to store the type of open bracket
-	int i = 0;			// Loop counter to traverse the input string
-
-	while (str[i] != '\0') 
-	{
-		if (str[i] == '{') 
+		else if (locationEncountered)
 		{
-			top++;
-			stack[top] = str[i];
-		} 
-		else if (str[i] == '}') 
-		{
-			if (top == -1) 
-				return false;    
-			openBracket = stack[top];
-			top--;
+			// Throw an exception if any non-location parameters are encountered after a location block.
+			throw Exception_Config("Invalid configuration format: non-location parameter after location block");
 		}
-		if (str[i] == '}' && openBracket != '{') 
-			return false; // Return false if brackets don't match
-		i++;
-	}
-	if (top != -1)
-		return false;	// If there are unmatched open brackets left on the stack, return false
-	return true;
-}
-
-/* removeComments();
- * - Removes the comments from 'char #' to '\n' 
- */
-void	Config::removeComments(std::string &file_content)
-{
-	size_t pos;
-
-	// Find the first occurrence of '#'
-	pos = file_content.find('#');
-	while (pos != std::string::npos)
-	{
-		size_t pos_end;
-		pos_end = file_content.find('\n', pos);	// Find the end of the line (newline character) after '#'
-		file_content.erase(pos, pos_end - pos);	// Remove the comment
-		pos = file_content.find('#');
-	}
-}
-
-/* removeWhitespace();
- * - Removes whitespaces in the start, end and in the content (if more than one)
- */
-void	Config::removeWhitespace(std::string &file_content)
-{
-	size_t	i = 0;
-
-	// Step 1: Remove leading whitespace (start of content)
-	while (file_content[i] && isspace(file_content[i]))
-		i++;
-	file_content = file_content.substr(i);
-
-	// Step 2: Remove trailing whitespace (end of content)
-	i = file_content.length() - 1;
-	while (i > 0 && isspace(file_content[i]))
-		i--;
-	file_content = file_content.substr(0, i + 1);
-
-	// Step 3: Remove multiple internal spaces (inbetween of content)
-	bool in_space = false;
-	i = 0;
-	while (i < file_content.length())
-	{
-		if (isspace(file_content[i]))
+		else if (parameters[0][i] == "port")
 		{
-			if (in_space)
-				file_content.erase(i, 1);
-			else
-			{
-				in_space = true;
-				i++;
-			}
+			ft_checkPort(parameters[1][i], server);
+			server.setPort(std::stoi(parameters[1][i]));
+		}
+		else if (parameters[0][i] == "host")
+		{
+			ft_checkHost(parameters[1][i], server);
+			server.setHost(parameters[1][i]);
+		}
+		else if (parameters[0][i] == "root")
+		{
+			server.setRoot(ft_checkRoot(parameters[1][i], server));
+		}
+		else if (parameters[0][i] == "index")
+		{
+			ft_checkIndex(parameters[1][i], server);
+			server.setIndex(parameters[1][i]);
+		}
+		else if (parameters[0][i] == "max_client_size")
+		{
+			ft_checkMaxClient((parameters[1][i]), server);
+			server.setMaxClient(std::stoi(parameters[1][i]));
+		}
+		else if (parameters[0][i] == "server_name")
+		{
+			ft_checkServerName(parameters[1][i], server);
+			server.setServerName(parameters[1][i]);
+		}
+		else if (errorPage(parameters[0][i]))
+		{
+			ft_checkErrorPage(parameters[0][i], parameters[1][i], server);
+			server.setErrorPage(parameters[1][i]);
 		}
 		else
-		{
-			in_space = false;
-			i++;
-		}
+			throw Exception_Config("Invalid configuration format, invalid keyword");
 	}
+
+	// Check that all important varabiles are filled.
+	ft_checkServerVariables(server);
 }
 
-// Prints the arguments that need to be passed onto the 'Server' -> Used for testing purpose
-void	Config::printConfigFile()
+/* getServerBlocks();
+ * - A getter for the server blocks (used in the sockets aka. Server.cpp)
+ */
+std::vector<ServerBlock> Config::getServerBlocks() const
 {
-	std::cout << "------ " << BOLD << "Printing Config file" << RESET << " ------" << std::endl << std::endl;
-	
-	size_t	i = -1;
-	// loops through all the servers (for multiple servers)
-	while (++i < _serverBlocks.size())
-	{
-		// prints WHAT server #
-		std::cout << RED << i << RESET << " Server" << std::endl;
-
-		// prints server name
-		std::cout << "Server_name : " << _serverBlocks[i].getName() << std::endl;
-
-		// prints server host
-		std::cout << "host : " << _serverBlocks[i].getHost() << std::endl;
-
-		// prints port
-		std::cout << "Port : ";
-		std::vector<int> port = _serverBlocks[i].getPort();
-		for (size_t i = 0; i < port.size(); ++i) 
-		{
-			std::cout << port[i] << "  ";
-		}
-		std::cout << std::endl;
-
-		// prints root
-		std::cout << "RootPath : " << _serverBlocks[i].getRoot() << std::endl;
-
-		// --- ADD more ---
-
-		std::cout << BOLD << "----------------------------------" << RESET << std::endl;
-	}
+	return (_serverBlocks);
 }

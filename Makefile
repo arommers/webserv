@@ -9,9 +9,13 @@ SRC := \
 	src/main.cpp \
 	src/Client.cpp \
 	src/Server.cpp \
-	src/Cgi.cpp \
 	src/Config.cpp \
-	src/ServerInfo.cpp \
+	src/ConfigUtils.cpp \
+	src/ConfigUtils2.cpp \
+	src/ServerBlock.cpp \
+	src/ServerBlockUtils.cpp \
+	src/Location.cpp \
+	src/Cgi.cpp \
 
 SRC := $(SRC:%=$(SRC_DIR)/%)
 OBJ := $(SRC:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
@@ -30,7 +34,7 @@ all: $(NAME)
 
 $(NAME): $(OBJ)
 	@$(CC) $(FLAG) $(OBJ) -o $(NAME) $(HEADERS)
-	@echo "$(BOLD) $(GREEN) Compilation $(NAME) done$(RSET)"
+	@echo "$(BOLD) $(GREEN) Compilation $(NAME) done$(RESET)"
 
 $(OBJ_DIR)/%.o: ./$(SRC_DIR)/%.cpp
 	@$(DIR_DUP)
@@ -38,11 +42,11 @@ $(OBJ_DIR)/%.o: ./$(SRC_DIR)/%.cpp
 
 clean:
 	@rm -rf $(OBJ_DIR)
-	@echo "$(BOLD) $(CYAN) Clean objects Done $(RSET)"
+	@echo "$(BOLD) $(CYAN) Clean objects Done $(RESET)"
 
 fclean: clean
 	@rm -rf $(NAME)
-	@echo "$(BOLD) $(CYAN) Clean $(NAME) done $(RSET)"
+	@echo "$(BOLD) $(CYAN) Clean $(NAME) done $(RESET)"
 
 re: fclean all
 

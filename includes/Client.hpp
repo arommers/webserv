@@ -19,7 +19,8 @@
 #include <sstream>
 #include <ctime>
 #include <regex>
-
+#include <dirent.h>       // Provides functions for using DIR directory stream like opendir(), readdir()
+#include "ServerBlock.hpp"
 
 
 
@@ -67,6 +68,8 @@ class Client
         int                                     _responsePipe[2];
         std::vector<int>                        _statusCheck = {400, 401, 404, 405, 500, 503};
         
+        // bool                                    _responseReady = false;
+        ServerBlock                              _ServerBlock;
 
         void    errorCheckRequest( void );
         void    isValidMethod( std::string method );
@@ -75,9 +78,9 @@ class Client
 
     public:
         Client();
-        Client(int fd);
-        Client(const Client& rhs);
-        Client& operator=(const Client& rhs); // Update!
+        Client(int fd, ServerBlock& ServerBlock);
+        // Client(const Client& rhs);
+        // Client& operator=(const Client& rhs);
         ~Client();
 
         void                                    addToBuffer( std::string bufferNew );
@@ -111,6 +114,9 @@ class Client
         int*                                    getResponsePipe();
         bool                                    detectError();
         int                                     getStatusCode();
+        int*                                    getReponsePipe();
+        // std::string                             readFile ( std::string file );
+        ServerBlock&                             getServerBlock();
 };
 
 std::string trimWhiteSpace(std::string& string);

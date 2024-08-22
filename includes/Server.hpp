@@ -2,14 +2,14 @@
 
 #include "../includes/Client.hpp"
 #include "../includes/Cgi.hpp" 
+#include "../includes/ServerBlock.hpp"
 
 class Cgi;
 
 class Server
 {
     private:
-        int                             _serverSocket;
-        struct sockaddr_in              _address;
+        std::vector <ServerBlock>        _servers;
         std::vector<struct pollfd>      _pollFds;
         std::unordered_map<int, Client> _clients;
         Cgi                             _cgi;
@@ -20,34 +20,42 @@ class Server
         Server& operator=(const Server& rhs);
         ~Server();
 
-        void                        createServerSocket();
-        void                        createPollLoop();
-        void                        acceptConnection();
-        void                        closeConnection(size_t index);
-        void                        shutdownServer();
-        void                        handleClientData(size_t index);
-        void                        sendClientData(size_t index);
+        void            addServer(const ServerBlock& serverInfo);
+        void            createServerSockets();
+        void            createPollLoop();
+        void            acceptConnection(int serverSocket);
+        void            handleClientData(size_t index);
+        void            openFile(Client& client);
+        void            handleFileRead(size_t index);
+        void            sendClientData(size_t index);
+        void            checkTimeout(int time);
+        void            shutdownServer();
+        void            closeConnection(size_t index);
+        void            removeClient(int fd);
+        ServerBlock&    getServerBlockByFd(int fd);
+        void            addClient(int fd, ServerBlock& serverInfo);
+        Client&         getClient(int fd);
+        std::string     generateFolderContent(std::string path);
+
+        // currently not implemented
+        // void        handleClientRequest(Client &client);
+
+        void            removePollFd( int fd );
+        std::vector<struct pollfd>      getPollFds();
+        void            setServer(std::vector<ServerBlock> serverBlocks);
+
+
         void                        handleFdWrite(size_t index);
-        void                        addClient(int fd);
-        Client&                     getClient(int fd);
-        void                        removeClient(int fd);
-        void                        checkTimeout(int time);
         int                         getServerSocket();
-        std::vector<struct pollfd>  getPollFds();
         void                        addPollFd( int fd, short int events );
-        void                        removePollFd( int fd );
         void                        addFileToPoll( Client& client, std::string file );
 
-        void            handleClientRequest();
-        int             checkFile(std::string &file);
-        void            openFile(Client& client);
-        void            handleClientRequest(Client &client);
-        void            handleDeleteRequest(Client& client);
+        // int             checkFile(std::string &file);
+        void                        handleClientRequest(Client &client);
+        void                        handleDeleteRequest(Client& client);
 
-        // void    handleGetRequest(Client &client);
-        // void    handlePostRequest(Client &client);
-        // void    handleDeleteRequest(Client &client);
-
-        void    handleFileRead( size_t index );
-        void    removePipe( size_t index );
+        void                        removePipe( size_t index );
 };
+
+        bool            sortLocations(const Location& a, const Location& b);
+

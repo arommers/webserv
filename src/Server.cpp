@@ -1,4 +1,5 @@
 #include "../includes/Server.hpp"
+#include "../includes/Config.hpp"
 
 // int _shutdownRequest = false;
 
@@ -10,49 +11,71 @@ Server::~Server() {}
 // Server& Server::operator=(const Server& rhs) {}
 
 
-int     Server::getServerSocket()
-{
-    return (_serverSocket);
-}
+// int     Server::getServerSocket()
+// {
+//     return (_serverSocket);
+// }
 
 /*  CREATES A SERVERSOCKET, INITIALIZES THE POLLFD ARRAY
     AND STARTS LISTENING FOR CONNECTIONS    */
 
-void    Server::createServerSocket()
+
+void    Server::addServer(const ServerBlock& ServerBlock)
 {
-    int addrLen = sizeof(_address);
-    struct pollfd serverFd;
+    _servers.push_back(ServerBlock);
+}
+
+// Creates server sockets and adds them to the poll loop
+
+
+void Server::createServerSockets()
+{
+    struct sockaddr_in address;
+    int addrLen = sizeof(address);
     int opt = 1;
 
-    if ((_serverSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    for (ServerBlock& ServerBlock : _servers)
     {
-        std::cerr << RED << "Socket failed: " << strerror(errno) << RESET << std::endl;
-        exit(EXIT_FAILURE);
+        int serverSocket;
+
+        if ((serverSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+        {
+            std::cerr << RED << "Socket creation failed: " << strerror(errno) << RESET << std::endl;
+            exit(EXIT_FAILURE);
+        }
+        std::cout << GREEN << "Socket created successfully: " << serverSocket << RESET << std::endl;
+
+        setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt));
+
+        address.sin_family = AF_INET;
+        address.sin_addr.s_addr = inet_addr(ServerBlock.getHost().c_str());
+        address.sin_port = htons(ServerBlock.getPort());
+
+        if (bind(serverSocket, reinterpret_cast<struct sockaddr*>(&address), addrLen) < 0)
+        {
+            std::cerr << RED << "Bind failed: " << strerror(errno) << RESET << std::endl;
+            close(serverSocket);
+            exit(EXIT_FAILURE);
+        }
+        std::cout << GREEN <<"Bind successful on port: " << ServerBlock.getPort() << RESET << std::endl;
+
+        if (listen(serverSocket, ServerBlock.getMaxClient()) < 0)
+        {
+            std::cerr << RED << "Listen failed: " << strerror(errno) << RESET << std::endl;
+            close(serverSocket);
+            exit(EXIT_FAILURE);
+        }
+        std::cout << GREEN << "Listening on port: " << ServerBlock.getPort() << GREEN << std::endl;
+
+        struct pollfd serverFd;
+        serverFd.fd = serverSocket;
+        serverFd.events = POLLIN;
+        _pollFds.push_back(serverFd);
+
+        ServerBlock.setServerFd(serverSocket);
     }
-    setsockopt(getServerSocket(), SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt));
-
-    _address.sin_family = AF_INET; // address family
-    _address.sin_addr.s_addr = INADDR_ANY; // accepts connections from any IP on the host
-    _address.sin_port = htons(PORT); // ensures the port number is correctly formatted
-
-    if (bind(_serverSocket, reinterpret_cast<struct sockaddr*>(&_address), addrLen) < 0)
-    {
-        std::cerr << RED << "Bind failed: " << strerror(errno) << RESET << std::endl;
-        close(_serverSocket);
-        exit(EXIT_FAILURE);
-    }
-
-    if (listen(_serverSocket, MAX_CLIENTS) < 0)
-    {
-        std::cerr << RED << "Listen failed: " << strerror(errno) << RESET << std::endl;
-        close(_serverSocket);
-        exit(EXIT_FAILURE);
-    }
-
-    serverFd.fd = _serverSocket;
-    serverFd.events = POLLIN;
-    _pollFds.push_back(serverFd);
 }
+
 
 /*  START A POLL LOOP AND CHECKS FOR REVENTS THAT TRIGGERED
     POLLIN
@@ -62,11 +85,16 @@ void    Server::createServerSocket()
     POLLOUT
     - SEND DATA */
      
-
-void    Server::createPollLoop()
+void Server::createPollLoop()
 {
     while (true)
     {
+        if (_pollFds.empty())
+        {
+            std::cerr << RED << "No file descriptors to poll." << RESET << std::endl;
+            break;
+        }
+
         int pollSize = poll(_pollFds.data(), _pollFds.size(), -1);
         if (pollSize == -1)
         {
@@ -75,20 +103,21 @@ void    Server::createPollLoop()
             exit(EXIT_FAILURE);
         }
 
+        // possibly use an alternative way to recognize distinction between the different FDs
         for (size_t i = 0; i < _pollFds.size(); ++i)
         {
-            // std::cout << "FD: " << _pollFds[i].fd << " revent: " << _pollFds[i].revents << std::endl;
             if (_pollFds[i].revents & POLLIN)
             {
-                if (_pollFds[i].fd == _serverSocket)
-                    acceptConnection();
+                if (i < _servers.size())
+                    acceptConnection(_pollFds[i].fd);
                 else if (_clients.count(_pollFds[i].fd))
                     handleClientData(i);
                 else
+                // Do we need a distinction between reading from a pipe vs a file?
                     handleFileRead(i);
             }
             else if (_pollFds[i].revents & POLLOUT){
-                if (_clients.count(_pollFds[i].fd)){
+            if (_clients.count(_pollFds[i].fd)){
                     if (getClient(_pollFds[i].fd).getState() == RESPONSE)
                         sendClientData(i);
                     else
@@ -105,6 +134,276 @@ void    Server::createPollLoop()
     }
 
 }
+
+
+
+// Accept a new connection from a client and add it to the poll loop
+
+void    Server::acceptConnection(int serverSocket)
+{
+    int newSocket;
+    struct sockaddr_in clientAddress;
+    int addrLen = sizeof(clientAddress);
+
+    if ((newSocket = accept(serverSocket, reinterpret_cast<struct sockaddr*>(&clientAddress), reinterpret_cast<socklen_t*>(&addrLen))) < 0)
+        std::cerr << RED << "Accept failed: " << strerror(errno) << RESET << std::endl;
+    else
+    {    
+        std::cout << GREEN << "New connection from: " << inet_ntoa(clientAddress.sin_addr) << ", assigned socket is: " << newSocket << RESET << std::endl;
+
+        struct pollfd clientFd;
+        clientFd.fd = newSocket;
+        clientFd.events = POLLIN;
+        _pollFds.push_back(clientFd);
+        
+        addClient(newSocket, getServerBlockByFd(serverSocket));
+    }
+}
+
+
+void Server::openFile(Client &client)
+{
+    int                     fileFd;
+    std::string             file;
+    ServerBlock&            serverBlock = client.getServerBlock();
+    std::vector<Location>   matchingLocations;
+    bool                    locationFound = false;
+
+    file = client.getRequestMap().at("Path");
+
+    for (const Location& location : serverBlock.getLocations())
+    {
+        if (file.find(location.getPath()) == 0)
+            matchingLocations.push_back(location);
+    }
+
+    std::sort(matchingLocations.begin(), matchingLocations.end(), sortLocations);
+
+    for (const Location& location : matchingLocations)
+    {
+        std::string locationRoot = location.getRoot();
+        std::string locationPath = location.getPath();
+
+        if (locationRoot.empty())
+            locationRoot = serverBlock.getRoot();
+        
+        if (!locationRoot.empty() && locationRoot.back() == '/')
+            locationRoot.pop_back();
+
+        std::string fileName = file.substr(locationPath.length());
+        if (!fileName.empty() && fileName.front() == '/')
+            fileName.erase(fileName.begin());
+
+        file = locationRoot + "/" + fileName;
+
+        if (file.back() == '/' && location.getAutoindex())
+        {
+            client.setWriteBuffer(generateFolderContent(file));
+            return;
+        }
+        if (file.back() == '/' && !location.getIndex().empty())
+            file += location.getIndex();
+
+        locationFound = true;
+        break;
+    }
+
+    // If no matching location was found, use the server root
+    if (!locationFound)
+    {
+        if (file.back() == '/')
+            file += serverBlock.getIndex();
+
+        std::string serverRoot = serverBlock.getRoot();
+        if (!serverRoot.empty() && serverRoot.back() == '/')
+            serverRoot.pop_back();
+
+        if (file.front() == '/')
+            file = serverRoot + file;
+        else
+            file = serverRoot + "/" + file;
+    }
+
+    // Normalize path: Replace multiple slashes with a single slash
+    file = std::regex_replace(file, std::regex("//+"), "/");
+
+    std::cout << "Constructed file path: " << file << std::endl;
+
+    fileFd = open(file.c_str(), O_RDONLY);
+    if (fileFd < 0)
+    {
+        client.setStatusCode(404); 
+        // Call function to open error file (not implemented here)
+    }
+    else
+    {
+        // If file is successfully opened, add it to the poll loop
+        client.setReadWriteFd(fileFd); // CHANGED BY SVEN
+        struct pollfd filePollFd;
+        filePollFd.fd = fileFd;
+        filePollFd.events = POLLIN;
+        _pollFds.push_back(filePollFd);
+        client.setState(READING);
+    }
+}
+
+// void Server::openFile(Client &client)
+// {
+//     int         fileFd;
+//     std::string file;
+//     ServerBlock& serverBlock = client.getServerBlock();
+//     bool        locationFound = false;
+
+//     file = client.getRequestMap().at("Path");
+
+//     std::cout << RED << serverBlock.getLocations().size() << RESET << std::endl;
+
+//     for (const Location& location : serverBlock.getLocations())
+//     {
+//         // Check if the file path starts with the location path
+//         if (file.find(location.getPath()) == 0)
+//         {
+//             std::string locationRoot = location.getRoot();
+//             std::string locationPath = location.getPath();
+//             std::cout << RED << locationRoot << "\n" << locationPath << RESET << std::endl;
+
+            
+//             // Ensure no trailing slash on root before appending the file
+//             if (!locationRoot.empty() && locationRoot.back() == '/')
+//                 locationRoot.pop_back();
+            
+//             // Avoid double slash by removing the first slash if present
+//             if (!locationPath.empty() && locationPath.back() == '/' && file[locationPath.length()] == '/')
+//                 file = locationRoot + file.substr(locationPath.length() + 1);
+//             else
+//             {
+//                file = locationRoot + file.substr(locationPath.length());
+//                 std::cout << RED << "TEST" << RESET << std::endl;
+//             }
+
+//             if (file.back() == '/' && location.getAutoindex() == true)
+//             {
+//                 client.setWriteBuffer(generateFolderContent(file));
+//                 return;
+//             }
+//             if (file.back() == '/' && !location.getIndex().empty())
+//                 file += location.getIndex();
+
+//             locationFound = true;
+//             break;
+//         }
+//     }
+
+//     // If no matching location was found, use the server root
+//     // ************* We probably just want to serve a 404 error here ****************
+//     if (!locationFound)
+//     {
+//         if (file.back() == '/')
+//             file += serverBlock.getIndex();
+
+//         std::string serverRoot = serverBlock.getRoot();
+//         if (!serverRoot.empty() && serverRoot.back() == '/')
+//             serverRoot.pop_back();
+
+//         if (file.front() == '/')
+//             file = serverRoot + file;
+//         else
+//             file = serverRoot + "/" + file;
+//     }
+
+//     // Normalize path: Replace multiple slashes with a single slash
+//     // not sure if this is still necessary
+//     file = std::regex_replace(file, std::regex("//+"), "/");
+
+//     std::cout << "Constructed file path: " << file << std::endl;
+
+//     fileFd = open(file.c_str(), O_RDONLY);
+//     if (fileFd < 0)
+//     {
+//         client.setStatusCode(404); 
+//         // call function to open error file
+//     }
+//     else
+//     {
+//         // If file is successfully opened, add it to the poll loop
+//         client.setFileFd(fileFd);
+//         struct pollfd filePollFd;
+//         filePollFd.fd = fileFd;
+//         filePollFd.events = POLLIN;
+//         _pollFds.push_back(filePollFd);
+//     }
+// }
+
+std:: string Server::generateFolderContent(std::string path)
+{
+    std::ostringstream  html;
+    struct dirent       *entry;
+    DIR                 *folder;
+    
+    html << "<!DOCTYPE html>";  // Include the DOCTYPE declaration
+    html << "<html><head>";
+    html << "<meta charset=\"UTF-8\">";  // Define the character set
+    html << "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">";  // Responsive design
+    html << "<title>Index of " << path << "</title>";  // Set the title
+    html << "</head><body>";
+    html << "<h1>Index of " << path << "</h1>";
+    html << "<ul>";
+
+    if (folder == opendir(path.c_str()))
+    {
+        while (entry == readdir(folder))
+        {
+            std::string name = entry->d_name;
+            
+            if (name == "." || name == "..")
+                continue;
+
+            std::string fullPath = path + (path.back() == '/' ? "" : "/") + name;
+
+            if (entry->d_type == DT_DIR)
+                name += "/";
+            
+            html << "<li><a href=\"" << name << "\">" << name << "</a></li>";
+        }
+        closedir(folder);
+    }
+    else
+        html << "<li>Unable to open directory</li>";
+    
+    html << "<ul>";
+    html << "</body></hmtl>";
+
+    return html.str();
+}
+
+// void Server::openFile(Client &client)
+// {
+//     int fileFd;
+//     std::string file;
+
+//     // if Error call new function that builds an error Path.
+//     // When does the error get detected? if after the path building
+//     // needs to be redone after trying to open the original file request
+
+//     file = client.getRequestMap().at("Path");
+//     if (file == "/")
+//         file += client.getServerInfo().getIndex();
+//     file = client.getServerInfo().getRoot() + file;
+
+//     std::cout << "Constructed file path: " << file << std::endl;
+//     fileFd = open(file.c_str(), O_RDONLY);
+//     if (fileFd < 0)
+//     //  build path to 404 file, open it and add fd to Poll loop
+//         client.setStatusCode(404); 
+//     else
+//     {
+//         client.setFileFd(fileFd);
+//         struct pollfd filePollFd;
+//         filePollFd.fd = fileFd;
+//         filePollFd.events = POLLIN;
+//         _pollFds.push_back(filePollFd);
+//     }
+// }
 
 void Server::handleFileRead(size_t index)
 {
@@ -157,27 +456,6 @@ void Server::handleFdWrite(size_t index)
 
 }
 
-
-void    Server::acceptConnection()
-{
-    int newSocket;
-    struct sockaddr_in clientAddress;
-    int addrLen = sizeof(clientAddress);
-
-    if ((newSocket = accept(_serverSocket, reinterpret_cast<struct sockaddr*>(&clientAddress), reinterpret_cast<socklen_t*>(&addrLen))) < 0)
-        std::cerr << RED << "Accept failed: " << strerror(errno) << RESET << std::endl;
-    else
-    {    
-        std::cout << GREEN << "New connection from: " << inet_ntoa(_address.sin_addr) << ", assigned socket is: " << newSocket << RESET << std::endl;
-
-        struct pollfd clientFd;
-        clientFd.fd = newSocket;
-        clientFd.events = POLLIN;
-        _pollFds.push_back(clientFd);
-        
-        addClient(newSocket);
-    }
-}
 
 void    Server::closeConnection(size_t index)
 {
@@ -263,28 +541,28 @@ void Server::sendClientData(size_t index)
 }
 
 
-void Server::openFile(Client &client)
-{
-    int fileFd;
-    std::string file;
+// void Server::openFile(Client &client)
+// {
+//     int fileFd;
+//     std::string file;
     
-    file = client.getRequestMap().at("Path");
-    if (file == "/")
-        file += "index.html";
-    file = "./html" + file;
+//     file = client.getRequestMap().at("Path");
+//     if (file == "/")
+//         file += "index.html";
+//     file = "./html" + file;
     
-    fileFd = open(file.c_str(), O_RDONLY);
-    if (fileFd < 0)
-    {
-        client.setStatusCode(404);
-        std::cerr << "Failed to open file: " << file << ": " << strerror(errno) << std::endl;
-        return;
-    }
+//     fileFd = open(file.c_str(), O_RDONLY);
+//     if (fileFd < 0)
+//     {
+//         client.setStatusCode(404);
+//         std::cerr << "Failed to open file: " << file << ": " << strerror(errno) << std::endl;
+//         return;
+//     }
 
-    client.setReadWriteFd(fileFd);
-    addPollFd(fileFd, POLLIN);
-    client.setState(READING);
-}
+//     client.setReadWriteFd(fileFd);
+//     addPollFd(fileFd, POLLIN);
+//     client.setState(READING);
+// }
 
 void    Server::checkTimeout(int time)
 {
@@ -305,15 +583,19 @@ void    Server::checkTimeout(int time)
 
 void    Server::shutdownServer()
 {
-    while (_pollFds.size() > 1)
-        closeConnection(1);
-    if (_serverSocket != -1)
-    close(_serverSocket);
-}
-
-void Server::addClient(int fd)
-{
-    _clients.emplace(fd, Client(fd));
+    // Close all client connections first
+    while (_pollFds.size() > _servers.size())
+        closeConnection(_servers.size());
+    // Close all server sockets
+    for (auto& ServerBlock : _servers)
+    {
+        if (ServerBlock.getServerFd() != -1)
+            close(ServerBlock.getServerFd());
+    }
+    
+    // For now just an insurance to. Probably redundant
+    _pollFds.clear();
+    _clients.clear();
 }
 
 Client& Server::getClient(int fd)
@@ -369,6 +651,16 @@ void    Server:: removePipe( size_t index )
     }
 }
 
+ServerBlock& Server::getServerBlockByFd(int fd)
+{
+    for (size_t i = 0; i < _servers.size(); ++i)
+    {
+        if (_servers[i].getServerFd() == fd)
+            return _servers[i];
+    }
+    throw std::runtime_error("ServerBlock with the given fd not found");
+}
+
 
 void    Server::addFileToPoll( Client& client, std::string file )
 {
@@ -384,6 +676,11 @@ void    Server::addFileToPoll( Client& client, std::string file )
     addPollFd(fileFd, POLLIN);
 }
 
+void Server::addClient(int fd, ServerBlock& ServerBlock)
+{
+    _clients.emplace(fd, Client(fd, ServerBlock));
+}
+
 void Server::handleDeleteRequest(Client& client)
 {
     std::string toDelete = client.getRequestMap().at("Path");
@@ -395,4 +692,15 @@ void Server::handleDeleteRequest(Client& client)
         return ;
     }
     client.setState(RESPONSE);
+
+}
+
+void            Server::setServer(std::vector<ServerBlock> serverBlocks)
+{
+    _servers = serverBlocks;
+}
+
+bool    sortLocations(const Location& a, const Location& b)
+{
+    return (a.getPath().length()> b.getPath().length());
 }

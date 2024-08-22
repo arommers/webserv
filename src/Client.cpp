@@ -16,34 +16,93 @@ Client::Client() {}
 
 Client::~Client() { }
 
-Client::Client( int fd ): _fd(fd) {}
+Client::Client(int fd, ServerBlock& ServerBlock): _fd(fd), _ServerBlock(ServerBlock) {}
 
-Client::Client(const Client& rhs)
-{
-    _fd = rhs._fd;
-    _readBuffer = rhs._readBuffer;
-    _writeBuffer = rhs._writeBuffer;
-    _writePos = rhs._writePos;
-    _time = rhs._time;
-}
+// Client::Client(const Client& rhs)
+// {
+//     _fd = rhs._fd;
+//     _ServerBlock = rhs._ServerBlock;
+//     _readBuffer = rhs._readBuffer;
+//     _writeBuffer = rhs._writeBuffer;
+//     _writePos = rhs._writePos;
+//     _time = rhs._time;
+// }
 
-Client& Client::operator=(const Client& rhs)
-{
-    if (this != &rhs)
-    {
-        _fd = rhs._fd;
-        _readBuffer = rhs._readBuffer;
-        _writeBuffer = rhs._writeBuffer;
-        _writePos = rhs._writePos;
-        _time = rhs._time;
-    }
-    return *this;
-}
+// Client& Client::operator=(const Client& rhs)
+// {
+//     if (this != &rhs)
+//     {
+//         _fd = rhs._fd;
+//         _ServerBlock = rhs._ServerBlock;
+//         _readBuffer = rhs._readBuffer;
+//         _writeBuffer = rhs._writeBuffer;
+//         _writePos = rhs._writePos;
+//         _time = rhs._time;
+//     }
+//     return (*this);
+// }
 
 void    Client::addToBuffer( std::string bufferNew )
 {
     _readBuffer += bufferNew;
 }
+
+bool    Client::requestComplete()
+{
+    size_t pos = _readBuffer.find("\r\n\r\n");
+
+    if (pos == std::string::npos)
+        return false;
+    
+    std::string headers = _readBuffer.substr(0, pos + 4);
+    size_t posContent = headers.find("Content-Length:");
+
+    if (posContent == std::string::npos)
+        return true;
+    
+    size_t contentEnd = headers.find("\r\n", posContent);
+    std::string content = headers.substr(posContent + 15, contentEnd - posContent - 15);
+    int contentLength = std::stoi(content);
+
+    size_t bodyBegin = pos + 4;
+    size_t bodyLength = bodyBegin + contentLength;
+
+    return _readBuffer.size() >= bodyLength;
+}
+
+void    Client::updateTime()
+{
+    _time = std::time(nullptr);
+}
+
+std::time_t Client::getTime()
+{
+    return _time;
+}
+
+std::map<std::string, std::string> Client::getRequestMap( void )
+{
+    return (_requestMap);
+}
+
+
+
+
+ServerBlock& Client::getServerBlock()
+{
+    return _ServerBlock;
+}
+
+// bool Client::getResponseStatus()
+// {
+//     return _responseReady;
+// }
+
+// std::string Client::getFileBuffer()
+// {
+//     return _fileBuffer;
+// }
+
 
 std::string    Client::getReadBuffer( void )
 {
@@ -103,37 +162,6 @@ void Client::setStatusCode( const int statusCode )
     }
 }
 
-bool    Client::requestComplete()
-{
-    size_t pos = _readBuffer.find("\r\n\r\n");
-
-    if (pos == std::string::npos)
-        return false;
-    
-    std::string headers = _readBuffer.substr(0, pos + 4);
-    size_t posContent = headers.find("Content-Length:");
-
-    if (posContent == std::string::npos)
-        return true;
-    size_t contentEnd = headers.find("\r\n", posContent);
-    std::string content = headers.substr(posContent + 15, contentEnd - posContent - 15);
-    int contentLength = std::stoi(content);
-
-    size_t bodyBegin = pos + 4;
-    size_t bodyLength = bodyBegin + contentLength;
-    return  _readBuffer.size() >= bodyLength;
-}
-
-void    Client::updateTime()
-{
-    _time = std::time(nullptr);
-}
-
-std::time_t Client::getTime()
-{
-    return _time;
-}
-
 void    Client::parseBuffer ( void )
 {
     std::string line, key, value;
@@ -179,11 +207,6 @@ void    Client::printRequestMap( void )
         std::cout << pair.first << ":" << pair.second << std::endl;
     }
     std::cout << "\n------- Content of header map -------\n";
-}
-
-std::map<std::string, std::string> Client::getRequestMap( void )
-{
-    return (_requestMap);
 }
 
 void   Client::isValidMethod( std::string method )
@@ -301,10 +324,16 @@ void    Client::resetClientData( void )
 }
 
 
-std::string Client::getFileBuffer()
-{
-    return _fileBuffer;
-}
+// std::string Client::getFileBuffer()
+// void Client::setFileFd(int fd)
+// {
+//     _fileFd = fd;
+// }
+
+// int Client::getFileFd()
+// {
+//     return _fileBuffer;
+// }
 
 void Client::setReadWriteFd(int fd)
 {
