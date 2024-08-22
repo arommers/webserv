@@ -753,23 +753,33 @@
               <a class="nav__link" href="#section--4">About us</a>
             </li>
             <li class="nav__item">
-              <button class="nav__link" onclick="showTime()">Show Time</button>
+              <a class="nav__link nav__link--btn" href="#" onclick="uploadFile()">Upload File</a>
+          </li>
+            <li class="nav__item">
+              <a class="nav__link nav__link--btn" href="#" onclick="showTime()">Show Time</a>
             </li>
             <li class="nav__item">
-              <a class="nav__link" href="javascript:void(0);" onclick="loadFormData()">Serving data</a>
+              <a class="nav__link nav__link--btn" href="javascript:void(0);" onclick="loadFormData()">Show form</a>
           </li>
             <li class="nav__item">
               <a class="nav__link nav__link--btn btn--show-modal" href="#"
-                >Start serving</a
-              >
+                >Submit to form</a>
             </li>
           </ul>
         </nav>
 
         <script>
+          function uploadFile() {
+              // Open a new window with specific width, height, and other features
+              window.open('upload.html', 'Upload File', 'width=600,height=300');
+          }
+          </script>
+          
+
+        <script>
           function showTime() {
             // Open a small pop-up window and load the time.cgi script
-            window.open('/cgi-bin/time.cgi', 'Time', 'width=300,height=200');
+            window.open('/cgi-bin/time.cgi', 'Time', 'width=600,height=300');
           }
           </script>
           
