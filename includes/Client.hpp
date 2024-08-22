@@ -26,8 +26,8 @@
 
 enum    clientState
 {
-    PARSE = 0,
-    START = 1,
+    PARSE = 0, // Parsing the request
+    START = 1, // Parsing has finished
     READING = 2, // Reading from file/pipe
     WRITING = 3, // Writing to file or pipe
     ERROR = 4, // Some error occured
