@@ -3,11 +3,11 @@
 import os
 import sys
 import cgi
+import io
 import cgitb
 
 
 cgitb.enable()
-
 
 form = cgi.FieldStorage()
 

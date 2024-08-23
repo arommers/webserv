@@ -20,8 +20,6 @@ class Server
         Server& operator=(const Server& rhs);
         ~Server();
 
-        void    createServerInstances();
-
         void            addServer(const ServerBlock& serverInfo);
         void            createServerSockets();
         void            createPollLoop();
@@ -46,4 +44,18 @@ class Server
         std::vector<struct pollfd>      getPollFds();
         void            setServer(std::vector<ServerBlock> serverBlocks);
 
+
+        void                        handleFdWrite(size_t index);
+        int                         getServerSocket();
+        void                        addPollFd( int fd, short int events );
+        void                        addFileToPoll( Client& client, std::string file );
+
+        // int             checkFile(std::string &file);
+        void                        handleClientRequest(Client &client);
+        void                        handleDeleteRequest(Client& client);
+
+        void                        removePipe( size_t index );
 };
+
+        bool            sortLocations(const Location& a, const Location& b);
+

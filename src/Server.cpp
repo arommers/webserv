@@ -1,47 +1,24 @@
 #include "../includes/Server.hpp"
 #include "../includes/Config.hpp"
 
-Server::Server() {}
+// int _shutdownRequest = false;
+
+Server::Server() {
+
+}
 Server::~Server() {}
-Server::Server(const Server &rhs)
-{
-    _servers = rhs._servers;
-    _pollFds = rhs._pollFds;
-    _clients = rhs._clients;
-}
+// Server::Server(const Server &rhs) {}
+// Server& Server::operator=(const Server& rhs) {}
 
-Server& Server::operator=(const Server& rhs)
-{
-    if (this != &rhs)
-        _servers = rhs._servers;
-        _pollFds = rhs._pollFds;
-        _clients = rhs._clients;
-    return (*this);
-}
 
-/*********  Hardcoded serverblocks for testing purposes   ************/
-
-// void Server::createServerInstances()
+// int     Server::getServerSocket()
 // {
-//     ServerBlock server1;
-//     server1.setPort(4040);
-//     server1.setIndex("index.html");
-//     server1.setRoot("./html");
-//     server1.setHost("127.0.0.1");
-
-//     ServerBlock server2;
-//     server2.setPort(8080);
-//     server2.setIndex("index.html");
-//     server2.setRoot("./html1");
-//     server2.setHost("127.0.0.1");
-
-//     _servers.push_back(server1);
-//     _servers.push_back(server2);
+//     return (_serverSocket);
 // }
 
-/*********************************************************************/
+/*  CREATES A SERVERSOCKET, INITIALIZES THE POLLFD ARRAY
+    AND STARTS LISTENING FOR CONNECTIONS    */
 
-// Adds a new server instance to the server list
 
 void    Server::addServer(const ServerBlock& ServerBlock)
 {
@@ -49,6 +26,7 @@ void    Server::addServer(const ServerBlock& ServerBlock)
 }
 
 // Creates server sockets and adds them to the poll loop
+
 
 void Server::createServerSockets()
 {
@@ -98,8 +76,15 @@ void Server::createServerSockets()
     }
 }
 
-// Creates the poll loop to handle events in a non-blocking manner
 
+/*  START A POLL LOOP AND CHECKS FOR REVENTS THAT TRIGGERED
+    POLLIN
+    - IF IT'S A SERVER SOCKET A NEW CLIENT SOCKET GETS CREATED AND ADDED TO THE POLLFD ARRAY
+    - IF IT'S A CLIENT SOCKET 'x' GET READ FROM THE FD AND STORED IN A STRING UNTIL THE REQUEST IS COMPLETE
+    - IF IT'S A FILE FD, READ FROM THE FILE UNTILL WE REACH EOF 
+    POLLOUT
+    - SEND DATA */
+     
 void Server::createPollLoop()
 {
     while (true)
@@ -131,14 +116,26 @@ void Server::createPollLoop()
                 // Do we need a distinction between reading from a pipe vs a file?
                     handleFileRead(i);
             }
-            else if (_pollFds[i].revents & POLLOUT)
-            // need to have a check if the fd is a pipe
-            // if so, write to the pipe
-                sendClientData(i);
+            else if (_pollFds[i].revents & POLLOUT){
+            if (_clients.count(_pollFds[i].fd)){
+                    if (getClient(_pollFds[i].fd).getState() == RESPONSE)
+                        sendClientData(i);
+                    else
+                        handleClientData(i);
+                }
+                else
+                    handleFdWrite(i);
+            }
+            else if (_pollFds[i].revents & POLLHUP){
+                removePipe(i);
+                break;
+            }
         }
     }
 
 }
+
+
 
 // Accept a new connection from a client and add it to the poll loop
 
@@ -163,91 +160,55 @@ void    Server::acceptConnection(int serverSocket)
     }
 }
 
-void Server::handleClientData(size_t index)
-{
-    char buffer[BUFFER_SIZE];
-    int bytesRead = read(_pollFds[index].fd, buffer, BUFFER_SIZE);
-
-    if (bytesRead < 0)
-        std::cerr << RED << "Error reading from client socket: " << strerror(errno) << RESET << std::endl;
-    else if (bytesRead == 0)
-    {
-        std::cout << YELLOW << "Client disconnected, socket fd is: " << _pollFds[index].fd << RESET << std::endl;
-        closeConnection(index);
-    }
-    else
-    {
-        buffer[bytesRead] = '\0';
-        Client &client = getClient(_pollFds[index].fd);
-        client.addToBuffer(buffer);
-
-        if (client.requestComplete())
-        {
-            client.parseBuffer();
-            if (client.getState() == ERROR){
-                client.createResponse();
-                return;
-            }
-            std::cout << GREEN << "Request Received from socket " << _pollFds[index].fd << ", method: [" << client.getRequestMap()["Method"] << "], version: [" << client.getRequestMap()["Version"] << "], URI: " << client.getRequestMap()["Path"] << RESET << std::endl;
-            if (_cgi.checkIfCGI(client) == true){
-                _cgi.runCGI(*this, client);
-                _pollFds[index].events = POLLOUT; // CGI finished, so POLLOUT can be set
-            }
-            else{
-                openFile(client);
-            }
-            if (client.getState() == ERROR)
-            {
-                client.createResponse();
-                _pollFds[index].events = POLLOUT;
-                return ;
-            }
-        }
-    }
-}
 
 void Server::openFile(Client &client)
 {
-    int         fileFd;
-    std::string file;
-    ServerBlock& serverBlock = client.getServerBlock();
-    bool        locationFound = false;
+    int                     fileFd;
+    std::string             file;
+    ServerBlock&            serverBlock = client.getServerBlock();
+    std::vector<Location>   matchingLocations;
+    bool                    locationFound = false;
 
     file = client.getRequestMap().at("Path");
 
     for (const Location& location : serverBlock.getLocations())
     {
-        // Check if the file path starts with the location path
         if (file.find(location.getPath()) == 0)
+            matchingLocations.push_back(location);
+    }
+
+    std::sort(matchingLocations.begin(), matchingLocations.end(), sortLocations);
+
+    for (const Location& location : matchingLocations)
+    {
+        std::string locationRoot = location.getRoot();
+        std::string locationPath = location.getPath();
+
+        if (locationRoot.empty())
+            locationRoot = serverBlock.getRoot();
+        
+        if (!locationRoot.empty() && locationRoot.back() == '/')
+            locationRoot.pop_back();
+
+        std::string fileName = file.substr(locationPath.length());
+        if (!fileName.empty() && fileName.front() == '/')
+            fileName.erase(fileName.begin());
+
+        file = locationRoot + "/" + fileName;
+
+        if (file.back() == '/' && location.getAutoindex())
         {
-            std::string locationRoot = location.getRoot();
-            std::string locationPath = location.getPath();
-            
-            // Ensure no trailing slash on root before appending the file
-            if (!locationRoot.empty() && locationRoot.back() == '/')
-                locationRoot.pop_back();
-            
-            // Avoid double slash by removing the first slash if present
-            if (!locationPath.empty() && locationPath.back() == '/' && file[locationPath.length()] == '/')
-                file = locationRoot + file.substr(locationPath.length() + 1);
-            else
-                file = locationRoot + file.substr(locationPath.length());
-
-            if (file.back() == '/' && location.getAutoindex() == true)
-            {
-                client.setWriteBuffer(generateFolderContent(file));
-                return;
-            }
-            if (file.back() == '/' && !location.getIndex().empty())
-                file += location.getIndex();
-
-            locationFound = true;
-            break;
+            client.setWriteBuffer(generateFolderContent(file));
+            return;
         }
+        if (file.back() == '/' && !location.getIndex().empty())
+            file += location.getIndex();
+
+        locationFound = true;
+        break;
     }
 
     // If no matching location was found, use the server root
-    // ************* We probably just want to serve a 404 error here ****************
     if (!locationFound)
     {
         if (file.back() == '/')
@@ -264,7 +225,6 @@ void Server::openFile(Client &client)
     }
 
     // Normalize path: Replace multiple slashes with a single slash
-    // not sure if this is still necessary
     file = std::regex_replace(file, std::regex("//+"), "/");
 
     std::cout << "Constructed file path: " << file << std::endl;
@@ -273,18 +233,106 @@ void Server::openFile(Client &client)
     if (fileFd < 0)
     {
         client.setStatusCode(404); 
-        // call function to open error file
+        // Call function to open error file (not implemented here)
     }
     else
     {
         // If file is successfully opened, add it to the poll loop
-        client.setFileFd(fileFd);
+        client.setReadWriteFd(fileFd); // CHANGED BY SVEN
         struct pollfd filePollFd;
         filePollFd.fd = fileFd;
         filePollFd.events = POLLIN;
         _pollFds.push_back(filePollFd);
+        client.setState(READING);
     }
 }
+
+// void Server::openFile(Client &client)
+// {
+//     int         fileFd;
+//     std::string file;
+//     ServerBlock& serverBlock = client.getServerBlock();
+//     bool        locationFound = false;
+
+//     file = client.getRequestMap().at("Path");
+
+//     std::cout << RED << serverBlock.getLocations().size() << RESET << std::endl;
+
+//     for (const Location& location : serverBlock.getLocations())
+//     {
+//         // Check if the file path starts with the location path
+//         if (file.find(location.getPath()) == 0)
+//         {
+//             std::string locationRoot = location.getRoot();
+//             std::string locationPath = location.getPath();
+//             std::cout << RED << locationRoot << "\n" << locationPath << RESET << std::endl;
+
+            
+//             // Ensure no trailing slash on root before appending the file
+//             if (!locationRoot.empty() && locationRoot.back() == '/')
+//                 locationRoot.pop_back();
+            
+//             // Avoid double slash by removing the first slash if present
+//             if (!locationPath.empty() && locationPath.back() == '/' && file[locationPath.length()] == '/')
+//                 file = locationRoot + file.substr(locationPath.length() + 1);
+//             else
+//             {
+//                file = locationRoot + file.substr(locationPath.length());
+//                 std::cout << RED << "TEST" << RESET << std::endl;
+//             }
+
+//             if (file.back() == '/' && location.getAutoindex() == true)
+//             {
+//                 client.setWriteBuffer(generateFolderContent(file));
+//                 return;
+//             }
+//             if (file.back() == '/' && !location.getIndex().empty())
+//                 file += location.getIndex();
+
+//             locationFound = true;
+//             break;
+//         }
+//     }
+
+//     // If no matching location was found, use the server root
+//     // ************* We probably just want to serve a 404 error here ****************
+//     if (!locationFound)
+//     {
+//         if (file.back() == '/')
+//             file += serverBlock.getIndex();
+
+//         std::string serverRoot = serverBlock.getRoot();
+//         if (!serverRoot.empty() && serverRoot.back() == '/')
+//             serverRoot.pop_back();
+
+//         if (file.front() == '/')
+//             file = serverRoot + file;
+//         else
+//             file = serverRoot + "/" + file;
+//     }
+
+//     // Normalize path: Replace multiple slashes with a single slash
+//     // not sure if this is still necessary
+//     file = std::regex_replace(file, std::regex("//+"), "/");
+
+//     std::cout << "Constructed file path: " << file << std::endl;
+
+//     fileFd = open(file.c_str(), O_RDONLY);
+//     if (fileFd < 0)
+//     {
+//         client.setStatusCode(404); 
+//         // call function to open error file
+//     }
+//     else
+//     {
+//         // If file is successfully opened, add it to the poll loop
+//         client.setFileFd(fileFd);
+//         struct pollfd filePollFd;
+//         filePollFd.fd = fileFd;
+//         filePollFd.events = POLLIN;
+//         _pollFds.push_back(filePollFd);
+//     }
+// }
 
 std:: string Server::generateFolderContent(std::string path)
 {
@@ -363,19 +411,107 @@ void Server::handleFileRead(size_t index)
 
     for (std::unordered_map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it)
     {
-        if (it->second.getFileFd() == fd)
+        if (it->second.getReadWriteFd() == fd)
         {
             it->second.readNextChunk();
-            if (it->second.getResponseStatus() == true)
+            if (it->second.getState() == READY || it->second.getState() == ERROR)
             {
                 for (auto& value : _pollFds)
                 {
-                    if (value.fd == it->second.getFd())
+                    if (value.fd == it->second.getFd()){
                         value.events = POLLOUT;
+                        it->second.setState(RESPONSE);
+                    }
                 }
-                removePollFd(it->second.getFileFd());
+                removePollFd(it->second.getReadWriteFd());
+                it->second.setReadWriteFd(-1);
             }
         }
+    }
+}
+
+void Server::handleFdWrite(size_t index)
+{
+    int fd = _pollFds[index].fd;
+
+    for (std::unordered_map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it)
+    {
+        if (it->second.getReadWriteFd() == fd)
+        {
+            it->second.writeNextChunk();
+            if (it->second.getState() == READY || it->second.getState() == ERROR)
+            {
+                for (auto& value : _pollFds)
+                {
+                    if (value.fd == it->second.getFd()){
+                        value.events = POLLOUT;
+                    }
+                }
+                removePollFd(it->second.getReadWriteFd());
+                it->second.setReadWriteFd(-1);
+            }
+        }
+    }
+  
+
+}
+
+
+void    Server::closeConnection(size_t index)
+{
+    int fd = _pollFds[index].fd;
+
+    close(fd);
+    _pollFds.erase(_pollFds.begin() + index);
+    removeClient(fd);
+}
+
+void    Server::handleClientData(size_t index)
+{
+    Client &client = getClient(_pollFds[index].fd);
+
+    if (client.getState() == PARSE)
+    {
+        char    buffer[BUFFER_SIZE];
+        int     bytesRead = read(_pollFds[index].fd, buffer, BUFFER_SIZE);
+        if (bytesRead < 0)
+                std::cerr << RED << "Error reading from client socket: " << strerror(errno) << RESET << std::endl;
+        else if(bytesRead == 0)
+        {
+            std::cout << YELLOW << "Client disconnected, socket fd is: " << RESET << std::endl;
+            closeConnection(index);
+        }
+        else
+        {
+            client.addToBuffer(std::string(buffer, bytesRead));
+            std::time_t now = std::time(nullptr);
+            std::tm* local_time = std::localtime(&now);
+            if (client.requestComplete())
+            {
+                client.parseBuffer();
+                if (client.getState() != ERROR)
+                    client.setState(START);
+                _pollFds[index].events = POLLOUT;
+            }
+        }
+    }
+    else if (client.getState() == START || client.getState() == READY)
+    {
+            std::cout << GREEN << "Request Received from socket " << _pollFds[index].fd << ", method: [" << client.getRequestMap()["Method"] << "]" << ", version: [" << client.getRequestMap()["Version"] << "], URI: "<< client.getRequestMap()["Path"] <<  RESET << std::endl;
+            if (_cgi.checkIfCGI(client) == true){
+                _cgi.runCGI(*this, client);
+            }
+            else if(client.getRequestMap().at("Method") == "GET"){
+                openFile(client);
+            }
+            else if(client.getRequestMap().at("Method") == "DELETE"){
+                handleDeleteRequest(client);
+            }
+    }
+    else if (client.getState() == ERROR)
+    {
+        addFileToPoll(client, "./config/error_page/" + std::to_string(client.getStatusCode()) + ".html");
+        client.setState(READING);
     }
 }
 
@@ -383,8 +519,7 @@ void Server::sendClientData(size_t index)
 {
     Client& client = getClient(_pollFds[index].fd);
 
-    // if(!client.getResponseStatus())
-    //     handleClientRequest(client);  
+    client.createResponse();
     std::string writeBuffer = client.getWriteBuffer();
 
     int bytesSent = send(_pollFds[index].fd, writeBuffer.c_str(), writeBuffer.size(), 0);
@@ -405,6 +540,7 @@ void Server::sendClientData(size_t index)
     }
 }
 
+
 void    Server::checkTimeout(int time)
 {
     std::time_t currentTime = std::time(nullptr);
@@ -422,7 +558,7 @@ void    Server::checkTimeout(int time)
     }
 }
 
-void Server::shutdownServer()
+void    Server::shutdownServer()
 {
     // Close all client connections first
     while (_pollFds.size() > _servers.size())
@@ -439,13 +575,9 @@ void Server::shutdownServer()
     _clients.clear();
 }
 
-void Server::closeConnection(size_t index)
+Client& Server::getClient(int fd)
 {
-    int fd = _pollFds[index].fd;
-
-    close(fd);
-    _pollFds.erase(_pollFds.begin() + index);
-    removeClient(fd);
+    return (_clients.at(fd));
 }
 
 void Server::removeClient(int fd)
@@ -458,12 +590,22 @@ std::vector<struct pollfd>  Server::getPollFds()
     return (_pollFds);
 }
 
+void Server::addPollFd( int fd, short int events )
+{
+    struct pollfd pollFdStruct;
+
+    pollFdStruct.fd = fd;
+    pollFdStruct.events = events;
+    _pollFds.push_back(pollFdStruct);
+}
+
 void Server::removePollFd( int fd )
 {
     int i = 0;
     for (auto& value : _pollFds)
     {
         if (value.fd == fd){
+            close(fd);
             _pollFds.erase(_pollFds.begin() + i);
             return ;
         }
@@ -471,7 +613,20 @@ void Server::removePollFd( int fd )
     }
 
 }
-// Retrieve the ServerBlock object corresponding to a given file descriptor
+
+void    Server:: removePipe( size_t index )
+{
+    for (std::unordered_map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it)
+    {
+        if (it->second.getReadWriteFd() == _pollFds[index].fd)
+        {
+            it->second.setState(RESPONSE);
+            removePollFd(it->second.getReadWriteFd());
+            it->second.setReadWriteFd(-1);
+            return ;
+        }
+    }
+}
 
 ServerBlock& Server::getServerBlockByFd(int fd)
 {
@@ -483,14 +638,38 @@ ServerBlock& Server::getServerBlockByFd(int fd)
     throw std::runtime_error("ServerBlock with the given fd not found");
 }
 
+
+void    Server::addFileToPoll( Client& client, std::string file )
+{
+    int fileFd;
+
+    fileFd = open(file.c_str(), O_RDONLY);
+    if (fileFd == -1)
+    {
+        perror("file open");
+        exit (1);
+    }
+    client.setReadWriteFd(fileFd);
+    addPollFd(fileFd, POLLIN);
+}
+
 void Server::addClient(int fd, ServerBlock& ServerBlock)
 {
     _clients.emplace(fd, Client(fd, ServerBlock));
 }
 
-Client& Server::getClient(int fd)
+void Server::handleDeleteRequest(Client& client)
 {
-    return _clients.at(fd);
+    std::string toDelete = client.getRequestMap().at("Path");
+    toDelete.erase(0, 1);
+    if (remove(toDelete.c_str()) < 0)
+    {
+        client.setStatusCode(404);
+        std::cout << "Error removing file: " << client.getRequestMap().at("Path").c_str() << std::endl;
+        return ;
+    }
+    client.setState(RESPONSE);
+
 }
 
 void            Server::setServer(std::vector<ServerBlock> serverBlocks)
@@ -498,3 +677,7 @@ void            Server::setServer(std::vector<ServerBlock> serverBlocks)
     _servers = serverBlocks;
 }
 
+bool    sortLocations(const Location& a, const Location& b)
+{
+    return (a.getPath().length()> b.getPath().length());
+}

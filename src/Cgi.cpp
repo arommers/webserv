@@ -33,8 +33,30 @@ bool Cgi::checkIfCGI( Client &client )
 
 void Cgi::runCGI( Server& server, Client& client)
 {
-    // client.printRequestMap();
-    createFork(server, client);
+    if (client.getState() == START)
+    {
+        if (client.getRequestMap().at("Method") == "POST"){    
+            createPipe(server, client, client.getRequestPipe());
+            client.setWriteBuffer(client.getRequestMap().at("Body"));
+            client.setReadWriteFd(client.getRequestPipe()[1]);
+            server.addPollFd(client.getRequestPipe()[1], POLLOUT);
+            client.setState(WRITING);
+        }
+        else
+            client.setState(READY);
+        createPipe(server, client, client.getResponsePipe());
+        createFork(server, client);
+
+    }
+    if (client.getState() == READY){
+        waitpid(_pid, nullptr, 0); // Is this correct? Will the server hang if a child is hanging?
+        client.setReadWriteFd(client.getResponsePipe()[0]);
+        close(client.getResponsePipe()[1]);
+        if (client.getRequestMap().at("Method") == "POST")
+            close(client.getRequestPipe()[0]);
+        server.addPollFd(client.getResponsePipe()[0], POLLIN);
+        client.setState(READING);
+    }
 }
 
 
@@ -48,6 +70,7 @@ char** Cgi::createEnv(Server& server, Client& client)
         env_vec.push_back("CONTENT_LENGTH=" + std::to_string(client.getRequestMap().at("Body").length() - 2));
     if (client.getRequestMap().count("Content-Type"))
         env_vec.push_back("CONTENT_TYPE=" + client.getRequestMap().at("Content-Type"));
+    env_vec.push_back("BUFFER_SIZE="+std::to_string(BUFFER_SIZE));
     char** env = new char*[env_vec.size() + 1];
     for (int i = 0; i < env_vec.size(); i++){
         env[i] = new char[env_vec[i].size() + 1];
@@ -59,83 +82,22 @@ char** Cgi::createEnv(Server& server, Client& client)
 
 void Cgi::createPipe(Server& server, Client& client, int* fdPipe)
 {
-    struct pollfd pipeFdRead;
-    struct pollfd pipeFdWrite;
-
     if (pipe(fdPipe) == -1){
         perror("pipe");
-        exit(1);
-    }
-    pipeFdRead.fd = fdPipe[0];
-    pipeFdRead.events = POLLIN;
-    pipeFdWrite.fd = fdPipe[1];
-    pipeFdWrite.events = POLLOUT;
-    server.getPollFds().push_back(pipeFdRead);
-    server.getPollFds().push_back(pipeFdWrite);
-}
-
-void Cgi::readClosePipes(Server& server, Client& client)
-{
-    int     bufferSize = 2000;
-    char    buffer[bufferSize];
-
-    size_t bytesRead = read(client.getReponsePipe()[0], buffer, bufferSize - 1);
-    if (bytesRead == -1){
-        perror("read");
-        exit(1);
-    }
-    buffer[bytesRead] = '\0';
-    client.setFileBuffer(buffer);
-    client.createResponse();
-    
-    // server.removePollFd(client.getRequestPipe()[0]);
-    // server.removePollFd(client.getRequestPipe()[1]);
-    // server.removePollFd(client.getReponsePipe()[0]);
-    // server.removePollFd(client.getReponsePipe()[1]);
-    // close (client.getRequestPipe()[0]);
-    // close (client.getRequestPipe()[1]);
-    // close (client.getReponsePipe()[0]);
-    // close (client.getReponsePipe()[1]);
-}
-
-void Cgi::writeBodyToPipe(Server& server, Client& client)
-{
-    int             writeFd;
-    struct pollfd   pollFd;
-
-    writeFd = write(client.getRequestPipe()[1], client.getRequestMap().at("Body").c_str(), client.getRequestMap().at("Body").length());
-    if (writeFd < 0){
-        perror("write");
         exit(1);
     }
 }
 
 void Cgi::createFork(Server& server, Client& client)
 {
-    pid_t   pid;
-
-    if (client.getRequestMap().at("Method") == "POST"){    
-        createPipe(server, client, client.getRequestPipe());
-        writeBodyToPipe(server, client);
-    }
-
-    createPipe(server, client, client.getReponsePipe());
-    std::cout << "Test!\n";
-    
-    pid = fork();
-    if (pid == -1){
+    _pid = fork();
+    if (_pid == -1){
         perror("fork");
         exit (1);
     }
-    else if (pid == 0) // Entering child process
+    else if (_pid == 0) // Entering child process
     {
         launchScript(server, client);
-    }
-    else // In parent
-    {
-        _childForks.push_back(pid);
-        waitpid(pid, nullptr, 0); // Is this correct? Will the server hang if a child is hanging?
-        readClosePipes(server, client);
     }
 }
 
@@ -147,25 +109,65 @@ void Cgi::redirectToPipes(Server& server, Client& client)
             perror("dup2");
             exit(1);
         }
+        close(client.getRequestPipe()[0]);
+
     }
-    close(client.getReponsePipe()[0]);
-    if (dup2(client.getReponsePipe()[1], STDOUT_FILENO) == -1){
+    close(client.getResponsePipe()[0]);
+    if (dup2(client.getResponsePipe()[1], STDOUT_FILENO) == -1){
         perror("dup2");
         exit(1);
     }
+    close(client.getResponsePipe()[1]);
+
 }
 
 void Cgi::launchScript(Server& server, Client& client)
 {
-    std::string path = "." + client.getRequestMap().at("Path");
+    std::string path = findPath(server, client);
     char * pathArray[] = {const_cast<char *>(path.c_str()), nullptr};
-    write(2, "Hier!\n", 6);
-
     char** env = createEnv(server, client);
-
-
     redirectToPipes(server, client);
     execve(pathArray[0], pathArray, env);
     perror("execve");
     exit(1);
+}
+
+std::string Cgi::findPath(Server& server, Client& client)
+{
+    std::string             path;
+    ServerBlock&            serverBlock = client.getServerBlock();
+    std::vector<Location>   matchingLocations;
+    bool                    locationFound = false;
+
+    path = client.getRequestMap().at("Path");
+
+    for (const Location& location : serverBlock.getLocations())
+    {
+        if (path.find(location.getPath()) == 0)
+            matchingLocations.push_back(location);
+    }
+
+    std::sort(matchingLocations.begin(), matchingLocations.end(), sortLocations);
+
+    for (const Location& location : matchingLocations)
+    {
+        std::string locationRoot = location.getRoot();
+        std::string locationPath = location.getPath();
+
+        if (locationRoot.empty())
+            locationRoot = serverBlock.getRoot();
+        
+        if (!locationRoot.empty() && locationRoot.back() == '/')
+            locationRoot.pop_back();
+
+        std::string fileName = path.substr(locationPath.length());
+        if (!fileName.empty() && fileName.front() == '/')
+            fileName.erase(fileName.begin());
+
+        path = locationRoot + "/" + fileName;
+
+        locationFound = true;
+        break;
+    }
+    return (path);
 }

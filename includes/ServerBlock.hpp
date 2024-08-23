@@ -7,6 +7,7 @@
 # include <vector>
 # include <limits.h>
 # include <algorithm>
+# include <limits.h>
 # include "Location.hpp"
 
 class ServerBlock

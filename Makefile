@@ -1,6 +1,6 @@
 NAME = webserv
 CC = c++
-FLAG =  -std=c++17
+FLAG =  #-Wall -Werror -Wextra -std=c++11
 HEADERS = -I includes
 SRC_DIR := ./
 OBJ_DIR := obj

@@ -15,8 +15,9 @@
 #include <csignal>
 #include <fstream>        // Temporary for testing  
 #include <algorithm>
-#include <string> // Needed? cstring or string library
+#include <string>
 #include <sstream>
+#include <ctime>
 #include <regex>
 #include <dirent.h>       // Provides functions for using DIR directory stream like opendir(), readdir()
 #include "ServerBlock.hpp"
@@ -25,11 +26,16 @@
 
 enum    clientState
 {
-    READY = 0, // Reading is finished and the request can be parsed
-    READING = 1, // Reading HTTP request
-    SENDING = 2, // Sending HTTP request
-    ERROR = 3 // Some error occured 
+    PARSE = 0, // Parsing the request
+    START = 1, // Parsing has finished
+    READING = 2, // Reading from file/pipe
+    WRITING = 3, // Writing to file or pipe
+    ERROR = 4, // Some error occured
+    READY = 5, // Reading/Writing is finished and the process can continue
+    RESPONSE = 6 // Everything has been done and the reponse can be build
 };
+
+
 
 #define RESET   "\033[0m"
 #define RED     "\033[31m"
@@ -47,23 +53,25 @@ class Client
 {
     private:
         int                                     _fd = -1;
-        int                                     _state = -1;
-        int                                     _fileFd = -1;
+        int                                     _state = PARSE;
+        int                                     _readWriteFd = -1;
         std::string                             _readBuffer;
         std::string                             _writeBuffer;
         std::string                             _fileBuffer;
         size_t                                  _writePos = 0;
         std::map<std::string, std::string>      _requestMap;
         std::map<std::string, std::string>      _responseMap;
-        static const std::map<int, std::string> _ErrorMap;
+        static const std::map<int, std::string> _ReasonPhraseMap;
         int                                     _statusCode = 0;
         std::time_t                             _time = std::time(nullptr);
         int                                     _requestPipe[2];
         int                                     _responsePipe[2];
+        std::vector<int>                        _statusCheck = {400, 401, 404, 405, 500, 503};
         
-        bool                                    _responseReady = false;
+        // bool                                    _responseReady = false;
         ServerBlock                              _ServerBlock;
 
+        void    errorCheckRequest( void );
         void    isValidMethod( std::string method );
         void    isValidPath( std::string path );
         void    isValidVersion( std::string version );
@@ -95,17 +103,19 @@ class Client
         bool                                    requestComplete();
         std::time_t                             getTime();
         void                                    updateTime();
-        std::string                             createErrorResponse( void );
         void                                    resetClientData( void );
         void                                    runCGI( void );        
         void                                    readNextChunk();
-        bool                                    getResponseStatus();
-        void                                    setFileFd(int fd);
-        int                                     getFileFd();
+        void                                    writeNextChunk();
+        void                                    setReadWriteFd(int fd);
+        int                                     getReadWriteFd();
         bool                                    fileReadComplete();
         int*                                    getRequestPipe();
+        int*                                    getResponsePipe();
+        bool                                    detectError();
+        int                                     getStatusCode();
         int*                                    getReponsePipe();
-        std::string                             readFile ( std::string file );
+        // std::string                             readFile ( std::string file );
         ServerBlock&                             getServerBlock();
 };
 

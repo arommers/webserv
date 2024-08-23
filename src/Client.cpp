@@ -1,6 +1,6 @@
 #include "../includes/Client.hpp"
 
-const std::map<int, std::string> Client::_ErrorMap = {
+const std::map<int, std::string> Client::_ReasonPhraseMap = {
     {200, "OK"},
     {201, "Created"},
     {204, "No Content"},
@@ -14,7 +14,7 @@ const std::map<int, std::string> Client::_ErrorMap = {
 
 Client::Client() {}
 
-Client::~Client() {}
+Client::~Client() { }
 
 Client::Client(int fd, ServerBlock& ServerBlock): _fd(fd), _ServerBlock(ServerBlock) {}
 
@@ -86,50 +86,22 @@ std::map<std::string, std::string> Client::getRequestMap( void )
 }
 
 
-void Client::readNextChunk()
-{
-    char buffer[BUFFER_SIZE];
-    int bytesRead = read(_fileFd, buffer, BUFFER_SIZE);
 
-    if (bytesRead < 0)
-    {
-        std::cerr << "Failed to read file: " << strerror(errno) << std::endl;
-        setStatusCode(404);
-        close(_fileFd);
-        _fd = -1;
-        _responseReady = true;
-        return;
-    }
-    else if (bytesRead == 0)
-    {
-        close(_fileFd);
-        // _fileFd = -1; // This is commented out, otherwise I can't remove it from the _pollFds
-        _responseReady = true;
-        createResponse();
-        return;
-    }
-
-    _fileBuffer.append(buffer, bytesRead);
-
-}
-
-
-// Getters and Setters
 
 ServerBlock& Client::getServerBlock()
 {
     return _ServerBlock;
 }
 
-bool Client::getResponseStatus()
-{
-    return _responseReady;
-}
+// bool Client::getResponseStatus()
+// {
+//     return _responseReady;
+// }
 
-std::string Client::getFileBuffer()
-{
-    return _fileBuffer;
-}
+// std::string Client::getFileBuffer()
+// {
+//     return _fileBuffer;
+// }
 
 
 std::string    Client::getReadBuffer( void )
@@ -147,12 +119,12 @@ int Client::getFd()
     return (_fd);
 }
 
-size_t  Client::getWritePos()
+size_t      Client::getWritePos()
 {
     return (_writePos);
 }
 
-void    Client::setWritePos( size_t pos )
+void        Client::setWritePos( size_t pos )
 {
     _writePos = pos;
 }
@@ -162,12 +134,12 @@ std::string Client::getWriteBuffer()
     return (_writeBuffer);
 }
 
-void    Client::setWriteBuffer( std::string buffer )
+void        Client::setWriteBuffer( std::string buffer )
 {
     _writeBuffer = buffer;
 }
 
-void    Client::setFileBuffer(std::string buffer)
+void        Client::setFileBuffer(std::string buffer)
 {
     _fileBuffer = buffer;
 }
@@ -184,11 +156,10 @@ void Client::setState (const int state)
 
 void Client::setStatusCode( const int statusCode )
 {
-    std::vector<int>     statusCheck = {400, 401, 404, 405, 500, 503};
-    if (std::find(statusCheck.begin(), statusCheck.end(), statusCode) != statusCheck.end()){
+    _statusCode = statusCode;
+    if (detectError()){
         setState(ERROR);
     }
-    _statusCode = statusCode;
 }
 
 void    Client::parseBuffer ( void )
@@ -277,71 +248,65 @@ std::string trimWhiteSpace(std::string& string)
     return string.substr(start, end - start + 1);
 }
 
-std::string Client::readFile ( std::string file )
-{
-    int     fileFd;
-    int     bytesRead;
-    int     bufferSize = 2000;
-    char    buffer[bufferSize];
-
-    fileFd = open(file.c_str(), O_RDONLY);
-    if (fileFd == -1)
-    {
-        perror("file open");
-        exit (1);
-    }
-    bytesRead = read(fileFd, buffer, bufferSize - 1);
-    if (bytesRead == -1){
-        perror("read");
-        exit (1);
-    }
-    buffer[bytesRead] = '\0';
-    close(fileFd);
-    return (buffer);
-}
-
-std::string Client::createErrorResponse( void )
-{
-    std::string errorResponse;
-    std::string file = "./config/error_page/" + std::to_string(_statusCode) + ".html";
-    std::string errorPage = readFile(file);
-    
-    _responseMap["Content-Type"] = "text/html";
-    if (!_requestMap.count("Version"))
-        _requestMap["Version"] = "HTTP/1.1";
-    errorResponse = _requestMap.at("Version") + " " + std::to_string(_statusCode) + " " + _ErrorMap.at(_statusCode) + "\r\n";
-    errorResponse += "Content-Type: " + _responseMap.at("Content-Type") + "\r\n";
-    errorResponse += "Content-Length: " + std::to_string(errorPage.size()) + "\r\n\r\n";
-    errorResponse += errorPage;
-    return (errorResponse);
-}
-
 void Client::createResponse ( void )
 {
     std::string responseMessage;
 
     if (_statusCode == 0)
         setStatusCode(200);
-    if (getState() == ERROR)
-    {
-        _writeBuffer = createErrorResponse();
-        setState(READY);
+    _responseMap["Content-Type"] = "text/html";
+    responseMessage = _requestMap.at("Version") + " " + std::to_string(_statusCode) + " " + _ReasonPhraseMap.at(_statusCode) + "\r\n";
+    responseMessage += "Content-Type: " + _responseMap.at("Content-Type") + "\r\n";
+    if (!_fileBuffer.empty()){
+        responseMessage += "Content-Length: " + std::to_string(_fileBuffer.size()) + "\r\n\r\n";
+        responseMessage += _fileBuffer;
     }
-    else {
-        _responseMap["Content-Type"] = "text/html";
-        responseMessage = _requestMap.at("Version") + " " + std::to_string(_statusCode) + " " + _ErrorMap.at(_statusCode) + "\r\n";
-        responseMessage += "Content-Type: " + _responseMap.at("Content-Type") + "\r\n";
-        if (!_fileBuffer.empty()){
-            responseMessage += "Content-Length: " + std::to_string(_fileBuffer.size()) + "\r\n\r\n";
-            responseMessage += _fileBuffer;
-        }
-        else{
-            responseMessage += "\r\n";
-        }
-        _writeBuffer = responseMessage;
+    else{
+        responseMessage += "\r\n";
     }
+    _writeBuffer = responseMessage;
 }
 
+void Client::readNextChunk()
+{
+    char buffer[BUFFER_SIZE];
+    int bytesRead = read(_readWriteFd, buffer, BUFFER_SIZE);
+    if (bytesRead < 0)
+    {
+        std::cerr << "Failed to read file: " << strerror(errno) << std::endl;
+        close(_readWriteFd);
+        setStatusCode(500);
+        _fd = -1;
+    }
+    else if (bytesRead == 0)
+    {
+        close(_readWriteFd);
+        setState(READY);
+    }
+    else
+        _fileBuffer.append(buffer, bytesRead);
+
+}
+
+void Client::writeNextChunk()
+{
+    std::string buffer;
+    int bytesWritten;
+
+    buffer = getWriteBuffer().substr(0,BUFFER_SIZE);
+    bytesWritten = write(getReadWriteFd(), buffer.c_str(), buffer.length());
+    if (bytesWritten < 0)
+    {
+        std::cerr << "Failed to write to fd: " << strerror(errno) << std::endl;
+        close(_readWriteFd);
+        setState(500);
+        _fd = -1;
+        return ;
+    }
+    _writeBuffer.erase(0, bytesWritten);
+    if (getWriteBuffer().empty())
+        setState(READY);
+}
 
 void    Client::resetClientData( void )
 {
@@ -353,19 +318,31 @@ void    Client::resetClientData( void )
     _responseMap.clear();
     _statusCode = 0;
     _fd = -1;
-    _state = -1;
-    _fileFd = -1;
-    _responseReady = false;
+    _state = PARSE;
+    _readWriteFd = -1;
+    // Is all added?? -- Sven
 }
 
-void Client::setFileFd(int fd)
+
+// std::string Client::getFileBuffer()
+// void Client::setFileFd(int fd)
+// {
+//     _fileFd = fd;
+// }
+
+// int Client::getFileFd()
+// {
+//     return _fileBuffer;
+// }
+
+void Client::setReadWriteFd(int fd)
 {
-    _fileFd = fd;
+    _readWriteFd = fd;
 }
 
-int Client::getFileFd()
+int Client::getReadWriteFd()
 {
-    return _fileFd;
+    return _readWriteFd;
 }
 
 int* Client::getRequestPipe()
@@ -373,7 +350,19 @@ int* Client::getRequestPipe()
     return (_requestPipe);
 }
 
-int* Client::getReponsePipe()
+int* Client::getResponsePipe()
 {
     return (_responsePipe);
+}
+
+bool    Client::detectError()
+{
+    if (std::find(_statusCheck.begin(), _statusCheck.end(), _statusCode) != _statusCheck.end())
+        return (true);
+    return (false);
+}
+
+int Client::getStatusCode()
+{
+    return (_statusCode);
 }
