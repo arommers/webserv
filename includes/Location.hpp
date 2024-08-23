@@ -16,6 +16,7 @@ class Location
 		std::string					_index; // what specific file should be served
 		std::vector<std::string>	_allowedMethods;
 		bool						_autoindex;
+		std::string					_redir; // Redirect
 
 	public:
 		Location();		// Constructor
@@ -26,6 +27,7 @@ class Location
 		std::string					getPath() const;
 		std::string 				getRoot() const;
 		std::string 				getIndex() const;
+		std::string					getRedir() const;
 		std::vector<std::string>	getAllowedMethods() const;
 
 		// Getter
@@ -34,4 +36,5 @@ class Location
 		void						setIndex(const std::string &index);
 		void						setAllowedMethods(const std::vector<std::string> &methods);
 		void						setAutoindex(bool autoindex);
+		void						setRedir(const std::string &redir);
 };

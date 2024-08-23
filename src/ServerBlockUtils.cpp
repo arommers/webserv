@@ -63,10 +63,27 @@ std::string ServerBlock::ft_checkLocationRoot(const std::string &newRoot, Locati
 		char dir[1024];
 		getcwd(dir, 1024);
 		NewFullRoot = dir + newRoot + path;
-		if (ServerBlock::getPathType(NewFullRoot) != FOLDER) // If the path type is not a directory or can't be found
-			throw Exception_ServerBlock("Loction_Block: Invalid Root");
+		// if (ServerBlock::getPathType(NewFullRoot) != FOLDER) // If the path type is not a directory or can't be found
+		// 	throw Exception_ServerBlock("Loction_Block: Invalid Root");
 	}
 	return NewFullRoot;
+}
+
+std::string ServerBlock::ft_checkLocationReturn(const std::string &newRedir, Location locBlock, std::string path)
+{
+	/* '/cgi-bin' should not be redirected
+	 * - Security Risks: The cgi-bin directory typically contains scripts and executables that handle form submissions, process data, 
+	 *	 and perform other server-side functions. Redirecting it could inadvertently expose these scripts to unintended locations 
+	 *	 or users, potentially leading to unauthorized access or execution of scripts.
+	 *	 If a cgi-bin directory is redirected, attackers might exploit the redirection to trick the server into executing harmful scripts or commands. */
+	if (path == "/cgi-bin")
+		throw Exception_ServerBlock("Invalid Location_Block Return: Parameter return not allow for cgi-bin");
+	if (newRedir == "301")
+		return REDIR301;
+	else if (newRedir == "302")
+		return REDIR302;
+	else
+		throw Exception_ServerBlock("Location_Block: return invalid");
 }
 
 void ServerBlock::ft_checkLocationIndex(const std::string &newIndex, Location locBlock)

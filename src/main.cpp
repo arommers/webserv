@@ -8,7 +8,7 @@
  *		- It will use the default configuration file.
  *	- Otherwise, it will use argv[1] (the file provided as an argument).
  *	- Step 1: It will check the configuration file and parse all the arguments (Config(configFile)).
- *	- Step 2: It will create the sockets and start the server for request/response.  // ---> MoRE detail?!
+ *	- Step 2: It will create the sockets and start the server for request/response.
  *	- If something goes wrong, it will throw an exception. (for configuration file, the rest will put an error page)
  */
 int	main(int argc, char **argv)
@@ -44,5 +44,5 @@ int	main(int argc, char **argv)
 		std::cerr << "Error: wrong arguments " << std::endl;
 		return 1;
 	}
-    return 0;
+	return 0;
 }

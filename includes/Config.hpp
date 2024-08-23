@@ -37,35 +37,35 @@ class	Config
 		~Config() {}								// Destructor
 
 		// Member functions
-		std::string					readConfigFile(std::string name);
-		void						splitServers(std::string &file_content);
-		void 						createServer(std::string &config_string, ServerBlock &server);
+		std::string								readConfigFile(std::string name);
+		void									splitServers(std::string &file_content);
+		void 									createServer(std::string &config_string, ServerBlock &server);
 
 		// Getter
-		std::vector<ServerBlock>	getServerBlocks() const;	// Used for creating the sockets (aka. Server.cpp)
+		std::vector<ServerBlock>				getServerBlocks() const;	// Used for creating the sockets (aka. Server.cpp)
 
 		// Checkers
-		std::string					ft_checkRoot(const std::string &newRoot, ServerBlock &server);
-		void						ft_checkHost(const std::string &newHost, ServerBlock &server);
-		void						ft_checkPort(const std::string &newPort, ServerBlock &server);
-		void						ft_checkMaxClient(const std::string &newMaxClient, ServerBlock &server);
-		void						ft_checkIndex(const std::string &newIndex, ServerBlock &server);
-		void						ft_checkServerName(const std::string &newServerName, ServerBlock &server);
-		void						ft_checkErrorPage(const std::string &param0, const std::string &param1, ServerBlock &server);
+		std::string								ft_checkRoot(const std::string &newRoot, ServerBlock &server);
+		void									ft_checkHost(const std::string &newHost, ServerBlock &server);
+		void									ft_checkPort(const std::string &newPort, ServerBlock &server);
+		void									ft_checkMaxClient(const std::string &newMaxClient, ServerBlock &server);
+		void									ft_checkIndex(const std::string &newIndex, ServerBlock &server);
+		void									ft_checkServerName(const std::string &newServerName, ServerBlock &server);
+		void									ft_checkErrorPage(const std::string &param0, const std::string &param1, ServerBlock &server);
 		std::vector<std::vector<std::string>>	ft_checkLocation(const std::string &newLocation0, const std::string &newLocation1, ServerBlock &server);
 
 		// Utils
-		void						ft_printConfigFile();	// for testing purpose
-		void						ft_checkServerVariables(ServerBlock &server);
-		void						ft_removeComments(std::string &file_content);
-		void						ft_removeWhitespace(std::string &file_content);
-		bool						ft_checkBrackets(std::string &str);
-		size_t						ft_findServerStart(size_t start, std::string &file_content);
-		size_t						ft_findServerEnd(size_t start, std::string &file_content);
-		bool						errorPage(std::string string);
-		bool						location(std::string string);
-		int							getPathType(std::string const path);
-		std::vector<std::string>	ft_splitStringByNewline(const std::string &input);
+		void									ft_printConfigFile();	// for testing purpose
+		void									ft_checkServerVariables(ServerBlock &server);
+		void									ft_removeComments(std::string &file_content);
+		void									ft_removeWhitespace(std::string &file_content);
+		bool									ft_checkBrackets(std::string &str);
+		size_t									ft_findServerStart(size_t start, std::string &file_content);
+		size_t									ft_findServerEnd(size_t start, std::string &file_content);
+		bool									errorPage(std::string string);
+		bool									location(std::string string);
+		int										getPathType(std::string const path);
+		std::vector<std::string>				ft_splitStringByNewline(const std::string &input);
 		std::vector<std::vector<std::string>>	ft_splitParameters(const std::string &config_string);
 		std::vector<std::vector<std::string>>	ft_splitLocationParameters(const std::string newLocation0, const std::string &newLocation1);
 

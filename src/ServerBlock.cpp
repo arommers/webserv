@@ -136,6 +136,8 @@ void	ServerBlock::ft_checkLocationVariables(Location &locBlock, ServerBlock &ser
 		checkRootRound2(locBlock, locBlock.getPath());
 	if (locBlock.getIndex().empty())
 		locBlock.setIndex(server.getIndex());
+	if (locBlock.getRedir().empty())
+		locBlock.setRedir("");
 	if (locBlock.getAllowedMethods().empty())
 	{
 		std::vector<std::string> defaultMethods = {"DELETE", "POST", "GET"};
@@ -148,6 +150,7 @@ void ServerBlock::createLocation(std::vector<std::vector<std::string>> &locParam
 {
 	bool boolAutoindex = 0;
 	bool boolMethods = 0;
+	bool boolReturn = 0;
 
 	// Set variables
 	for (size_t i = 0; i < locParams[0].size(); i++)
@@ -164,6 +167,14 @@ void ServerBlock::createLocation(std::vector<std::vector<std::string>> &locParam
 		{
 			ft_checkLocationIndex(locParams[1][i], locBlock);
 			locBlock.setIndex(locParams[1][i]);
+		}
+		else if (locParams[0][i] == "return")
+		{
+			// Check if variable is already set
+			if (boolReturn == 1)
+				throw Exception_ServerBlock("Loction_Block: Return is duplicated");
+			locBlock.setRedir(ft_checkLocationReturn(locParams[1][i], locBlock, locBlock.getPath()));
+			boolReturn = 1;
 		}
 		else if (locParams[0][i] == "allowed_methods")
 		{

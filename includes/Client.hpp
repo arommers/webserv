@@ -42,8 +42,7 @@ enum    clientState
 #define GREEN   "\033[32m"
 #define YELLOW  "\033[33m"
 
-//pending config parsing these are set
-
+// Pending config parsing these are set
 #define PORT 4040
 #define MAX_CLIENTS 10
 #define TIMEOUT 60
@@ -51,72 +50,68 @@ enum    clientState
 
 class Client
 {
-    private:
-        int                                     _fd = -1;
-        int                                     _state = PARSE;
-        int                                     _readWriteFd = -1;
-        std::string                             _readBuffer;
-        std::string                             _writeBuffer;
-        std::string                             _fileBuffer;
-        size_t                                  _writePos = 0;
-        std::map<std::string, std::string>      _requestMap;
-        std::map<std::string, std::string>      _responseMap;
-        static const std::map<int, std::string> _ReasonPhraseMap;
-        int                                     _statusCode = 0;
-        std::time_t                             _time = std::time(nullptr);
-        int                                     _requestPipe[2];
-        int                                     _responsePipe[2];
-        std::vector<int>                        _statusCheck = {400, 401, 404, 405, 500, 503};
-        
-        // bool                                    _responseReady = false;
-        ServerBlock                              _ServerBlock;
+	private:
+		size_t									_writePos = 0;
+		int										_fd = -1;
+		int										_state = PARSE;
+		int										_readWriteFd = -1;
+		int										_statusCode = 0;
+		int										_responsePipe[2];
+		int										_requestPipe[2];
+		std::string								_readBuffer;
+		std::string								_writeBuffer;
+		std::string								_fileBuffer;
+		std::time_t								_time = std::time(nullptr);
+		std::vector<int>						_statusCheck = {400, 401, 404, 405, 500, 503};
+		std::map<std::string, std::string>		_requestMap;
+		std::map<std::string, std::string>		_responseMap;
+		static const std::map<int, std::string>	_ReasonPhraseMap;
+		ServerBlock								_ServerBlock;
 
-        void    errorCheckRequest( void );
-        void    isValidMethod( std::string method );
-        void    isValidPath( std::string path );
-        void    isValidVersion( std::string version );
+		void									errorCheckRequest( void );
+		void									isValidMethod( std::string method );
+		void									isValidPath( std::string path );
+		void									isValidVersion( std::string version );
 
-    public:
-        Client();
-        Client(int fd, ServerBlock& ServerBlock);
-        // Client(const Client& rhs);
-        // Client& operator=(const Client& rhs);
-        ~Client();
+	public:
+		Client();
+		Client(int fd, ServerBlock& ServerBlock);
+		~Client();
 
-        void                                    addToBuffer( std::string bufferNew );
-        std::string                             getReadBuffer();
-        void                                    parseBuffer ( void );
-        void                                    printRequestMap( void );
-        void                                    createResponse ( void );
-        void                                    setFd( int fd );
-        int                                     getFd();
-        int                                     getState();
-        void                                    setState ( const int state );
-        size_t                                  getWritePos();
-        void                                    setWritePos( size_t pos );
-        std::string                             getWriteBuffer();
-        std::string                             getFileBuffer();
-        void                                    setFileBuffer(std::string buffer);
-        void                                    setWriteBuffer( std::string buffer );
-        void                                    setStatusCode( const int statusCode );
-        std::map<std::string, std::string>      getRequestMap( void );
-        bool                                    requestComplete();
-        std::time_t                             getTime();
-        void                                    updateTime();
-        void                                    resetClientData( void );
-        void                                    runCGI( void );        
-        void                                    readNextChunk();
-        void                                    writeNextChunk();
-        void                                    setReadWriteFd(int fd);
-        int                                     getReadWriteFd();
-        bool                                    fileReadComplete();
-        int*                                    getRequestPipe();
-        int*                                    getResponsePipe();
-        bool                                    detectError();
-        int                                     getStatusCode();
-        int*                                    getReponsePipe();
-        // std::string                             readFile ( std::string file );
-        ServerBlock&                             getServerBlock();
+		void									addToBuffer( std::string bufferNew );
+		void									parseBuffer ( void );
+		void									printRequestMap( void );
+		void									createResponse ( void );
+		void									setFd( int fd );
+		void									setState ( const int state );
+		void									setWritePos( size_t pos );
+		void									setFileBuffer(std::string buffer);
+		void									setWriteBuffer( std::string buffer );
+		void									setStatusCode( const int statusCode );
+		void									updateTime();
+		void									resetClientData( void );
+		void									runCGI( void );        
+		void									readNextChunk();
+		void									writeNextChunk();
+		void									setReadWriteFd(int fd);
+		bool									requestComplete();
+		bool									fileReadComplete();
+		bool									detectError();
+		int										getFd();
+		int										getState();
+		int										getReadWriteFd();
+		int										getStatusCode();
+		int*									getResponsePipe();
+		int*									getRequestPipe();
+		int*									getReponsePipe();
+		size_t									getWritePos();
+		std::string								getReadBuffer();
+		std::time_t								getTime();
+		ServerBlock&							getServerBlock();
+		std::string								getFileBuffer();
+		std::string								getWriteBuffer();
+		std::map<std::string, std::string>		getRequestMap( void );
+		std::map<std::string, std::string>&		getResponseMap(); // ADD JOVI
 };
 
-std::string trimWhiteSpace(std::string& string);
+std::string	trimWhiteSpace(std::string& string);

@@ -10,6 +10,10 @@
 # include <limits.h>
 # include "Location.hpp"
 
+// Redirects URL (301 and 302)
+# define REDIR301 "https://en.wikipedia.org/wiki/42_(number)"
+# define REDIR302 "https://en.wikipedia.org/wiki/12_(number)"
+
 class ServerBlock
 {
 	private:
@@ -54,6 +58,7 @@ class ServerBlock
 		std::vector<std::string>	ft_checkLocationMethods(const std::string &newMethods, Location locBlock);
 		std::string					ft_checkLocationRoot(const std::string &newRoot, Location locBlock, std::string path);
 		std::string					ft_checkLocationPath(const std::string &newPath, Location locBlock);
+		std::string					ft_checkLocationReturn(const std::string &newRedir, Location locBlock, std::string path);
 		void						ft_checkLocationIndex(const std::string &newIndex, Location locBlock);
 		bool						ft_checkLoactionAutoindex(const std::string &newAutoindex, std::string path);
 

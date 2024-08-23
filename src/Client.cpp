@@ -12,357 +12,377 @@ const std::map<int, std::string> Client::_ReasonPhraseMap = {
     {503, "Service Unavailable"},
 };
 
+// --- Constructors/ Deconstructor/ Operation ---
 Client::Client() {}
 
-Client::~Client() { }
+Client::~Client() {}
 
 Client::Client(int fd, ServerBlock& ServerBlock): _fd(fd), _ServerBlock(ServerBlock) {}
 
-// Client::Client(const Client& rhs)
+// --- Client Functions ---
+
+void	Client::resetClientData( void )
+{
+	_readBuffer.clear();
+	_writeBuffer.clear();
+	_fileBuffer.clear();
+	_writePos = 0;
+	_requestMap.clear();
+	_responseMap.clear();
+	_statusCode = 0;
+	_fd = -1;
+	_state = PARSE;
+	_readWriteFd = -1;
+	// Is all added?? -- Sven
+}
+
+bool	Client::requestComplete()
+{
+	size_t pos = _readBuffer.find("\r\n\r\n");
+
+	if (pos == std::string::npos)
+		return false;
+	
+	std::string headers = _readBuffer.substr(0, pos + 4);
+	size_t posContent = headers.find("Content-Length:");
+
+	if (posContent == std::string::npos)
+		return true;
+	
+	size_t contentEnd = headers.find("\r\n", posContent);
+	std::string content = headers.substr(posContent + 15, contentEnd - posContent - 15);
+	int contentLength = std::stoi(content);
+
+	size_t bodyBegin = pos + 4;
+	size_t bodyLength = bodyBegin + contentLength;
+
+	return _readBuffer.size() >= bodyLength;
+}
+
+void	Client::parseBuffer ( void )
+{
+	std::string line, key, value;
+	bool startBody = false;
+
+	// Storing the (first) request line with the method (GET/POST etc..), path and version in headerMap
+	std::istringstream stream(_readBuffer);
+	if (std::getline(stream, line))
+	{
+		std::istringstream lineStream(line);
+		lineStream >> _requestMap["Method"] >> _requestMap["Path"] >> _requestMap["Version"]; // Error Management missing if wrong request line format!
+	}
+	// Storing the rest of the incoming header in headerMap
+	while (std::getline(stream, line, '\n'))
+	{
+		std::istringstream lineStream(line);
+		if (startBody == false && line == "\r"){
+			startBody = true;
+		}
+		if (startBody == true){
+			_requestMap["Body"] += line + '\n';
+		}
+		else if (std::getline(lineStream, key, ':'))
+		{
+			if (std::getline(lineStream, value))
+			{            
+				value = trimWhiteSpace(value);
+				_requestMap[key] = value;
+			}
+		}
+	}
+	isValidMethod(_requestMap["Method"]);
+	isValidPath(_requestMap["Path"]);
+	isValidVersion(_requestMap["Version"]); 
+}
+
+// // SVEN VERSION
+// void	Client::createResponse ( void )
 // {
-//     _fd = rhs._fd;
-//     _ServerBlock = rhs._ServerBlock;
-//     _readBuffer = rhs._readBuffer;
-//     _writeBuffer = rhs._writeBuffer;
-//     _writePos = rhs._writePos;
-//     _time = rhs._time;
+// 	std::string responseMessage;
+
+// 	if (_statusCode == 0)
+// 		setStatusCode(200);
+// 	_responseMap["Content-Type"] = "text/html";
+// 	responseMessage = _requestMap.at("Version") + " " + std::to_string(_statusCode) + " " + _ReasonPhraseMap.at(_statusCode) + "\r\n";
+// 	responseMessage += "Content-Type: " + _responseMap.at("Content-Type") + "\r\n";
+// 	if (!_fileBuffer.empty()){
+// 		responseMessage += "Content-Length: " + std::to_string(_fileBuffer.size()) + "\r\n\r\n";
+// 		responseMessage += _fileBuffer;
+// 	}
+// 	else{
+// 		responseMessage += "\r\n";
+// 	}
+// 	_writeBuffer = responseMessage;
 // }
 
-// Client& Client::operator=(const Client& rhs)
-// {
-//     if (this != &rhs)
-//     {
-//         _fd = rhs._fd;
-//         _ServerBlock = rhs._ServerBlock;
-//         _readBuffer = rhs._readBuffer;
-//         _writeBuffer = rhs._writeBuffer;
-//         _writePos = rhs._writePos;
-//         _time = rhs._time;
-//     }
-//     return (*this);
-// }
-
-void    Client::addToBuffer( std::string bufferNew )
+// JOVI VERSION
+void	Client::createResponse()
 {
-    _readBuffer += bufferNew;
+	std::string responseMessage;
+
+	if (_statusCode == 0)
+		setStatusCode(200);
+
+	// Handle redirects
+	if (_statusCode == 301 || _statusCode == 302)
+	{
+		responseMessage = _requestMap.at("Version") + " " + std::to_string(_statusCode) + " " + _ReasonPhraseMap.at(_statusCode) + "\r\n";
+		responseMessage += "Location: " + _responseMap["Location"] + "\r\n";
+		responseMessage += "Content-Length: 0\r\n\r\n";  // Usually no body for redirects
+	}
+	else
+	{
+		_responseMap["Content-Type"] = "text/html";
+		responseMessage = _requestMap.at("Version") + " " + std::to_string(_statusCode) + " " + _ReasonPhraseMap.at(_statusCode) + "\r\n";
+		responseMessage += "Content-Type: " + _responseMap["Content-Type"] + "\r\n";
+		if (!_fileBuffer.empty())
+		{
+			responseMessage += "Content-Length: " + std::to_string(_fileBuffer.size()) + "\r\n\r\n";
+			responseMessage += _fileBuffer;
+		}
+		else
+			responseMessage += "\r\n";
+	}
+	_writeBuffer = responseMessage;
+
+
+	// std::string responseMessage;
+
+	// if (_statusCode == 0)
+	// 	setStatusCode(200);
+
+	// responseMessage = _requestMap.at("Version") + " " + std::to_string(_statusCode) + " " + _ReasonPhraseMap.at(_statusCode) + "\r\n";
+
+	// if (_statusCode == 301 || _statusCode == 302)
+	// {
+	// 	responseMessage += "Location: " + _responseMap.at("Location") + "\r\n";
+	// }
+
+	// responseMessage += "Content-Type: " + _responseMap.at("Content-Type") + "\r\n";
+
+	// if (!_fileBuffer.empty())
+	// {
+	// 	responseMessage += "Content-Length: " + std::to_string(_fileBuffer.size()) + "\r\n\r\n";
+	// 	responseMessage += _fileBuffer;
+	// }
+	// else
+	// {
+	// 	responseMessage += "\r\n";
+	// }
+	
+	// _writeBuffer = responseMessage;
 }
 
-bool    Client::requestComplete()
+void	Client::readNextChunk()
 {
-    size_t pos = _readBuffer.find("\r\n\r\n");
-
-    if (pos == std::string::npos)
-        return false;
-    
-    std::string headers = _readBuffer.substr(0, pos + 4);
-    size_t posContent = headers.find("Content-Length:");
-
-    if (posContent == std::string::npos)
-        return true;
-    
-    size_t contentEnd = headers.find("\r\n", posContent);
-    std::string content = headers.substr(posContent + 15, contentEnd - posContent - 15);
-    int contentLength = std::stoi(content);
-
-    size_t bodyBegin = pos + 4;
-    size_t bodyLength = bodyBegin + contentLength;
-
-    return _readBuffer.size() >= bodyLength;
+	char buffer[BUFFER_SIZE];
+	int bytesRead = read(_readWriteFd, buffer, BUFFER_SIZE);
+	if (bytesRead < 0)
+	{
+		std::cerr << "Failed to read file: " << strerror(errno) << std::endl;
+		close(_readWriteFd);
+		setStatusCode(500);
+		_fd = -1;
+	}
+	else if (bytesRead == 0)
+	{
+		close(_readWriteFd);
+		setState(READY);
+	}
+	else
+		_fileBuffer.append(buffer, bytesRead);
 }
 
-void    Client::updateTime()
+void	Client::writeNextChunk()
 {
-    _time = std::time(nullptr);
+	std::string buffer;
+	int bytesWritten;
+
+	buffer = getWriteBuffer().substr(0,BUFFER_SIZE);
+	bytesWritten = write(getReadWriteFd(), buffer.c_str(), buffer.length());
+	if (bytesWritten < 0)
+	{
+		std::cerr << "Failed to write to fd: " << strerror(errno) << std::endl;
+		close(_readWriteFd);
+		setState(500);
+		_fd = -1;
+		return ;
+	}
+	_writeBuffer.erase(0, bytesWritten);
+	if (getWriteBuffer().empty())
+		setState(READY);
 }
 
-std::time_t Client::getTime()
+// --- Utils ---
+bool	Client::detectError()
 {
-    return _time;
+	if (std::find(_statusCheck.begin(), _statusCheck.end(), _statusCode) != _statusCheck.end())
+		return (true);
+	return (false);
 }
 
-std::map<std::string, std::string> Client::getRequestMap( void )
+void	Client::updateTime()
 {
-    return (_requestMap);
+	_time = std::time(nullptr);
 }
 
-
-
-
-ServerBlock& Client::getServerBlock()
+void	Client::addToBuffer( std::string bufferNew )
 {
-    return _ServerBlock;
+	_readBuffer += bufferNew;
 }
 
-// bool Client::getResponseStatus()
-// {
-//     return _responseReady;
-// }
-
-// std::string Client::getFileBuffer()
-// {
-//     return _fileBuffer;
-// }
-
-
-std::string    Client::getReadBuffer( void )
+void	Client::printRequestMap( void )
 {
-    return (_readBuffer);
+	// Printing header map
+	std::cout << "------- Content of header map -------\n";
+	for (const auto& pair : _requestMap)
+	{
+		std::cout << pair.first << ":" << pair.second << std::endl;
+	}
+	std::cout << "\n------- Content of header map -------\n";
 }
 
-void Client::setFd ( int fd )
+void	Client::isValidMethod( std::string method )
 {
-    _fd = fd;
+	std::vector<std::string> validMethods = {"POST", "GET", "DELETE"};
+
+	if (method.empty()){
+		setStatusCode(400);
+	}
+	else if (std::find(validMethods.begin(), validMethods.end(), method) == validMethods.end()){
+		setStatusCode(405);
+	}
 }
 
-int Client::getFd()
+void	Client::isValidPath( std::string path )
 {
-    return (_fd);
+	if (path.empty()){
+		setStatusCode(400);
+	}
 }
 
-size_t      Client::getWritePos()
+void	Client::isValidVersion( std::string version )
 {
-    return (_writePos);
+	std::regex versionRegex(R"(HTTP\/\d\.\d)");
+
+	if (version.empty()){
+		setStatusCode(400);
+	}
+	else if (!std::regex_match(version, versionRegex)){
+		setStatusCode(505);
+	}
 }
 
-void        Client::setWritePos( size_t pos )
+std::string	trimWhiteSpace(std::string& string)
 {
-    _writePos = pos;
+	size_t start = string.find_first_not_of(" \n\t\r");
+	size_t end = string.find_last_not_of(" \n\t\r");
+
+	return string.substr(start, end - start + 1);
 }
 
-std::string Client::getWriteBuffer()
+// --- Getter ---
+int	Client::getStatusCode()
 {
-    return (_writeBuffer);
+	return (_statusCode);
 }
 
-void        Client::setWriteBuffer( std::string buffer )
+int	Client::getReadWriteFd()
 {
-    _writeBuffer = buffer;
+	return _readWriteFd;
 }
 
-void        Client::setFileBuffer(std::string buffer)
+int*	Client::getRequestPipe()
 {
-    _fileBuffer = buffer;
+	return (_requestPipe);
 }
 
-int Client::getState()
+int*	Client::getResponsePipe()
 {
-    return (_state);
+	return (_responsePipe);
 }
 
-void Client::setState (const int state)
+std::time_t	Client::getTime()
 {
-    _state = state;
+	return _time;
 }
 
-void Client::setStatusCode( const int statusCode )
+std::map<std::string, std::string>	Client::getRequestMap( void )
 {
-    _statusCode = statusCode;
-    if (detectError()){
-        setState(ERROR);
-    }
+	return (_requestMap);
 }
 
-void    Client::parseBuffer ( void )
+ServerBlock&	Client::getServerBlock()
 {
-    std::string line, key, value;
-    bool startBody = false;
-
-    // Storing the (first) request line with the method (GET/POST etc..), path and version in headerMap
-    std::istringstream stream(_readBuffer);
-    if (std::getline(stream, line))
-    {
-        std::istringstream lineStream(line);
-        lineStream >> _requestMap["Method"] >> _requestMap["Path"] >> _requestMap["Version"]; // Error Management missing if wrong request line format!
-    }
-    // Storing the rest of the incoming header in headerMap
-    while (std::getline(stream, line, '\n'))
-    {
-        std::istringstream lineStream(line);
-        if (startBody == false && line == "\r"){
-            startBody = true;
-        }
-        if (startBody == true){
-            _requestMap["Body"] += line + '\n';
-        }
-        else if (std::getline(lineStream, key, ':'))
-        {
-            if (std::getline(lineStream, value))
-            {            
-                value = trimWhiteSpace(value);
-                _requestMap[key] = value;
-            }
-        }
-    }
-    isValidMethod(_requestMap["Method"]);
-    isValidPath(_requestMap["Path"]);
-    isValidVersion(_requestMap["Version"]); 
+	return _ServerBlock;
 }
 
-void    Client::printRequestMap( void )
+std::string	Client::getReadBuffer( void )
 {
-    // Printing header map
-    std::cout << "------- Content of header map -------\n";
-    for (const auto& pair : _requestMap)
-    {
-        std::cout << pair.first << ":" << pair.second << std::endl;
-    }
-    std::cout << "\n------- Content of header map -------\n";
+	return (_readBuffer);
 }
 
-void   Client::isValidMethod( std::string method )
+int	Client::getFd()
 {
-    std::vector<std::string> validMethods = {"POST", "GET", "DELETE"};
-
-    if (method.empty()){
-        setStatusCode(400);
-    }
-    else if (std::find(validMethods.begin(), validMethods.end(), method) == validMethods.end()){
-        setStatusCode(405);
-    }
+	return (_fd);
 }
 
-void    Client::isValidPath( std::string path )
+size_t	Client::getWritePos()
 {
-    if (path.empty()){
-        setStatusCode(400);
-    }
+	return (_writePos);
 }
 
-void    Client::isValidVersion( std::string version )
+std::string	Client::getWriteBuffer()
 {
-    std::regex versionRegex(R"(HTTP\/\d\.\d)");
-
-    if (version.empty()){
-        setStatusCode(400);
-    }
-    else if (!std::regex_match(version, versionRegex)){
-        setStatusCode(505);
-    }
+	return (_writeBuffer);
 }
 
-std::string trimWhiteSpace(std::string& string)
+int	Client::getState()
 {
-    size_t start = string.find_first_not_of(" \n\t\r");
-    size_t end = string.find_last_not_of(" \n\t\r");
-
-    return string.substr(start, end - start + 1);
+	return (_state);
 }
 
-void Client::createResponse ( void )
+// ADD JOVI
+std::map<std::string, std::string>&	Client::getResponseMap()
 {
-    std::string responseMessage;
-
-    if (_statusCode == 0)
-        setStatusCode(200);
-    _responseMap["Content-Type"] = "text/html";
-    responseMessage = _requestMap.at("Version") + " " + std::to_string(_statusCode) + " " + _ReasonPhraseMap.at(_statusCode) + "\r\n";
-    responseMessage += "Content-Type: " + _responseMap.at("Content-Type") + "\r\n";
-    if (!_fileBuffer.empty()){
-        responseMessage += "Content-Length: " + std::to_string(_fileBuffer.size()) + "\r\n\r\n";
-        responseMessage += _fileBuffer;
-    }
-    else{
-        responseMessage += "\r\n";
-    }
-    _writeBuffer = responseMessage;
+		return _responseMap;
 }
 
-void Client::readNextChunk()
+// --- Setter --- 
+void	Client::setReadWriteFd(int fd)
 {
-    char buffer[BUFFER_SIZE];
-    int bytesRead = read(_readWriteFd, buffer, BUFFER_SIZE);
-    if (bytesRead < 0)
-    {
-        std::cerr << "Failed to read file: " << strerror(errno) << std::endl;
-        close(_readWriteFd);
-        setStatusCode(500);
-        _fd = -1;
-    }
-    else if (bytesRead == 0)
-    {
-        close(_readWriteFd);
-        setState(READY);
-    }
-    else
-        _fileBuffer.append(buffer, bytesRead);
-
+	_readWriteFd = fd;
 }
 
-void Client::writeNextChunk()
+void	Client::setFd ( int fd )
 {
-    std::string buffer;
-    int bytesWritten;
-
-    buffer = getWriteBuffer().substr(0,BUFFER_SIZE);
-    bytesWritten = write(getReadWriteFd(), buffer.c_str(), buffer.length());
-    if (bytesWritten < 0)
-    {
-        std::cerr << "Failed to write to fd: " << strerror(errno) << std::endl;
-        close(_readWriteFd);
-        setState(500);
-        _fd = -1;
-        return ;
-    }
-    _writeBuffer.erase(0, bytesWritten);
-    if (getWriteBuffer().empty())
-        setState(READY);
+	_fd = fd;
 }
 
-void    Client::resetClientData( void )
+void	Client::setWritePos( size_t pos )
 {
-    _readBuffer.clear();
-    _writeBuffer.clear();
-    _fileBuffer.clear();
-    _writePos = 0;
-    _requestMap.clear();
-    _responseMap.clear();
-    _statusCode = 0;
-    _fd = -1;
-    _state = PARSE;
-    _readWriteFd = -1;
-    // Is all added?? -- Sven
+	_writePos = pos;
 }
 
-
-// std::string Client::getFileBuffer()
-// void Client::setFileFd(int fd)
-// {
-//     _fileFd = fd;
-// }
-
-// int Client::getFileFd()
-// {
-//     return _fileBuffer;
-// }
-
-void Client::setReadWriteFd(int fd)
+void	Client::setWriteBuffer( std::string buffer )
 {
-    _readWriteFd = fd;
+	_writeBuffer = buffer;
 }
 
-int Client::getReadWriteFd()
+void	Client::setFileBuffer(std::string buffer)
 {
-    return _readWriteFd;
+	_fileBuffer = buffer;
 }
 
-int* Client::getRequestPipe()
+void	Client::setState (const int state)
 {
-    return (_requestPipe);
+	_state = state;
 }
 
-int* Client::getResponsePipe()
+void	Client::setStatusCode( const int statusCode )
 {
-    return (_responsePipe);
-}
-
-bool    Client::detectError()
-{
-    if (std::find(_statusCheck.begin(), _statusCheck.end(), _statusCode) != _statusCheck.end())
-        return (true);
-    return (false);
-}
-
-int Client::getStatusCode()
-{
-    return (_statusCode);
+	_statusCode = statusCode;
+	if (detectError()){
+		setState(ERROR);
+	}
 }
