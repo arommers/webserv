@@ -55,7 +55,15 @@ class Server
         void                        handleDeleteRequest(Client& client);
 
         void                        removePipe( size_t index );
+
+        std::vector<Location>   findMatchingLocations(const std::string& file, ServerBlock& serverBlock);
+        std::string             resolveFilePath(const std::string& file, const Location& location, ServerBlock& serverBlock);
+        bool                    handleDirectoryRequest(std::string& file, const Location& location, Client& client);
+        void                    openRequestedFile(const std::string& file, Client& client);
+        bool                    checkAllowedMethod(const Location& location, const std::string& method);
 };
 
         bool            sortLocations(const Location& a, const Location& b);
+
+
 
