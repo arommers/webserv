@@ -212,15 +212,30 @@ void    Server::handleClientData(size_t index)
     else if (client.getState() == START || client.getState() == READY)
     {
             std::cout << GREEN << "Request Received from socket " << _pollFds[index].fd << ", method: [" << client.getRequestMap()["Method"] << "]" << ", version: [" << client.getRequestMap()["Version"] << "], URI: "<< client.getRequestMap()["Path"] <<  RESET << std::endl;
-            if (_cgi.checkIfCGI(client) == true){
+           
+            ServerBlock& serverBlock = client.getServerBlock();
+            std::string filePath = client.getRequestMap().at("Path");
+            std::vector<Location> matchingLocations = findMatchingLocations(filePath, serverBlock);
+
+            if (!matchingLocations.empty())
+            {
+                const Location& location = matchingLocations[0];
+                std::string method = client.getRequestMap().at("Method");
+
+                if (!checkAllowedMethod(location, method))
+                {
+                    client.setStatusCode(405);
+                    client.setState(ERROR);
+                    return;
+                }
+            }
+           
+            if (_cgi.checkIfCGI(client) == true)
                 _cgi.runCGI(*this, client);
-            }
-            else if(client.getRequestMap().at("Method") == "GET"){
+            else if(client.getRequestMap().at("Method") == "GET")
                 openFile(client);
-            }
-            else if(client.getRequestMap().at("Method") == "DELETE"){
+            else if(client.getRequestMap().at("Method") == "DELETE")
                 handleDeleteRequest(client);
-            }
     }
     else if (client.getState() == ERROR)
     {
@@ -307,14 +322,14 @@ void    Server::removePollFd( int fd )
     int i = 0;
     for (auto& value : _pollFds)
     {
-        if (value.fd == fd){
+        if (value.fd == fd)
+        {
             close(fd);
             _pollFds.erase(_pollFds.begin() + i);
             return ;
         }
         i++;
     }
-
 }
 
 void    Server:: removePipe( size_t index )
@@ -372,7 +387,6 @@ void    Server::handleDeleteRequest(Client& client)
         return ;
     }
     client.setState(RESPONSE);
-
 }
 
 void    Server::setServer(std::vector<ServerBlock> serverBlocks)
