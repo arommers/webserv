@@ -68,7 +68,6 @@ class Client
 		static const std::map<int, std::string>	_ReasonPhraseMap;
 		ServerBlock								_ServerBlock;
 
-		void									errorCheckRequest( void );
 		void									isValidMethod( std::string method );
 		void									isValidPath( std::string path );
 		void									isValidVersion( std::string version );
@@ -89,13 +88,11 @@ class Client
 		void									setWriteBuffer( std::string buffer );
 		void									setStatusCode( const int statusCode );
 		void									updateTime();
-		void									resetClientData( void );
-		void									runCGI( void );        
+		void									resetClientData( void );    
 		void									readNextChunk();
 		void									writeNextChunk();
 		void									setReadWriteFd(int fd);
 		bool									requestComplete();
-		bool									fileReadComplete();
 		bool									detectError();
 		int										getFd();
 		int										getState();
@@ -108,10 +105,9 @@ class Client
 		std::string								getReadBuffer();
 		std::time_t								getTime();
 		ServerBlock&							getServerBlock();
-		std::string								getFileBuffer();
 		std::string								getWriteBuffer();
 		std::map<std::string, std::string>		getRequestMap( void );
-		std::map<std::string, std::string>&		getResponseMap(); // ADD JOVI
+		std::map<std::string, std::string>&		getResponseMap();
 };
 
 std::string	trimWhiteSpace(std::string& string);

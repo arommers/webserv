@@ -12,11 +12,9 @@ const std::map<int, std::string> Client::_ReasonPhraseMap = {
     {503, "Service Unavailable"},
 };
 
-// --- Constructors/ Deconstructor/ Operation ---
+// --- Constructors/ Deconstructor ---
 Client::Client() {}
-
 Client::~Client() {}
-
 Client::Client(int fd, ServerBlock& ServerBlock): _fd(fd), _ServerBlock(ServerBlock) {}
 
 // --- Client Functions ---
@@ -33,7 +31,6 @@ void	Client::resetClientData( void )
 	_fd = -1;
 	_state = PARSE;
 	_readWriteFd = -1;
-	// Is all added?? -- Sven
 }
 
 bool	Client::requestComplete()
@@ -123,7 +120,7 @@ void	Client::createResponse()
 	if (_statusCode == 0)
 		setStatusCode(200);
 
-	// Handle redirects
+	// // Handle redirect responses
 	if (_statusCode == 301 || _statusCode == 302)
 	{
 		responseMessage = _requestMap.at("Version") + " " + std::to_string(_statusCode) + " " + _ReasonPhraseMap.at(_statusCode) + "\r\n";
@@ -132,6 +129,7 @@ void	Client::createResponse()
 	}
 	else
 	{
+		// Handle regular responses
 		_responseMap["Content-Type"] = "text/html";
 		responseMessage = _requestMap.at("Version") + " " + std::to_string(_statusCode) + " " + _ReasonPhraseMap.at(_statusCode) + "\r\n";
 		responseMessage += "Content-Type: " + _responseMap["Content-Type"] + "\r\n";
@@ -342,10 +340,9 @@ int	Client::getState()
 	return (_state);
 }
 
-// ADD JOVI
 std::map<std::string, std::string>&	Client::getResponseMap()
 {
-		return _responseMap;
+	return (_responseMap);
 }
 
 // --- Setter --- 

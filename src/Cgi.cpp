@@ -1,17 +1,9 @@
 #include "../includes/Cgi.hpp"
 #include "../includes/Server.hpp"
 
-// --- Constructors/ Deconstructor/ Operation ---
+// --- Constructors/ Deconstructor ---
 Cgi::Cgi() {}
-
-Cgi::Cgi(const Cgi& rhs) {}
-
 Cgi::~Cgi() {}
-
-Cgi& Cgi::operator=(const Cgi& rhs)
-{
-	return (*this);
-}
 
 // --- CGI Functions ---
 bool	Cgi::checkIfCGI( Client &client )
@@ -40,7 +32,7 @@ void	Cgi::runCGI( Server& server, Client& client)
 
 	}
 	if (client.getState() == READY){
-		waitpid(_pid, nullptr, 0); // Is this correct? Will the server hang if a child is hanging?
+		waitpid(_pid, nullptr, 0);
 		client.setReadWriteFd(client.getResponsePipe()[0]);
 		close(client.getResponsePipe()[1]);
 		if (client.getRequestMap().at("Method") == "POST")

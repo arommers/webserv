@@ -1,7 +1,7 @@
 #include "Location.hpp"
 
 // --- Constructor ---
-Location::Location() : _path(""), _root(""), _index(""), _allowedMethods(0), _autoindex(OFF), _redir("") {}
+Location::Location() : _path(""), _root(""), _index(""), _allowedMethods(0), _autoindex(OFF), _redir(""), _redirStatusCode(0) {}
 
 // --- Getter ---
 std::string Location::getPath() const
@@ -34,6 +34,12 @@ std::string Location::getRedir() const
 	return _redir;
 }
 
+int	Location::getRedirStatusCode() const
+{
+	return _redirStatusCode;
+}
+
+
 // --- Setter ---
 void Location::setPath(const std::string &path)
 {
@@ -63,4 +69,9 @@ void Location::setAutoindex(bool autoindex)
 void Location::setRedir(const std::string &redir)
 {
 	_redir = redir;
+}
+
+void Location::setRedirStatusCode(const int &statusCode)
+{
+	_redirStatusCode = statusCode;
 }

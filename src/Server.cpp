@@ -1,9 +1,11 @@
 #include "../includes/Server.hpp"
 #include "../includes/Config.hpp"
 
+// --- Constructors/ Deconstructor ---
 Server::Server() {}
 Server::~Server() {}
 
+// --- Server Functions ---
 /*  CREATES A SERVERSOCKET, INITIALIZES THE POLLFD ARRAY
     AND STARTS LISTENING FOR CONNECTIONS    */
 // Creates server sockets and adds them to the poll loop
@@ -85,13 +87,20 @@ void	Server::createPollLoop()
 		{
 			if (_pollFds[i].revents & POLLIN)
 			{
+				// if (_fdToServerBlockMap.find(_pollFds[i].fd) != _fdToServerBlockMap.end())
 				if (i < _servers.size())
+				{
+					// Server socket
 					acceptConnection(_pollFds[i].fd);
+				}
 				else if (_clients.count(_pollFds[i].fd))
+				{
+					// Client socket
 					handleClientData(i);
+				}
 				else
 				{
-					// Do we need a distinction between reading from a pipe vs a file?
+					// Other file descriptors
 					handleFileRead(i);
 				}
 			}
@@ -212,7 +221,7 @@ void	Server::openFile(Client &client)
 	else
 	{
 		// If file is successfully opened, add it to the poll loop
-		client.setReadWriteFd(fileFd); // CHANGED BY SVEN
+		client.setReadWriteFd(fileFd);
 		struct pollfd filePollFd;
 		filePollFd.fd = fileFd;
 		filePollFd.events = POLLIN;
@@ -282,7 +291,7 @@ void	Server::sendClientData(size_t index)
 		if (client.getWriteBuffer().empty())
 		{
 			std::cout << GREEN << "Response sent to client: " << _pollFds[index].fd << RESET << std::endl;
-			client.resetClientData(); // Resetting all data of client. Right location?
+			client.resetClientData();
 			closeConnection(index);
 		}
 	}
@@ -334,42 +343,6 @@ void	Server::closeConnection(size_t index)
 	close(fd);
 	_pollFds.erase(_pollFds.begin() + index);
 	removeClient(fd);
-}
-
-// JOVI
-bool	Server::checkForRedirect(Client &client)
-{
-	std::string uri = client.getRequestMap()["Path"];
-	ServerBlock& serverBlock = getServerBlockByFd(client.getFd());
-	Location location = getLocationForRequest(uri, serverBlock);
-
-	if (!location.getRedir().empty())
-	{
-		client.setStatusCode(301);  // Or another status code based on your requirement
-		client.getResponseMap()["Location"] = location.getRedir();
-		return true;
-	}
-	return false;
-
-	// try
-	// {
-	// 	std::string uri = client.getRequestMap()["Path"];
-	// 	ServerBlock& serverBlock = getServerBlockByFd(client.getFd());
-	// 	Location &location = getLocationForRequest(uri, serverBlock);
-
-	// 	if (!location.getRedir().empty())
-	// 	{
-	// 		client.setStatusCode(301);  // Or another status code based on your requirement
-	// 		client.getResponseMap()["Location"] = location.getRedir();
-	// 		return true;
-	// 	}
-	// }
-	// catch (const std::exception &e)
-	// {
-	// 	// Handle the error, e.g., log it or set a default response
-	// }
-
-	// return false;
 }
 
 // --------------------------------------------------------------------
@@ -459,24 +432,44 @@ void	Server::handleClientData(size_t index)
 			// JOVI ADD
 			// ---
 			// Check for redirect
-			if (checkForRedirect(client))
+			std::string redirectUrl;
+			int redirectStatusCode = 0;
+			for (const Location &location : client.getServerBlock().getLocations())
 			{
-				client.createResponse();  // Build the redirect response
+				if (client.getRequestMap()["Path"].find(location.getPath()) == 0) // Match location path
+				{
+					std::cout << "MAtCHING: " << std::endl;
+					redirectUrl = location.getRedir();
+					redirectStatusCode = location.getRedirStatusCode();
+					break;
+				}
+			}
+
+			if (!redirectUrl.empty())
+			{
+				std::cout << "Redirection found: " << std::endl;
+				client.setStatusCode(redirectStatusCode);
+				std::cout << "Made it: " << std::endl;
+				client.getResponseMap()["Location"] = redirectUrl;
 				client.setState(RESPONSE);
-				// _pollFds[index].events = POLLOUT;
-				// return;  // Exit early as the redirect is handled
 			}
-			// ---
-	
-			// CGI check
-			if (_cgi.checkIfCGI(client) == true){
-				_cgi.runCGI(*this, client);
-			}
-			else if(client.getRequestMap().at("Method") == "GET"){
-				openFile(client);
-			}
-			else if(client.getRequestMap().at("Method") == "DELETE"){
-				handleDeleteRequest(client);
+			else
+			{
+				std::cout << "NO Redirect found : Continue" << std::endl;
+				// Handle CGI or file requests
+				// // -----------------------------------------------
+				// // -----------------------------------------------
+
+				// CGI check
+				if (_cgi.checkIfCGI(client) == true){
+					_cgi.runCGI(*this, client);
+				}
+				else if(client.getRequestMap().at("Method") == "GET"){
+					openFile(client);
+				}
+				else if(client.getRequestMap().at("Method") == "DELETE"){
+					handleDeleteRequest(client);
+				}
 			}
 	}
 	else if (client.getState() == ERROR)
@@ -591,16 +584,6 @@ Client&	Server::getClient(int fd)
 std::vector<struct pollfd>	Server::getPollFds()
 {
 	return (_pollFds);
-}
-
-Location	Server::getLocationForRequest(const std::string &uri, ServerBlock &serverBlock)
-{
-	for (std::vector<Location>::iterator it = serverBlock.getLocations().begin(); it != serverBlock.getLocations().end(); ++it)
-	{
-		if (uri.find(it->getPath()) == 0)
-			return *it;
-	}
-	return Location();  // Return a default Location if no match is found
 }
 
 // --------------------------------------------------------------------

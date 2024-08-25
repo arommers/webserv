@@ -413,6 +413,7 @@ void	Config::ft_printConfigFile()
 			std::cout << "		Index: " << loc.getIndex() << std::endl;
 			std::cout << "		Autoindex: " << (loc.getAutoindex() ? "on" : "off") << std::endl;
 			std::cout << "		Redirect: " << loc.getRedir() << std::endl;
+			std::cout << "		Redir-StatusCode: " << loc.getRedirStatusCode() << std::endl;
 			std::cout << "		Allowed Methods: " << std::endl;
 			for (size_t k = 0; k < loc.getAllowedMethods().size(); k++)
 			{

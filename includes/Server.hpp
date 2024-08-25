@@ -17,8 +17,6 @@ class Server
 
 	public:
 		Server();
-		Server(const Server &rhs);
-		Server& operator=(const Server& rhs);
 		~Server();
 
 		void							addServer(const ServerBlock& serverInfo);
@@ -39,16 +37,13 @@ class Server
 		void							handleFdWrite(size_t index);
 		void							addPollFd( int fd, short int events );
 		void							addFileToPoll( Client& client, std::string file );
-		void							handleClientRequest(Client &client);
 		void							handleDeleteRequest(Client& client);
 		void							removePipe( size_t index );
-		int								getServerSocket();
 		Client&							getClient(int fd);
 		std::string						generateFolderContent(std::string path);
 		ServerBlock&					getServerBlockByFd(int fd);
 		std::vector<struct pollfd>		getPollFds();
-		bool							checkForRedirect(Client &client); // ADD JOVI
-		Location						getLocationForRequest(const std::string &uri, ServerBlock &serverBlock); // ADD JOVI
+		Location						getLocationForRequest(const std::string &uri, ServerBlock &serverBlock);
 };
 
 bool	sortLocations(const Location& a, const Location& b);

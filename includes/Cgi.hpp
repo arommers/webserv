@@ -15,8 +15,6 @@ class Cgi
 		pid_t		_pid;
 	public:
 		Cgi();
-		Cgi(const Cgi& rhs);
-		Cgi& operator=(const Cgi& rhs);
 		~Cgi();
 		
 		bool		checkIfCGI( Client& client );
