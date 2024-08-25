@@ -112,7 +112,7 @@ void	Client::parseBuffer ( void )
 // 	_writeBuffer = responseMessage;
 // }
 
-// JOVI VERSION
+// JOVI VERSION // NEEEDS TO BE DEBUGGED
 void	Client::createResponse()
 {
 	std::string responseMessage;
@@ -120,9 +120,12 @@ void	Client::createResponse()
 	if (_statusCode == 0)
 		setStatusCode(200);
 
-	// // Handle redirect responses
+
+	// Handle redirect responses
 	if (_statusCode == 301 || _statusCode == 302)
 	{
+		std::cout << "Made it: " << std::endl; // For debugging
+		// Where do I need to set these? 
 		responseMessage = _requestMap.at("Version") + " " + std::to_string(_statusCode) + " " + _ReasonPhraseMap.at(_statusCode) + "\r\n";
 		responseMessage += "Location: " + _responseMap["Location"] + "\r\n";
 		responseMessage += "Content-Length: 0\r\n\r\n";  // Usually no body for redirects
@@ -142,33 +145,6 @@ void	Client::createResponse()
 			responseMessage += "\r\n";
 	}
 	_writeBuffer = responseMessage;
-
-
-	// std::string responseMessage;
-
-	// if (_statusCode == 0)
-	// 	setStatusCode(200);
-
-	// responseMessage = _requestMap.at("Version") + " " + std::to_string(_statusCode) + " " + _ReasonPhraseMap.at(_statusCode) + "\r\n";
-
-	// if (_statusCode == 301 || _statusCode == 302)
-	// {
-	// 	responseMessage += "Location: " + _responseMap.at("Location") + "\r\n";
-	// }
-
-	// responseMessage += "Content-Type: " + _responseMap.at("Content-Type") + "\r\n";
-
-	// if (!_fileBuffer.empty())
-	// {
-	// 	responseMessage += "Content-Length: " + std::to_string(_fileBuffer.size()) + "\r\n\r\n";
-	// 	responseMessage += _fileBuffer;
-	// }
-	// else
-	// {
-	// 	responseMessage += "\r\n";
-	// }
-	
-	// _writeBuffer = responseMessage;
 }
 
 void	Client::readNextChunk()
