@@ -85,9 +85,6 @@ std::map<std::string, std::string> Client::getRequestMap( void )
     return (_requestMap);
 }
 
-
-
-
 ServerBlock& Client::getServerBlock()
 {
     return _ServerBlock;
@@ -273,7 +270,7 @@ void Client::readNextChunk()
     int bytesRead = read(_readWriteFd, buffer, BUFFER_SIZE);
     if (bytesRead < 0)
     {
-        std::cerr << "Failed to read file: " << strerror(errno) << std::endl;
+        std::cerr << "Failed to read file." << std::endl;
         close(_readWriteFd);
         setStatusCode(500);
         _fd = -1;
@@ -293,15 +290,23 @@ void Client::writeNextChunk()
     std::string buffer;
     int bytesWritten;
 
-    buffer = getWriteBuffer().substr(0,BUFFER_SIZE);
+    buffer = getWriteBuffer().substr(0, BUFFER_SIZE);
     bytesWritten = write(getReadWriteFd(), buffer.c_str(), buffer.length());
     if (bytesWritten < 0)
     {
-        std::cerr << "Failed to write to fd: " << strerror(errno) << std::endl;
+        std::cerr << "Failed to write to fd." << std::endl;
         close(_readWriteFd);
         setState(500);
         _fd = -1;
         return ;
+    }
+    if (bytesWritten == 0)
+    {
+        std::cerr << "Warning: write() returned 0, no data was written. Possibly a closed connection." << std::endl;
+        close(_readWriteFd);
+        setState(500);
+        _fd = -1;
+        return;
     }
     _writeBuffer.erase(0, bytesWritten);
     if (getWriteBuffer().empty())
@@ -322,18 +327,6 @@ void    Client::resetClientData( void )
     _readWriteFd = -1;
     // Is all added?? -- Sven
 }
-
-
-// std::string Client::getFileBuffer()
-// void Client::setFileFd(int fd)
-// {
-//     _fileFd = fd;
-// }
-
-// int Client::getFileFd()
-// {
-//     return _fileBuffer;
-// }
 
 void Client::setReadWriteFd(int fd)
 {

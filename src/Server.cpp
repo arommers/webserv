@@ -189,10 +189,13 @@ void    Server::handleClientData(size_t index)
         char    buffer[BUFFER_SIZE];
         int     bytesRead = read(_pollFds[index].fd, buffer, BUFFER_SIZE);
         if (bytesRead < 0)
-                std::cerr << RED << "Error reading from client socket: " << strerror(errno) << RESET << std::endl;
+        {
+            std::cerr << RED << "Error reading from client socket: " << strerror(errno) << RESET << std::endl;
+            closeConnection(index);
+        }
         else if(bytesRead == 0)
         {
-            std::cout << YELLOW << "Client disconnected, socket fd is: " << RESET << std::endl;
+            std::cout << YELLOW << "Client with fd: "<< client.getFd() << " disconnected." << RESET << std::endl;
             closeConnection(index);
         }
         else
@@ -252,9 +255,14 @@ void    Server::sendClientData(size_t index)
     std::string writeBuffer = client.getWriteBuffer();
 
     int bytesSent = send(_pollFds[index].fd, writeBuffer.c_str(), writeBuffer.size(), 0);
-    if (bytesSent < 0)
+    if (bytesSent == 0)
     {
-        std::cerr << RED << "Error sending data to client: " << strerror(errno) << RESET << std::endl;
+        std::cerr << RED << "Error: send() returned 0, no data sent." << RESET << std::endl;
+        closeConnection(index); 
+    }
+    else if (bytesSent < 0)
+    {
+        std::cerr << RED << "Error sending data to client" << RESET << std::endl;
         closeConnection(index);
     }
     else
@@ -263,7 +271,7 @@ void    Server::sendClientData(size_t index)
         if (client.getWriteBuffer().empty())
         {
             std::cout << GREEN << "Response sent to client: " << _pollFds[index].fd << RESET << std::endl;
-            client.resetClientData(); // Resetting all data of client. Right location?
+            client.resetClientData();
             closeConnection(index);
         }
     }
@@ -332,7 +340,7 @@ void    Server::removePollFd( int fd )
     }
 }
 
-void    Server:: removePipe( size_t index )
+void    Server::removePipe( size_t index )
 {
     for (std::unordered_map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it)
     {
