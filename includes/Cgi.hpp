@@ -5,6 +5,8 @@
 #include <vector>
 #include <map>
 #include <sys/wait.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
 #include "../includes/Client.hpp"
 
 class Server;
@@ -25,4 +27,6 @@ class Cgi
 		void		launchScript(Server& server, Client& client);
 		void		redirectToPipes(Server& server, Client& client);
 		std::string	findPath(Server& server, Client& client);
+		bool 		isPipeEmpty(int fd);
+		void		closeAllPipes(Client& client);
 };

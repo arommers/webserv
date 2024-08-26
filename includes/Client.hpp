@@ -58,6 +58,7 @@ class Client
 		int										_statusCode = 0;
 		int										_responsePipe[2];
 		int										_requestPipe[2];
+        int                         		    _errorPipe[2];
 		std::string								_readBuffer;
 		std::string								_writeBuffer;
 		std::string								_fileBuffer;
@@ -100,7 +101,7 @@ class Client
 		int										getStatusCode();
 		int*									getResponsePipe();
 		int*									getRequestPipe();
-		int*									getReponsePipe();
+		int* 		                            getErrorPipe();
 		size_t									getWritePos();
 		std::string								getReadBuffer();
 		std::time_t								getTime();

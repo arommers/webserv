@@ -359,3 +359,8 @@ void	Client::setStatusCode( const int statusCode )
 		setState(ERROR);
 	}
 }
+
+int* Client::getErrorPipe()
+{
+	return (_errorPipe);
+}
