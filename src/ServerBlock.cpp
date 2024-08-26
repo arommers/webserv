@@ -41,10 +41,10 @@ void	ServerBlock::setServerFd(int fd)
     _serverFd = fd;
 }
 
-void ServerBlock::setLocations(std::vector<std::vector<std::string>> &newLocation, ServerBlock &server)
+void ServerBlock::setLocations(std::vector<std::vector<std::string>> &newLocation, ServerBlock &server, std::string STRING)
 {
 	Location locBlock;
-	createLocation(newLocation,locBlock, server);
+	createLocation(newLocation,locBlock, server, STRING);
 	_locations.push_back(locBlock);
 }
 
@@ -130,12 +130,12 @@ void ServerBlock::checkRootRound2(Location locBlock, std::string path)
 * - Checks that all variables are filled
 * - If not filled it will get set to the default value.
 */
-void	ServerBlock::ft_checkLocationVariables(Location &locBlock, ServerBlock &server)
+void	ServerBlock::ft_checkLocationVariables(Location &locBlock, ServerBlock &server, std::string STRING)
 {
 	if (locBlock.getRoot().empty())
 		checkRootRound2(locBlock, locBlock.getPath());
 	if (locBlock.getIndex().empty())
-		locBlock.setIndex(server.getIndex());
+		locBlock.setIndex(STRING);
 	if (locBlock.getRedir().empty())
 	{
 		locBlock.setRedirStatusCode(0);
@@ -149,7 +149,7 @@ void	ServerBlock::ft_checkLocationVariables(Location &locBlock, ServerBlock &ser
 }
 
 // Helper function to parse location configuration string into a Location object
-void ServerBlock::createLocation(std::vector<std::vector<std::string>> &locParams, Location &locBlock, ServerBlock &server)
+void ServerBlock::createLocation(std::vector<std::vector<std::string>> &locParams, Location &locBlock, ServerBlock &server, std::string STRING)
 {
 	bool boolAutoindex = 0;
 	bool boolMethods = 0;
@@ -204,5 +204,5 @@ void ServerBlock::createLocation(std::vector<std::vector<std::string>> &locParam
 	}
 
 	// Check that all important varabiles are filled.
-	ft_checkLocationVariables(locBlock, server); 
+	ft_checkLocationVariables(locBlock, server, STRING); 
 }

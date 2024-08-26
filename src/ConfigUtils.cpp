@@ -263,7 +263,7 @@ void	Config::ft_checkServerVariables(ServerBlock &server)
 	if (server.getHost().empty())
 		throw Exception_Config("Host not found");
 	if (server.getRoot().empty())
-		server.setRoot("/www");
+		throw Exception_Config("Root not found");
 	if (server.getIndex().empty())
 		server.setIndex("index.html");
 	if (server.getServerName().empty())

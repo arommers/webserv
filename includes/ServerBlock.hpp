@@ -25,9 +25,9 @@ class ServerBlock
 
 
 	public:
-		int	_codeTest;		// Is need to check the redirCode
-		ServerBlock();		// Constructor
-		~ServerBlock() {}	// Destructor
+		int				_codeTest;		// Is need to check the redirCode
+		ServerBlock();					// Constructor
+		~ServerBlock() {}				// Destructor
 
 		// Setter
 		void						setPort(int newPort);
@@ -37,7 +37,7 @@ class ServerBlock
 		void						setRoot(const std::string &newRoot);
 		void						setIndex(const std::string &newIndex);
 		void						setServerName(const std::string &newServerName);
-		void						setLocations(std::vector<std::vector<std::string>> &newLocation, ServerBlock &server);
+		void						setLocations(std::vector<std::vector<std::string>> &newLocation, ServerBlock &server, std::string STRING);
 		void						setErrorPage(const std::string &newErrorPage);
 
 		// Getter
@@ -62,8 +62,8 @@ class ServerBlock
 
 		// Utils
 		bool						hasErrorPage(const std::string &errorPage) const;
-		void						createLocation(std::vector<std::vector<std::string>> &locParams, Location &locBlock, ServerBlock &server);
-		void						ft_checkLocationVariables(Location &locBlock, ServerBlock &server);
+		void						createLocation(std::vector<std::vector<std::string>> &locParams, Location &locBlock, ServerBlock &server, std::string STRING);
+		void						ft_checkLocationVariables(Location &locBlock, ServerBlock &server, std::string STRING);
 		void						checkRootRound2(Location locBlock, std::string path);
 		int							getPathType(std::string const path);
 

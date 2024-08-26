@@ -432,18 +432,21 @@ void	Server::handleClientData(size_t index)
 			// Check for redirect
 			std::string redirectUrl;
 			int redirectStatusCode = 0;
+			Location loco;
 			for (const Location &location : client.getServerBlock().getLocations())
 			{
-				if (client.getRequestMap()["Path"].find(location.getPath()) == 0) // Match location path
-				{
-					redirectUrl = location.getRedir();
-					redirectStatusCode = location.getRedirStatusCode();
-					break;
-				}
+				redirectUrl = location.getRedir();
+				loco = location;
+				break;
 			}
 
 			if (!redirectUrl.empty())
 			{
+				if (client.getRequestMap()["Path"].find(loco.getPath()) == 0) // Match location path
+				{
+					redirectUrl = loco.getRedir();
+					redirectStatusCode = loco.getRedirStatusCode();
+				}
 				client.setStatusCode(redirectStatusCode);
 				client.getResponseMap()["Location"] = redirectUrl;
 				client.setState(RESPONSE);

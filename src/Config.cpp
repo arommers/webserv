@@ -98,9 +98,15 @@ void	Config::createServer(std::string &config_string, ServerBlock &server)
 		{
 			/* Needs to be at the top, so once a location block is encountered.
 			 * But there are more variables after the location block, it is invalid. */
+
+			std::string STRING;
+			if (!server.getIndex().empty())
+				STRING = server.getIndex();
+			else
+				STRING = "/index.html";
 			locationEncountered = true;
 			std::vector<std::vector<std::string>> locParams = ft_checkLocation(parameters[0][i], parameters[1][i], server);
-			server.setLocations(locParams, server);
+			server.setLocations(locParams, server, STRING);
 		}
 		else if (locationEncountered)
 		{
