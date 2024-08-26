@@ -1,12 +1,20 @@
 #include "../includes/Server.hpp"
 #include "../includes/Config.hpp"
 
-// int _shutdownRequest = false;
-
 Server::Server() {}
 Server::~Server() {}
-// Server::Server(const Server &rhs) {}
-// Server& Server::operator=(const Server& rhs) {}
+Server::Server(const Server &rhs) {}
+Server& Server::operator=(const Server& rhs)
+{
+    if (this != &rhs)
+    {
+        _servers = rhs._servers;
+        _pollFds = rhs._pollFds;
+        _clients = rhs._clients;
+        _cgi     = rhs._cgi;
+    }
+    return(*this);
+}
 
 
 void    Server::addServer(const ServerBlock& ServerBlock)
@@ -72,10 +80,12 @@ void    Server::createPollLoop()
             break;
         }
 
-        int pollSize = poll(_pollFds.data(), _pollFds.size(), -1);
+        int pollSize = poll(_pollFds.data(), _pollFds.size(), TIMEOUT);
+        // if (pollSize == 0)
+        //     checkTimeout(TIMEOUT / 1000);
         if (pollSize == -1)
         {
-            std::cerr << RED << "Poll failed: " << strerror(errno) << RESET << std::endl;
+            std::cerr << RED << "Poll failed" << RESET << std::endl;
             shutdownServer();
             exit(EXIT_FAILURE);
         }
@@ -107,7 +117,6 @@ void    Server::createPollLoop()
             }
         }
     }
-
 }
 
 void    Server::acceptConnection(int serverSocket)
@@ -388,6 +397,13 @@ void    Server::handleDeleteRequest(Client& client)
 {
     std::string toDelete = client.getRequestMap().at("Path");
     toDelete.erase(0, 1);
+
+    if (!checkFileAccessRights(toDelete))
+    {
+        client.setStatusCode(403);
+        return ;
+    }
+
     if (remove(toDelete.c_str()) < 0)
     {
         client.setStatusCode(404);
@@ -400,4 +416,9 @@ void    Server::handleDeleteRequest(Client& client)
 void    Server::setServer(std::vector<ServerBlock> serverBlocks)
 {
     _servers = serverBlocks;
+}
+
+std::vector<ServerBlock> Server::getServer() const
+{
+    return _servers;
 }

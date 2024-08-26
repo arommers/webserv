@@ -1,5 +1,6 @@
 #include "../includes/Server.hpp"
 #include "../includes/Config.hpp"
+#include <thread>
 
 void Server::openFile(Client &client)
 {
@@ -23,6 +24,12 @@ void Server::openFile(Client &client)
     }
 
     std::string resolvedFile = resolveFilePath(file, location, serverBlock);
+
+    if (!checkFileAccessRights(resolvedFile))
+    {
+        client.setStatusCode(403);
+        return;
+    }
 
     if (handleDirectoryRequest(resolvedFile, location, client))
         return;
@@ -163,21 +170,53 @@ std::string Server::generateFolderContent(std::string path)
     return html.str();
 }
 
-void    Server::checkTimeout(int time)
+// void Server::checkTimeout(int time)
+// {
+//     std::time_t currentTime = std::time(nullptr);
+
+//     for (size_t i = 0 + getServer().size(); i < _pollFds.size(); ++i)
+//     {
+//         std::cout << RED << "Test" << RESET << std::endl;
+        
+//         int fd = _pollFds[i].fd;
+
+//         std::cout << RED << fd << RESET << std::endl;
+
+//         if (_clients.count(fd))
+//         {
+//             Client& client = getClient(fd);
+//             std::cout << "Client Time : " << client.getTime() << ", Current Time: " << currentTime << std::endl;
+
+//             if (difftime(currentTime, client.getTime()) > time)
+//             {
+//                 std::cout << YELLOW << "Connection timeout, closing socket fd: " << fd << RESET << std::endl;
+//                 closeConnection(i);
+//                 --i;
+//             }
+//         }
+//     }
+// }
+
+// void    Server::checkTimeout(int time)
+// {
+//     std::time_t currentTime = std::time(nullptr);
+
+//     for (size_t i = 1; i < _pollFds.size(); ++i)
+//     {
+//         Client& client = getClient(_pollFds[i].fd);
+
+//         if (difftime(currentTime, client.getTime()) > time)
+//         {
+//             std::cout << YELLOW << "Connection timeout, closing socket fd: " << _pollFds[i].fd << RESET << std::endl;
+//             closeConnection(i);
+//             --i;
+//         }
+//     }
+// }
+
+bool Server::checkFileAccessRights(const std::string& path)
 {
-    std::time_t currentTime = std::time(nullptr);
-
-    for (size_t i = 1; i < _pollFds.size(); ++i)
-    {
-        Client& client = getClient(_pollFds[i].fd);
-
-        if (difftime(currentTime, client.getTime()) > time)
-        {
-            std::cout << YELLOW << "Connection timeout, closing socket fd: " << _pollFds[i].fd << RESET << std::endl;
-            closeConnection(i);
-            --i;
-        }
-    }
+    return (access(path.c_str(), R_OK) == 0) ? true : false;
 }
 
 bool    sortLocations(const Location& a, const Location& b)

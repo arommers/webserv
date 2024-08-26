@@ -6,6 +6,7 @@ const std::map<int, std::string> Client::_ReasonPhraseMap = {
     {204, "No Content"},
     {400, "Bad Formatting"},
     {401, "Unauthorized"},
+    {403, "Unautorized"},
     {404, "Not Found"},
     {405, "Method Not Allowed"},
     {500, "Internal Server Error"},
@@ -14,33 +15,41 @@ const std::map<int, std::string> Client::_ReasonPhraseMap = {
 
 Client::Client() {}
 
-Client::~Client() { }
+Client::~Client()
+{
+    _time = std::time(nullptr);
+}
 
-Client::Client(int fd, ServerBlock& ServerBlock): _fd(fd), _ServerBlock(ServerBlock) {}
+Client::Client(int fd, ServerBlock& ServerBlock)
+{
+    _fd = fd;
+    _ServerBlock = ServerBlock;
+    _time = std::time(nullptr);
+}
 
-// Client::Client(const Client& rhs)
-// {
-//     _fd = rhs._fd;
-//     _ServerBlock = rhs._ServerBlock;
-//     _readBuffer = rhs._readBuffer;
-//     _writeBuffer = rhs._writeBuffer;
-//     _writePos = rhs._writePos;
-//     _time = rhs._time;
-// }
+Client::Client(const Client& rhs)
+{
+    _fd = rhs._fd;
+    _ServerBlock = rhs._ServerBlock;
+    _readBuffer = rhs._readBuffer;
+    _writeBuffer = rhs._writeBuffer;
+    _writePos = rhs._writePos;
+    _time = rhs._time;
+}
 
-// Client& Client::operator=(const Client& rhs)
-// {
-//     if (this != &rhs)
-//     {
-//         _fd = rhs._fd;
-//         _ServerBlock = rhs._ServerBlock;
-//         _readBuffer = rhs._readBuffer;
-//         _writeBuffer = rhs._writeBuffer;
-//         _writePos = rhs._writePos;
-//         _time = rhs._time;
-//     }
-//     return (*this);
-// }
+Client& Client::operator=(const Client& rhs)
+{
+    if (this != &rhs)
+    {
+        _fd = rhs._fd;
+        _ServerBlock = rhs._ServerBlock;
+        _readBuffer = rhs._readBuffer;
+        _writeBuffer = rhs._writeBuffer;
+        _writePos = rhs._writePos;
+        _time = rhs._time;
+    }
+    return (*this);
+}
 
 void    Client::addToBuffer( std::string bufferNew )
 {

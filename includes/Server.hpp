@@ -37,33 +37,32 @@ class Server
         Client&         getClient(int fd);
         std::string     generateFolderContent(std::string path);
 
-        // currently not implemented
-        // void        handleClientRequest(Client &client);
-
-        void            removePollFd( int fd );
-        std::vector<struct pollfd>      getPollFds();
-        void            setServer(std::vector<ServerBlock> serverBlocks);
+        void                        removePollFd( int fd );
+        std::vector<struct pollfd>  getPollFds();
+        void                        setServer(std::vector<ServerBlock> serverBlocks);
+        std::vector<ServerBlock>    getServer() const;
 
 
-        void                        handleFdWrite(size_t index);
-        int                         getServerSocket();
-        void                        addPollFd( int fd, short int events );
-        void                        addFileToPoll( Client& client, std::string file );
 
-        // int             checkFile(std::string &file);
-        void                        handleClientRequest(Client &client);
-        void                        handleDeleteRequest(Client& client);
+        void                    handleFdWrite(size_t index);
+        int                     getServerSocket();
+        void                    addPollFd( int fd, short int events );
+        void                    addFileToPoll( Client& client, std::string file );
+        // void                    handleClientRequest(Client &client);
+        void                    handleDeleteRequest(Client& client);
 
-        void                        removePipe( size_t index );
+        void                    removePipe( size_t index );
 
         std::vector<Location>   findMatchingLocations(const std::string& file, ServerBlock& serverBlock);
         std::string             resolveFilePath(const std::string& file, const Location& location, ServerBlock& serverBlock);
         bool                    handleDirectoryRequest(std::string& file, const Location& location, Client& client);
         void                    openRequestedFile(const std::string& file, Client& client);
         bool                    checkAllowedMethod(const Location& location, const std::string& method);
+        bool                    checkFileAccessRights(const std::string& path);
+
 };
 
-        bool            sortLocations(const Location& a, const Location& b);
+        bool    sortLocations(const Location& a, const Location& b);
 
 
 

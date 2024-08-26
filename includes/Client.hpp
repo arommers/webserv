@@ -46,7 +46,7 @@ enum    clientState
 
 #define PORT 4040
 #define MAX_CLIENTS 10
-#define TIMEOUT 60
+#define TIMEOUT 10000
 #define BUFFER_SIZE 1024
 
 class Client
@@ -66,7 +66,7 @@ class Client
         std::time_t                             _time = std::time(nullptr);
         int                                     _requestPipe[2];
         int                                     _responsePipe[2];
-        std::vector<int>                        _statusCheck = {400, 401, 404, 405, 500, 503};
+        std::vector<int>                        _statusCheck = {400, 401, 403, 404, 405, 500, 503};
         
         // bool                                    _responseReady = false;
         ServerBlock                              _ServerBlock;
@@ -79,8 +79,8 @@ class Client
     public:
         Client();
         Client(int fd, ServerBlock& ServerBlock);
-        // Client(const Client& rhs);
-        // Client& operator=(const Client& rhs);
+        Client(const Client& rhs);
+        Client& operator=(const Client& rhs);
         ~Client();
 
         void                                    addToBuffer( std::string bufferNew );
