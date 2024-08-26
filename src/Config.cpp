@@ -114,8 +114,7 @@ void	Config::createServer(std::string &config_string, ServerBlock &server)
 		}
 		else if (parameters[0][i] == "host")
 		{
-			ft_checkHost(parameters[1][i], server);
-			server.setHost(parameters[1][i]);
+			server.setHost(ft_checkHost(parameters[1][i], server));
 		}
 		else if (parameters[0][i] == "root")
 		{

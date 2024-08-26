@@ -429,8 +429,6 @@ void	Server::handleClientData(size_t index)
 	{
 			std::cout << GREEN << "Request Received from socket " << _pollFds[index].fd << ", method: [" << client.getRequestMap()["Method"] << "]" << ", version: [" << client.getRequestMap()["Version"] << "], URI: "<< client.getRequestMap()["Path"] <<  RESET << std::endl;
 			
-			// JOVI ADD
-			// -----------------------------------------------------------
 			// Check for redirect
 			std::string redirectUrl;
 			int redirectStatusCode = 0;
@@ -438,7 +436,6 @@ void	Server::handleClientData(size_t index)
 			{
 				if (client.getRequestMap()["Path"].find(location.getPath()) == 0) // Match location path
 				{
-					std::cout << "MAtCHING: " << std::endl;
 					redirectUrl = location.getRedir();
 					redirectStatusCode = location.getRedirStatusCode();
 					break;
@@ -447,17 +444,12 @@ void	Server::handleClientData(size_t index)
 
 			if (!redirectUrl.empty())
 			{
-				std::cout << "Redirection found: " << std::endl;
 				client.setStatusCode(redirectStatusCode);
 				client.getResponseMap()["Location"] = redirectUrl;
 				client.setState(RESPONSE);
-				// std::cout << "Made it: " << std::endl; // for debugging
-			// -----------------------------------------------------------
 			}
 			else
 			{
-				std::cout << "NO Redirect found : Continue" << std::endl;
-
 				// Handle CGI or file requests
 				// CGI check
 				if (_cgi.checkIfCGI(client) == true){

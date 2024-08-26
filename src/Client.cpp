@@ -4,6 +4,8 @@ const std::map<int, std::string> Client::_ReasonPhraseMap = {
     {200, "OK"},
     {201, "Created"},
     {204, "No Content"},
+	{301, "Moved Permanently"},
+	{302, "Found"},
     {400, "Bad Formatting"},
     {401, "Unauthorized"},
     {404, "Not Found"},
@@ -92,27 +94,6 @@ void	Client::parseBuffer ( void )
 	isValidVersion(_requestMap["Version"]); 
 }
 
-// // SVEN VERSION
-// void	Client::createResponse ( void )
-// {
-// 	std::string responseMessage;
-
-// 	if (_statusCode == 0)
-// 		setStatusCode(200);
-// 	_responseMap["Content-Type"] = "text/html";
-// 	responseMessage = _requestMap.at("Version") + " " + std::to_string(_statusCode) + " " + _ReasonPhraseMap.at(_statusCode) + "\r\n";
-// 	responseMessage += "Content-Type: " + _responseMap.at("Content-Type") + "\r\n";
-// 	if (!_fileBuffer.empty()){
-// 		responseMessage += "Content-Length: " + std::to_string(_fileBuffer.size()) + "\r\n\r\n";
-// 		responseMessage += _fileBuffer;
-// 	}
-// 	else{
-// 		responseMessage += "\r\n";
-// 	}
-// 	_writeBuffer = responseMessage;
-// }
-
-// JOVI VERSION // NEEEDS TO BE DEBUGGED
 void	Client::createResponse()
 {
 	std::string responseMessage;
@@ -120,12 +101,9 @@ void	Client::createResponse()
 	if (_statusCode == 0)
 		setStatusCode(200);
 
-
 	// Handle redirect responses
 	if (_statusCode == 301 || _statusCode == 302)
 	{
-		std::cout << "Made it: " << std::endl; // For debugging
-		// Where do I need to set these? 
 		responseMessage = _requestMap.at("Version") + " " + std::to_string(_statusCode) + " " + _ReasonPhraseMap.at(_statusCode) + "\r\n";
 		responseMessage += "Location: " + _responseMap["Location"] + "\r\n";
 		responseMessage += "Content-Length: 0\r\n\r\n";  // Usually no body for redirects

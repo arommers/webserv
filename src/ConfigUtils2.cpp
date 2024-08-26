@@ -87,7 +87,7 @@ std::vector<std::vector<std::string>> Config::ft_splitLocationParameters(const s
 // -------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------
 // --- Checkers functions ---
-void	Config::ft_checkHost(const std::string &newHost, ServerBlock &server)
+std::string	Config::ft_checkHost(const std::string &newHost, ServerBlock &server)
 {
 	// Check if variable is already set
 	if (!server.getHost().empty())
@@ -95,7 +95,7 @@ void	Config::ft_checkHost(const std::string &newHost, ServerBlock &server)
 
 	// Check if the value is matches
 	if (newHost == "localhost" || newHost == "127.0.0.1")
-		return ;
+		return "127.0.0.1";
 	else
 		throw  Exception_Config("Invald Host");
 }

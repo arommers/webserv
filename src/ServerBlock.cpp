@@ -179,10 +179,7 @@ void ServerBlock::createLocation(std::vector<std::vector<std::string>> &locParam
 			else
 			{
 				locBlock.setRedir(ft_checkLocationReturn(locParams[1][i], locBlock, locBlock.getPath()));
-				if (locBlock.getRedir() == "https://en.wikipedia.org/wiki/42_(number)")
-					locBlock.setRedirStatusCode(301);
-				else
-					locBlock.setRedirStatusCode(302);
+				locBlock.setRedirStatusCode(_codeTest);
 				boolReturn = 1;
 			}
 		}

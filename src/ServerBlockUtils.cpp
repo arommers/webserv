@@ -63,10 +63,6 @@ std::string ServerBlock::ft_checkLocationRoot(const std::string &newRoot, Locati
 		char dir[1024];
 		getcwd(dir, 1024);
 		NewFullRoot = dir + newRoot + path;
-		// --- we need this? ---
-		// if (ServerBlock::getPathType(NewFullRoot) != FOLDER) // If the path type is not a directory or can't be found
-		// 	throw Exception_ServerBlock("Loction_Block: Invalid Root");
-		// ---
 	}
 	return NewFullRoot;
 }
@@ -80,12 +76,32 @@ std::string ServerBlock::ft_checkLocationReturn(const std::string &newRedir, Loc
 	 *	 If a cgi-bin directory is redirected, attackers might exploit the redirection to trick the server into executing harmful scripts or commands. */
 	if (path == "/cgi-bin")
 		throw Exception_ServerBlock("Invalid Location_Block Return: Parameter return not allow for cgi-bin");
-	if (newRedir == "301")
-		return REDIR301;
-	else if (newRedir == "302")
-		return REDIR302;
+	
+	// Skip leading whitespace
+	size_t pos = 0;
+	while (pos < newRedir.size() && std::isspace(newRedir[pos]))
+		++pos;
+
+	// Extract the first three non-whitespace characters
+	std::string statusCodeStr;
+	for (int i = 0; i < 3 && pos < newRedir.size(); ++i)
+		statusCodeStr += newRedir[pos++];
+
+	if (statusCodeStr == "301" || statusCodeStr == "302")
+		_codeTest = std::stoi(statusCodeStr);
 	else
-		throw Exception_ServerBlock("Location_Block: return invalid");
+		throw Exception_ServerBlock("Location_Block: return invalid (1)");
+
+	// Skip any whitespace after the status code
+	while (pos < newRedir.size() && std::isspace(newRedir[pos]))
+		++pos;
+
+	// Return the rest of the string
+	std::string remainingRedir = newRedir.substr(pos);
+	if (remainingRedir.empty())
+		throw Exception_ServerBlock("Location_Block: return invalid (2)"); 
+
+	return remainingRedir;
 }
 
 void ServerBlock::ft_checkLocationIndex(const std::string &newIndex, Location locBlock)

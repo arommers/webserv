@@ -10,10 +10,6 @@
 # include <limits.h>
 # include "Location.hpp"
 
-// Redirects URL (301 and 302)
-# define REDIR301 "https://en.wikipedia.org/wiki/42_(number)"
-# define REDIR302 "https://en.wikipedia.org/wiki/12_(number)"
-
 class ServerBlock
 {
 	private:
@@ -27,7 +23,9 @@ class ServerBlock
 		std::vector<Location> 		_locations;		// Inforamtion of the location blocks
 		std::vector<std::string>	_errorPage;		// Error Pages
 
+
 	public:
+		int	_codeTest;		// Is need to check the redirCode
 		ServerBlock();		// Constructor
 		~ServerBlock() {}	// Destructor
 

@@ -46,7 +46,7 @@ class	Config
 
 		// Checkers
 		std::string								ft_checkRoot(const std::string &newRoot, ServerBlock &server);
-		void									ft_checkHost(const std::string &newHost, ServerBlock &server);
+		std::string								ft_checkHost(const std::string &newHost, ServerBlock &server);
 		void									ft_checkPort(const std::string &newPort, ServerBlock &server);
 		void									ft_checkMaxClient(const std::string &newMaxClient, ServerBlock &server);
 		void									ft_checkIndex(const std::string &newIndex, ServerBlock &server);
