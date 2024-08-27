@@ -178,7 +178,7 @@ void ServerBlock::createLocation(std::vector<std::vector<std::string>> &locParam
 				throw Exception_ServerBlock("Loction_Block: Return is duplicated");
 			else
 			{
-				locBlock.setRedir(ft_checkLocationReturn(locParams[1][i], locBlock, locBlock.getPath()));
+				locBlock.setRedir(ft_checkLocationReturn(locParams[1][i], locBlock.getPath()));
 				if (locBlock.getRedir() == "https://en.wikipedia.org/wiki/42_(number)")
 					locBlock.setRedirStatusCode(301);
 				else
@@ -191,7 +191,7 @@ void ServerBlock::createLocation(std::vector<std::vector<std::string>> &locParam
 			// Check if variable is already set
 			if (boolMethods == 1)
 				throw Exception_ServerBlock("Location_Block: allowed_method is duplicated");
-			locBlock.setAllowedMethods(ft_checkLocationMethods(locParams[1][i], locBlock));
+			locBlock.setAllowedMethods(ft_checkLocationMethods(locParams[1][i]));
 			boolMethods = 1;
 		}
 		else if (locParams[0][i] == "autoindex")

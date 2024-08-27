@@ -56,10 +56,10 @@ class ServerBlock
 
 
 		// Checker
-		std::vector<std::string>	ft_checkLocationMethods(const std::string &newMethods, Location locBlock);
+		std::vector<std::string>	ft_checkLocationMethods(const std::string &newMethods);
 		std::string					ft_checkLocationRoot(const std::string &newRoot, Location locBlock, std::string path);
 		std::string					ft_checkLocationPath(const std::string &newPath, Location locBlock);
-		std::string					ft_checkLocationReturn(const std::string &newRedir, Location locBlock, std::string path);
+		std::string					ft_checkLocationReturn(const std::string &newRedir, std::string path);
 		void						ft_checkLocationIndex(const std::string &newIndex, Location locBlock);
 		bool						ft_checkLoactionAutoindex(const std::string &newAutoindex, std::string path);
 

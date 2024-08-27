@@ -217,7 +217,7 @@ void	Config::ft_checkServerName(const std::string &newServerName, ServerBlock &s
 	}
 }
 
-std::vector<std::vector<std::string>>	Config::ft_checkLocation(const std::string &newLocation0, const std::string &newLocation1, ServerBlock &server)
+std::vector<std::vector<std::string>>	Config::ft_checkLocation(const std::string &newLocation0, const std::string &newLocation1)
 {
     std::vector<std::vector<std::string>>	locParams;
 
@@ -228,7 +228,7 @@ std::vector<std::vector<std::string>>	Config::ft_checkLocation(const std::string
 	return (locParams);
 }
 
-void	Config::ft_checkErrorPage(const std::string &key, const std::string &value, ServerBlock &server)
+void	Config::ft_checkErrorPage(const std::string &key, const std::string &value)
 {
 	// Extract the last three characters from key
 	size_t spacePos = key.find(' ');

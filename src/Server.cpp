@@ -233,8 +233,8 @@ void	Server::openFile(Client &client)
 std::string	Server::generateFolderContent(std::string path)
 {
 	std::ostringstream	html;
-	struct dirent		*entry;
-	DIR					*folder;
+	struct dirent		*entry = nullptr;
+	DIR					*folder = nullptr;
 	
 	html << "<!DOCTYPE html>";  // Include the DOCTYPE declaration
 	html << "<html><head>";
@@ -402,8 +402,6 @@ void	Server::handleClientData(size_t index)
 		else
 		{
 			client.addToBuffer(std::string(buffer, bytesRead));
-			std::time_t now = std::time(nullptr);
-			std::tm* local_time = std::localtime(&now);
 			if (client.requestComplete())
 			{
 				client.parseBuffer();

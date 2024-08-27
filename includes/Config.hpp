@@ -28,9 +28,9 @@
 class	Config
 {
 	private:
-		std::vector<ServerBlock>	_serverBlocks;	// Info of each server block
-		std::vector<std::string>	_info;			// Save serverBlock string, before they will be parsed correctly 
 		int							_server_i;		// How many servers we have
+		std::vector<std::string>	_info;			// Save serverBlock string, before they will be parsed correctly 
+		std::vector<ServerBlock>	_serverBlocks;	// Info of each server block
 
 	public:
 		Config(std::string file_name);				// Constructor
@@ -51,8 +51,8 @@ class	Config
 		void									ft_checkMaxClient(const std::string &newMaxClient, ServerBlock &server);
 		void									ft_checkIndex(const std::string &newIndex, ServerBlock &server);
 		void									ft_checkServerName(const std::string &newServerName, ServerBlock &server);
-		void									ft_checkErrorPage(const std::string &param0, const std::string &param1, ServerBlock &server);
-		std::vector<std::vector<std::string>>	ft_checkLocation(const std::string &newLocation0, const std::string &newLocation1, ServerBlock &server);
+		void									ft_checkErrorPage(const std::string &param0, const std::string &param1);
+		std::vector<std::vector<std::string>>	ft_checkLocation(const std::string &newLocation0, const std::string &newLocation1);
 
 		// Utils
 		void									ft_printConfigFile();	// for testing purpose

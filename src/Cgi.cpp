@@ -22,7 +22,7 @@ void	Cgi::runCGI( Server& server, Client& client)
 	if (client.getState() == START)
 	{
 		if (client.getRequestMap().at("Method") == "POST"){    
-			createPipe(server, client, client.getRequestPipe());
+			createPipe(client, client.getRequestPipe());
 			if (client.getState() == ERROR)
 				return ;
 			client.setWriteBuffer(client.getRequestMap().at("Body"));
@@ -32,10 +32,10 @@ void	Cgi::runCGI( Server& server, Client& client)
 		}
 		else
 			client.setState(READY);
-		createPipe(server, client, client.getResponsePipe());
+		createPipe(client, client.getResponsePipe());
 		if (client.getState() == ERROR)
 				return ;
-		createFork(server, client);
+		createFork(client);
 	}
 	else if (client.getState() == READY){
 		int result = waitpid(_pid, &status, WNOHANG);
@@ -61,7 +61,7 @@ void	Cgi::runCGI( Server& server, Client& client)
 	}
 }
 
-char**	Cgi::createEnv(Server& server, Client& client)
+char**	Cgi::createEnv(Client& client)
 {
 	std::vector<std::string>    env_vec;
 
@@ -72,7 +72,7 @@ char**	Cgi::createEnv(Server& server, Client& client)
 		env_vec.push_back("CONTENT_TYPE=" + client.getRequestMap().at("Content-Type"));
 	env_vec.push_back("BUFFER_SIZE="+std::to_string(BUFFER_SIZE));
 	char** env = new char*[env_vec.size() + 1];
-	for (int i = 0; i < env_vec.size(); i++){
+	for (auto i = 0u; i < env_vec.size(); ++i){
 		env[i] = new char[env_vec[i].size() + 1];
 		std::strcpy(env[i], env_vec[i].c_str());
 	}
@@ -80,16 +80,16 @@ char**	Cgi::createEnv(Server& server, Client& client)
 	return (env);
 }
 
-void	Cgi::createPipe(Server& server, Client& client, int* fdPipe)
+void	Cgi::createPipe(Client& client, int* fdPipe)
 {
 	if (pipe(fdPipe) == -1){
 		client.setStatusCode(500);
 	}
 }
 
-void	Cgi::createFork(Server& server, Client& client)
+void	Cgi::createFork(Client& client)
 {
-	_path = findPath(server, client);
+	_path = findPath(client);
 	if (_path.empty())
 	{
 		client.setStatusCode(404);
@@ -102,11 +102,11 @@ void	Cgi::createFork(Server& server, Client& client)
 	}
 	else if (_pid == 0) // Entering child process
 	{
-		launchScript(server, client);
+		launchScript(client);
 	}
 }
 
-void	Cgi::redirectToPipes(Server& server, Client& client)
+void	Cgi::redirectToPipes(Client& client)
 {
 	if (client.getRequestMap().at("Method") == "POST"){
 		close(client.getRequestPipe()[1]);
@@ -125,18 +125,18 @@ void	Cgi::redirectToPipes(Server& server, Client& client)
 	close(client.getResponsePipe()[1]);
 }
 
-void	Cgi::launchScript(Server& server, Client& client)
+void	Cgi::launchScript(Client& client)
 {
 	char * pathArray[] = {const_cast<char *>(_path.c_str()), nullptr};
-	char** env = createEnv(server, client);
-	redirectToPipes(server, client);
+	char** env = createEnv(client);
+	redirectToPipes(client);
 	if (client.getState() == ERROR)
 		exit(EXIT_FAILURE);
 	execve(pathArray[0], pathArray, env);
 	exit(EXIT_FAILURE);
 }
 
-std::string	Cgi::findPath(Server& server, Client& client)
+std::string	Cgi::findPath(Client& client)
 {
 	std::string             path;
 	ServerBlock&            serverBlock = client.getServerBlock();
