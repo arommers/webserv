@@ -87,6 +87,8 @@ void	Server::createPollLoop()
 		// possibly use an alternative way to recognize distinction between the different FDs
 		for (size_t i = 0; i < _pollFds.size(); ++i)
 		{
+			// checkClientActivity();
+
 			if (_pollFds[i].revents & POLLIN)
 			{
 				// if (_fdToServerBlockMap.find(_pollFds[i].fd) != _fdToServerBlockMap.end())
@@ -127,6 +129,8 @@ void	Server::createPollLoop()
 // Accept a new connection from a client and add it to the poll loop
 void	Server::acceptConnection(int serverSocket)
 {
+	if (_clients.size() > MAX_CLIENTS)
+		return ;
 	int newSocket;
 	struct sockaddr_in clientAddress;
 	int addrLen = sizeof(clientAddress);
@@ -342,6 +346,7 @@ void	Server::handleFileRead(size_t index)
 	{
 		if (it->second.getReadWriteFd() == fd)
 		{
+			updateClientActivity(it->second.getFd());
 			it->second.readNextChunk();
 			if (it->second.getState() == READY || it->second.getState() == ERROR)
 			{
@@ -367,6 +372,7 @@ void	Server::handleFdWrite(size_t index)
 	{
 		if (it->second.getReadWriteFd() == fd)
 		{
+			updateClientActivity(fd);
 			it->second.writeNextChunk();
 			if (it->second.getState() == READY || it->second.getState() == ERROR)
 			{

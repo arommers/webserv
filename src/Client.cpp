@@ -31,6 +31,7 @@ void	Client::resetClientData( void )
 	// _fd = -1;
 	_state = PARSE;
 	_readWriteFd = -1;
+	_time = std::time(nullptr);
 }
 
 bool	Client::requestComplete()
