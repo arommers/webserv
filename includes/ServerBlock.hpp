@@ -9,6 +9,7 @@
 # include <algorithm>
 # include <limits.h>
 # include "Location.hpp"
+# include <chrono>
 
 // Redirects URL (301 and 302)
 # define REDIR301 "https://en.wikipedia.org/wiki/42_(number)"

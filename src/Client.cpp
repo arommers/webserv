@@ -28,7 +28,7 @@ void	Client::resetClientData( void )
 	_requestMap.clear();
 	_responseMap.clear();
 	_statusCode = 0;
-	_fd = -1;
+	// _fd = -1;
 	_state = PARSE;
 	_readWriteFd = -1;
 }

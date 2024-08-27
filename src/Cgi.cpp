@@ -90,7 +90,6 @@ void	Cgi::createPipe(Server& server, Client& client, int* fdPipe)
 void	Cgi::createFork(Server& server, Client& client)
 {
 	_path = findPath(server, client);
-	std::cout << "Path: " << _path << std::endl;
 	if (_path.empty())
 	{
 		client.setStatusCode(404);

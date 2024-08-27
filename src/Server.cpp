@@ -73,15 +73,17 @@ void	Server::createPollLoop()
 			std::cerr << RED << "No file descriptors to poll." << RESET << std::endl;
 			break;
 		}
+		checkClientActivity();
+		int pollSize = poll(_pollFds.data(), _pollFds.size(), TIMEOUT);
 
-		int pollSize = poll(_pollFds.data(), _pollFds.size(), -1);
 		if (pollSize == -1)
 		{
 			std::cerr << RED << "Poll failed: " << strerror(errno) << RESET << std::endl;
 			shutdownServer();
 			exit(EXIT_FAILURE);
 		}
-
+		else if (pollSize == 0)
+			continue ;
 		// possibly use an alternative way to recognize distinction between the different FDs
 		for (size_t i = 0; i < _pollFds.size(); ++i)
 		{
@@ -135,12 +137,10 @@ void	Server::acceptConnection(int serverSocket)
 	{    
 		std::cout << GREEN << "New connection from: " << inet_ntoa(clientAddress.sin_addr) << ", assigned socket is: " << newSocket << RESET << std::endl;
 
-		struct pollfd clientFd;
-		clientFd.fd = newSocket;
-		clientFd.events = POLLIN;
-		_pollFds.push_back(clientFd);
-		
+		addPollFd(newSocket, POLLIN);
 		addClient(newSocket, getServerBlockByFd(serverSocket));
+		_clientActivity[newSocket] = std::chrono::steady_clock::now();
+
 	}
 }
 
@@ -276,6 +276,7 @@ void	Server::sendClientData(size_t index)
 {
 	Client& client = getClient(_pollFds[index].fd);
 
+	updateClientActivity(_pollFds[index].fd);
 	client.createResponse();
 	std::string writeBuffer = client.getWriteBuffer();
 
@@ -283,7 +284,7 @@ void	Server::sendClientData(size_t index)
 	if (bytesSent < 0)
 	{
 		std::cerr << RED << "Error sending data to client: " << strerror(errno) << RESET << std::endl;
-		closeConnection(index);
+		closeConnection(_pollFds[index].fd);
 	}
 	else
 	{
@@ -292,24 +293,8 @@ void	Server::sendClientData(size_t index)
 		{
 			std::cout << GREEN << "Response sent to client: " << _pollFds[index].fd << RESET << std::endl;
 			client.resetClientData();
-			closeConnection(index);
-		}
-	}
-}
-
-void	Server::checkTimeout(int time)
-{
-	std::time_t currentTime = std::time(nullptr);
-
-	for (size_t i = 1; i < _pollFds.size(); ++i)
-	{
-		Client& client = getClient(_pollFds[i].fd);
-
-		if (difftime(currentTime, client.getTime()) > time)
-		{
-			std::cout << YELLOW << "Connection timeout, closing socket fd: " << _pollFds[i].fd << RESET << std::endl;
-			closeConnection(i);
-			--i;
+			// closeConnection(index);
+			_pollFds[index].events = POLLIN;
 		}
 	}
 }
@@ -323,7 +308,7 @@ void	Server::shutdownServer()
 {
 	// Close all client connections first
 	while (_pollFds.size() > _servers.size())
-		closeConnection(_servers.size());
+		closeConnection(_pollFds[_servers.size()].fd);
 	// Close all server sockets
 	for (auto& ServerBlock : _servers)
 	{
@@ -336,13 +321,15 @@ void	Server::shutdownServer()
 	_clients.clear();
 }
 
-void	Server::closeConnection(size_t index)
+void	Server::closeConnection(size_t fd)
 {
-	int fd = _pollFds[index].fd;
-
 	close(fd);
-	_pollFds.erase(_pollFds.begin() + index);
-	removeClient(fd);
+	std::cout << "H!\n";
+	removePollFd(fd);
+	// _pollFds.erase(_pollFds.begin() + index);
+	_clients.erase(fd);
+	// removeClient(fd);
+	_clientActivity.erase(fd);
 }
 
 // --------------------------------------------------------------------
@@ -400,6 +387,7 @@ void	Server::handleClientData(size_t index)
 {
 	Client &client = getClient(_pollFds[index].fd);
 
+	updateClientActivity(_pollFds[index].fd);
 	if (client.getState() == PARSE)
 	{
 		char    buffer[BUFFER_SIZE];
@@ -408,8 +396,8 @@ void	Server::handleClientData(size_t index)
 				std::cerr << RED << "Error reading from client socket: " << strerror(errno) << RESET << std::endl;
 		else if(bytesRead == 0)
 		{
-			std::cout << YELLOW << "Client disconnected, socket fd is: " << RESET << std::endl;
-			closeConnection(index);
+			// std::cout << YELLOW << "Client disconnected, socket fd is: " << RESET << std::endl;
+			// closeConnection(index);
 		}
 		else
 		{
@@ -593,4 +581,29 @@ std::vector<struct pollfd>	Server::getPollFds()
 void	Server::setServer(std::vector<ServerBlock> serverBlocks)
 {
 	_servers = serverBlocks;
+}
+
+void Server::updateClientActivity(int fd)
+{
+	
+	_clientActivity[fd] = std::chrono::steady_clock::now();
+}
+
+void Server::checkClientActivity()
+{
+	auto now = std::chrono::steady_clock::now();
+
+	for (auto it = _clientActivity.begin(); it != _clientActivity.end();)
+	{
+		auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - it->second);
+		if (elapsed.count() >= TIMEOUT / 100){
+			std::cout << RED << "Deleting client after timout: " << it->first << RESET << std::endl;
+			close(it->first);
+			removePollFd(it->first);
+			_clients.erase(it->first);
+			it = _clientActivity.erase(it);
+		}
+		else
+			it++;
+	}
 }

@@ -4,15 +4,18 @@
 #include "../includes/Cgi.hpp" 
 #include "../includes/ServerBlock.hpp"
 
+using TimePoint = std::chrono::time_point<std::chrono::steady_clock>;
+
 class Cgi;
 class Location;
 
 class Server
 {
 	private:
-		std::vector <ServerBlock>		_servers;
-		std::vector<struct pollfd>		_pollFds;
-		std::unordered_map<int, Client>	_clients;
+		std::vector <ServerBlock>			_servers;
+		std::vector<struct pollfd>			_pollFds;
+		std::unordered_map<int, Client>		_clients;
+		std::unordered_map<int, TimePoint>	_clientActivity;
 		Cgi								_cgi;
 
 	public:
@@ -27,9 +30,8 @@ class Server
 		void							openFile(Client& client);
 		void							handleFileRead(size_t index);
 		void							sendClientData(size_t index);
-		void							checkTimeout(int time);
 		void							shutdownServer();
-		void							closeConnection(size_t index);
+		void							closeConnection(size_t fd);
 		void							removeClient(int fd);
 		void							addClient(int fd, ServerBlock& serverInfo);
 		void							removePollFd( int fd );
@@ -44,6 +46,8 @@ class Server
 		ServerBlock&					getServerBlockByFd(int fd);
 		std::vector<struct pollfd>		getPollFds();
 		Location						getLocationForRequest(const std::string &uri, ServerBlock &serverBlock);
+		void							updateClientActivity(int fd);
+		void 							checkClientActivity();
 };
 
 bool	sortLocations(const Location& a, const Location& b);

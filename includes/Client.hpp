@@ -45,7 +45,7 @@ enum    clientState
 // Pending config parsing these are set
 #define PORT 4040
 #define MAX_CLIENTS 10
-#define TIMEOUT 60
+#define TIMEOUT 1000 //Miliseconds
 #define BUFFER_SIZE 1024
 
 class Client
