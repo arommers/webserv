@@ -129,8 +129,6 @@ void	Server::createPollLoop()
 // Accept a new connection from a client and add it to the poll loop
 void	Server::acceptConnection(int serverSocket)
 {
-	if (_clients.size() > MAX_CLIENTS)
-		return ;
 	int newSocket;
 	struct sockaddr_in clientAddress;
 	int addrLen = sizeof(clientAddress);
