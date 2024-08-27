@@ -100,7 +100,6 @@ class Client
 		int										getStatusCode();
 		int*									getResponsePipe();
 		int*									getRequestPipe();
-		int*									getReponsePipe();
 		size_t									getWritePos();
 		std::string								getReadBuffer();
 		std::time_t								getTime();

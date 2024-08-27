@@ -32,12 +32,10 @@ int	main(int argc, char **argv)
 			server.setServer(config.getServerBlocks());
 			server.createServerSockets();
 			server.createPollLoop();
-		} catch (const std::exception &e)
-		{
+		} catch (const std::exception &e) {
 			std::cerr << "Error: " << e.what() << std::endl;
 			return 1;
 		}
-
 	}
 	else
 	{

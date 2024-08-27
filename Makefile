@@ -9,6 +9,7 @@ SRC := \
 	src/main.cpp \
 	src/Client.cpp \
 	src/Server.cpp \
+	src/ServerUtils.cpp \
 	src/Config.cpp \
 	src/ConfigUtils.cpp \
 	src/ConfigUtils2.cpp \

@@ -39,11 +39,16 @@ class Server
 		void							addFileToPoll( Client& client, std::string file );
 		void							handleDeleteRequest(Client& client);
 		void							removePipe( size_t index );
+		void							openRequestedFile(const std::string& file, Client& client);
+		bool							handleDirectoryRequest(std::string& file, const Location& location, Client& client);
+		bool							checkAllowedMethod(const Location& location, const std::string& method);
+		bool							checkFileAccessRights(const std::string& path);
 		Client&							getClient(int fd);
 		std::string						generateFolderContent(std::string path);
+		std::string						resolveFilePath(const std::string& file, const Location& location, ServerBlock& serverBlock);
 		ServerBlock&					getServerBlockByFd(int fd);
 		std::vector<struct pollfd>		getPollFds();
-		Location						getLocationForRequest(const std::string &uri, ServerBlock &serverBlock);
+		std::vector<Location>			findMatchingLocations(const std::string& file, ServerBlock& serverBlock);
 };
 
 bool	sortLocations(const Location& a, const Location& b);

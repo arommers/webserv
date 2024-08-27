@@ -16,8 +16,18 @@ const std::map<int, std::string> Client::_ReasonPhraseMap = {
 
 // --- Constructors/ Deconstructor ---
 Client::Client() {}
-Client::~Client() {}
-Client::Client(int fd, ServerBlock& ServerBlock): _fd(fd), _ServerBlock(ServerBlock) {}
+
+Client::~Client()
+{
+	_time = std::time(nullptr);
+}
+
+Client::Client(int fd, ServerBlock& ServerBlock)
+{
+	_fd = fd;
+	_ServerBlock = ServerBlock;
+	_time = std::time(nullptr);
+}
 
 // --- Client Functions ---
 
@@ -159,6 +169,14 @@ void	Client::writeNextChunk()
 		setState(500);
 		_fd = -1;
 		return ;
+	}
+	if (bytesWritten == 0)
+	{
+		std::cerr << "Warning: write() returned 0, no data was written. Possibly a closed connection." << std::endl;
+		close(_readWriteFd);
+		setState(500);
+		_fd = -1;
+		return;
 	}
 	_writeBuffer.erase(0, bytesWritten);
 	if (getWriteBuffer().empty())
