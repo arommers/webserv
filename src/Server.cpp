@@ -292,7 +292,6 @@ void	Server::handleClientData(size_t index)
 
 			ServerBlock& serverBlock = client.getServerBlock();
 			std::string filePath = client.getRequestMap().at("Path");
-		
 			std::vector<Location> matchingLocations = findMatchingLocations(filePath, serverBlock);
 
 			if (!matchingLocations.empty())
