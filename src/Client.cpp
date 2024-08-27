@@ -30,7 +30,6 @@ Client::Client(int fd, ServerBlock& ServerBlock)
 }
 
 // --- Client Functions ---
-
 void	Client::resetClientData( void )
 {
 	_readBuffer.clear();
@@ -84,12 +83,10 @@ void	Client::parseBuffer ( void )
 	while (std::getline(stream, line, '\n'))
 	{
 		std::istringstream lineStream(line);
-		if (startBody == false && line == "\r"){
+		if (startBody == false && line == "\r")
 			startBody = true;
-		}
-		if (startBody == true){
+		if (startBody == true)
 			_requestMap["Body"] += line + '\n';
-		}
 		else if (std::getline(lineStream, key, ':'))
 		{
 			if (std::getline(lineStream, value))
@@ -216,31 +213,26 @@ void	Client::isValidMethod( std::string method )
 {
 	std::vector<std::string> validMethods = {"POST", "GET", "DELETE"};
 
-	if (method.empty()){
+	if (method.empty())
 		setStatusCode(400);
-	}
-	else if (std::find(validMethods.begin(), validMethods.end(), method) == validMethods.end()){
+	else if (std::find(validMethods.begin(), validMethods.end(), method) == validMethods.end())
 		setStatusCode(405);
-	}
 }
 
 void	Client::isValidPath( std::string path )
 {
-	if (path.empty()){
+	if (path.empty())
 		setStatusCode(400);
-	}
 }
 
 void	Client::isValidVersion( std::string version )
 {
 	std::regex versionRegex(R"(HTTP\/\d\.\d)");
 
-	if (version.empty()){
+	if (version.empty())
 		setStatusCode(400);
-	}
-	else if (!std::regex_match(version, versionRegex)){
+	else if (!std::regex_match(version, versionRegex))
 		setStatusCode(505);
-	}
 }
 
 std::string	trimWhiteSpace(std::string& string)
@@ -351,7 +343,6 @@ void	Client::setState (const int state)
 void	Client::setStatusCode( const int statusCode )
 {
 	_statusCode = statusCode;
-	if (detectError()){
+	if (detectError())
 		setState(ERROR);
-	}
 }

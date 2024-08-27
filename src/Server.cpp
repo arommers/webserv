@@ -6,8 +6,6 @@ Server::Server() {}
 Server::~Server() {}
 
 // --- Server Functions ---
-/*  CREATES A SERVERSOCKET, INITIALIZES THE POLLFD ARRAY
-    AND STARTS LISTENING FOR CONNECTIONS    */
 // Creates server sockets and adds them to the poll loop
 void	Server::createServerSockets()
 {
@@ -57,13 +55,6 @@ void	Server::createServerSockets()
 	}
 }
 
-/*  START A POLL LOOP AND CHECKS FOR REVENTS THAT TRIGGERED
-    POLLIN
-    - IF IT'S A SERVER SOCKET A NEW CLIENT SOCKET GETS CREATED AND ADDED TO THE POLLFD ARRAY
-    - IF IT'S A CLIENT SOCKET 'x' GET READ FROM THE FD AND STORED IN A STRING UNTIL THE REQUEST IS COMPLETE
-    - IF IT'S A FILE FD, READ FROM THE FILE UNTILL WE REACH EOF 
-    POLLOUT
-    - SEND DATA */
 void	Server::createPollLoop()
 {
 	while (true)
@@ -82,7 +73,6 @@ void	Server::createPollLoop()
 			exit(EXIT_FAILURE);
 		}
 
-		// possibly use an alternative way to recognize distinction between the different FDs
 		for (size_t i = 0; i < _pollFds.size(); ++i)
 		{
 			if (_pollFds[i].revents & POLLIN)
@@ -112,7 +102,6 @@ void	Server::createPollLoop()
 	}
 }
 
-// Accept a new connection from a client and add it to the poll loop
 void	Server::acceptConnection(int serverSocket)
 {
 	int newSocket;
@@ -191,7 +180,6 @@ void	Server::shutdownServer()
 			close(ServerBlock.getServerFd());
 	}
 	
-	// For now just an insurance to. Probably redundant
 	_pollFds.clear();
 	_clients.clear();
 }
@@ -292,8 +280,6 @@ void	Server::handleClientData(size_t index)
 	{
 			std::cout << GREEN << "Request Received from socket " << _pollFds[index].fd << ", method: [" << client.getRequestMap()["Method"] << "]" << ", version: [" << client.getRequestMap()["Version"] << "], URI: "<< client.getRequestMap()["Path"] <<  RESET << std::endl;
 
-			// Adri is this on the correct spot?
-			// ---
 			ServerBlock& serverBlock = client.getServerBlock();
 			std::string filePath = client.getRequestMap().at("Path");
 			std::vector<Location> matchingLocations = findMatchingLocations(filePath, serverBlock);
@@ -310,7 +296,6 @@ void	Server::handleClientData(size_t index)
 					return;
 				}
 			}
-			// ----
 
 			// Check for redirect
 			std::string redirectUrl;
@@ -337,7 +322,6 @@ void	Server::handleClientData(size_t index)
 			else
 			{
 				// Handle CGI or file requests
-				// CGI check
 				if (_cgi.checkIfCGI(client) == true)
 					_cgi.runCGI(*this, client);
 				else if(client.getRequestMap().at("Method") == "GET")

@@ -22,8 +22,6 @@
 #include <dirent.h>       // Provides functions for using DIR directory stream like opendir(), readdir()
 #include "ServerBlock.hpp"
 
-
-
 enum    clientState
 {
     PARSE = 0, // Parsing the request
@@ -34,7 +32,6 @@ enum    clientState
     READY = 5, // Reading/Writing is finished and the process can continue
     RESPONSE = 6 // Everything has been done and the reponse can be build
 };
-
 
 
 #define RESET   "\033[0m"
