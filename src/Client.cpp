@@ -346,3 +346,9 @@ void	Client::setStatusCode( const int statusCode )
 	if (detectError())
 		setState(ERROR);
 }
+
+void Client::setServerBlock(ServerBlock* serverBlock)
+{
+	if (serverBlock)
+		_ServerBlock = *serverBlock;  // Set the client's ServerBlock to the provided server block.
+}

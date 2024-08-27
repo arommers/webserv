@@ -75,3 +75,4 @@ void Location::setRedirStatusCode(const int &statusCode)
 {
 	_redirStatusCode = statusCode;
 }
+

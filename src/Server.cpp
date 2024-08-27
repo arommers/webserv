@@ -269,12 +269,22 @@ void	Server::handleClientData(size_t index)
 			std::tm* local_time = std::localtime(&now);
 			if (client.requestComplete())
 			{
+				// Extract the host header
+				std::string hostHeader = client.getRequestMap()["Host"];
+
+				// Get the appropriate ServerBlock based on the host
+				ServerBlock& serverBlock = getServerBlockForHost(hostHeader);
+
+				// Set the server block for this client
+				client.setServerBlock(&serverBlock);
+
 				client.parseBuffer();
 				if (client.getState() != ERROR)
 					client.setState(START);
 				_pollFds[index].events = POLLOUT;
 			}
 		}
+
 	}
 	else if (client.getState() == START || client.getState() == READY)
 	{
@@ -282,6 +292,7 @@ void	Server::handleClientData(size_t index)
 
 			ServerBlock& serverBlock = client.getServerBlock();
 			std::string filePath = client.getRequestMap().at("Path");
+		
 			std::vector<Location> matchingLocations = findMatchingLocations(filePath, serverBlock);
 
 			if (!matchingLocations.empty())
@@ -448,6 +459,17 @@ Client&	Server::getClient(int fd)
 std::vector<struct pollfd>	Server::getPollFds()
 {
 	return (_pollFds);
+}
+
+ServerBlock& Server::getServerBlockForHost(const std::string& hostHeader)
+{
+	for (ServerBlock& serverBlock : _servers)
+	{
+		if (serverBlock.getServerName() == hostHeader)
+			return serverBlock;
+	}
+	// Return the default server block if no match is found.
+	return _servers[0];
 }
 
 // --------------------------------------------------------------------

@@ -49,6 +49,7 @@ class Server
 		ServerBlock&					getServerBlockByFd(int fd);
 		std::vector<struct pollfd>		getPollFds();
 		std::vector<Location>			findMatchingLocations(const std::string& file, ServerBlock& serverBlock);
+		ServerBlock&					getServerBlockForHost(const std::string& hostHeader); // Jovi ADD
 };
 
 bool	sortLocations(const Location& a, const Location& b);

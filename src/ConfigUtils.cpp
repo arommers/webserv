@@ -270,6 +270,11 @@ void	Config::ft_checkServerVariables(ServerBlock &server)
 		server.setServerName("W3bMasters");
 	if (server.getMaxClient() == 0)
 		server.setMaxClient(5000000);
+	if (server.getLocations().empty())
+	{
+		Location defaultLocation = ft_setLocationDefault(server);
+		server.setLocationsDefault(defaultLocation);
+	}
 
 	// -- Error page --
 	// Define the default error pages
@@ -296,6 +301,21 @@ void	Config::ft_checkServerVariables(ServerBlock &server)
 // -------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------
 // --- Utils for gerneral stuff ---
+
+Location Config::ft_setLocationDefault(ServerBlock &server)
+{
+	Location loco;
+	loco.setPath("/");
+	loco.setRoot(server.getRoot());
+	loco.setIndex(server.getIndex());
+	std::vector<std::string> methods = {"GET", "POST", "DELETE"};
+	loco.setAllowedMethods(methods);
+	loco.setAutoindex(false);
+	loco.setRedir("");
+	loco.setRedirStatusCode(0);
+	return loco;
+}
+
 
 /* Helper function to check the type of the path.
  * - Is path FILE(1), FOLDER(2) or SOMETHING_ELSE(3)

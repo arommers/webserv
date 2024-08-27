@@ -16,7 +16,7 @@ void	Server::openFile(Client &client)
 	}
 
 	const Location& location = matchingLocations[0];
-	
+
 	if (!checkAllowedMethod(location, method))
 	{
 		client.setStatusCode(405);
@@ -43,9 +43,10 @@ std::vector<Location>	Server::findMatchingLocations(const std::string& file, Ser
 	for (const Location& location : serverBlock.getLocations())
 	{
 		if (file.find(location.getPath()) == 0)
+		{
 			matchingLocations.push_back(location);
+		}
 	}
-
 	std::sort(matchingLocations.begin(), matchingLocations.end(), sortLocations);
 	return matchingLocations;
 }
