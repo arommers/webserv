@@ -253,7 +253,7 @@ void	Server::handleClientData(size_t index)
 		else if(bytesRead == 0)
 		{
 			// std::cout << YELLOW << "Client disconnected, socket fd is: " << RESET << std::endl;
-			// closeConnection(index);
+			closeConnection(index);
 		}
 		else
 		{
@@ -281,24 +281,6 @@ void	Server::handleClientData(size_t index)
 	{
 			std::cout << GREEN << "Request Received from socket " << _pollFds[index].fd << ", method: [" << client.getRequestMap()["Method"] << "]" << ", version: [" << client.getRequestMap()["Version"] << "], URI: "<< client.getRequestMap()["Path"] <<  RESET << std::endl;
 
-			ServerBlock& serverBlock = client.getServerBlock();
-			std::string filePath = client.getRequestMap().at("Path");
-		
-			std::vector<Location> matchingLocations = findMatchingLocations(filePath, serverBlock);
-
-			if (!matchingLocations.empty())
-			{
-				const Location& location = matchingLocations[0];
-				std::string method = client.getRequestMap().at("Method");
-
-				if (!checkAllowedMethod(location, method))
-				{
-					client.setStatusCode(405);
-					client.setState(ERROR);
-					return;
-				}
-			}
-
 			// Check for redirect
 			std::string redirectUrl;
 			int redirectStatusCode = 0;
@@ -323,6 +305,22 @@ void	Server::handleClientData(size_t index)
 			}
 			else
 			{
+				ServerBlock& serverBlock = client.getServerBlock();
+				std::string filePath = client.getRequestMap().at("Path");
+				std::vector<Location> matchingLocations = findMatchingLocations(filePath, serverBlock);
+
+				if (!matchingLocations.empty())
+				{
+					const Location& location = matchingLocations[0];
+					std::string method = client.getRequestMap().at("Method");
+
+					if (!checkAllowedMethod(location, method))
+					{
+						client.setStatusCode(405);
+						client.setState(ERROR);
+						return;
+					}
+				}
 				// Handle CGI or file requests
 				if (_cgi.checkIfCGI(client) == true)
 					_cgi.runCGI(*this, client);
