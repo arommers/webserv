@@ -43,8 +43,9 @@ void	ServerBlock::setServerFd(int fd)
 
 void ServerBlock::setLocations(std::vector<std::vector<std::string>> &newLocation, ServerBlock &server, std::string STRING)
 {
+	(void)server;
 	Location locBlock;
-	createLocation(newLocation,locBlock, server, STRING);
+	createLocation(newLocation, locBlock, STRING);
 	_locations.push_back(locBlock);
 }
 
@@ -137,7 +138,7 @@ void ServerBlock::checkRootRound2(Location locBlock, std::string path)
 * - Checks that all variables are filled
 * - If not filled it will get set to the default value.
 */
-void	ServerBlock::ft_checkLocationVariables(Location &locBlock, ServerBlock &server, std::string STRING)
+void	ServerBlock::ft_checkLocationVariables(Location &locBlock, std::string STRING)
 {
 	if (locBlock.getRoot().empty())
 		checkRootRound2(locBlock, locBlock.getPath());
@@ -156,7 +157,7 @@ void	ServerBlock::ft_checkLocationVariables(Location &locBlock, ServerBlock &ser
 }
 
 // Helper function to parse location configuration string into a Location object
-void ServerBlock::createLocation(std::vector<std::vector<std::string>> &locParams, Location &locBlock, ServerBlock &server, std::string STRING)
+void ServerBlock::createLocation(std::vector<std::vector<std::string>> &locParams, Location &locBlock, std::string STRING)
 {
 	bool boolAutoindex = 0;
 	bool boolMethods = 0;
@@ -185,7 +186,7 @@ void ServerBlock::createLocation(std::vector<std::vector<std::string>> &locParam
 				throw Exception_ServerBlock("Loction_Block: Return is duplicated");
 			else
 			{
-				locBlock.setRedir(ft_checkLocationReturn(locParams[1][i], locBlock, locBlock.getPath()));
+				locBlock.setRedir(ft_checkLocationReturn(locParams[1][i], locBlock.getPath()));
 				locBlock.setRedirStatusCode(_codeTest);
 				boolReturn = 1;
 			}
@@ -195,7 +196,7 @@ void ServerBlock::createLocation(std::vector<std::vector<std::string>> &locParam
 			// Check if variable is already set
 			if (boolMethods == 1)
 				throw Exception_ServerBlock("Location_Block: allowed_method is duplicated");
-			locBlock.setAllowedMethods(ft_checkLocationMethods(locParams[1][i], locBlock));
+			locBlock.setAllowedMethods(ft_checkLocationMethods(locParams[1][i]));
 			boolMethods = 1;
 		}
 		else if (locParams[0][i] == "autoindex")
@@ -211,5 +212,5 @@ void ServerBlock::createLocation(std::vector<std::vector<std::string>> &locParam
 	}
 
 	// Check that all important varabiles are filled.
-	ft_checkLocationVariables(locBlock, server, STRING); 
+	ft_checkLocationVariables(locBlock, STRING); 
 }

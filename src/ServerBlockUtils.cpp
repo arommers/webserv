@@ -67,7 +67,7 @@ std::string ServerBlock::ft_checkLocationRoot(const std::string &newRoot, Locati
 	return NewFullRoot;
 }
 
-std::string ServerBlock::ft_checkLocationReturn(const std::string &newRedir, Location locBlock, std::string path)
+std::string ServerBlock::ft_checkLocationReturn(const std::string &newRedir, std::string path)
 {
 	/* '/cgi-bin' should not be redirected
 	 * - Security Risks: The cgi-bin directory typically contains scripts and executables that handle form submissions, process data, 
@@ -119,7 +119,7 @@ void ServerBlock::ft_checkLocationIndex(const std::string &newIndex, Location lo
 		throw Exception_ServerBlock("Invalid Location_Block Index: check your '.html' file");
 }
 
-std::vector<std::string> ServerBlock::ft_checkLocationMethods(const std::string &newMethods, Location locBlock)
+std::vector<std::string> ServerBlock::ft_checkLocationMethods(const std::string &newMethods)
 {
 	// Split the input string by whitespace
 	std::istringstream	iss(newMethods);

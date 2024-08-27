@@ -9,7 +9,7 @@ Config::Config(std::string file_name) : _server_i(0), _info(0), _serverBlocks(0)
 	splitServers(file_content);					// Split the Servers (to have each server block)
 
 	// Create the servers -> parse the info into each ServerBlock class
-	for (size_t i = 0; i < _server_i; i++)
+	for (int i = 0; i < _server_i; i++)
 	{
 		ServerBlock server;
 		createServer(_info[i], server);		// We create server
@@ -58,10 +58,6 @@ void	Config::splitServers(std::string &file_content)
 {
 	size_t start = 0;
 	size_t end = 1;
-	// if (matchingLocations.size() == 0)
-	// {
-	// 	matchingLocations.push_back(serverBlock.getLocations()[0]); // ----------------------------------------------------
-	// }
 	if (ft_checkBrackets(file_content) == 0)
 		throw Exception_Config("There is problem with the scope, please check '{}'");
 
@@ -108,7 +104,7 @@ void	Config::createServer(std::string &config_string, ServerBlock &server)
 			else
 				STRING = "/index.html";
 			locationEncountered = true;
-			std::vector<std::vector<std::string>> locParams = ft_checkLocation(parameters[0][i], parameters[1][i], server);
+			std::vector<std::vector<std::string>> locParams = ft_checkLocation(parameters[0][i], parameters[1][i]);
 			server.setLocations(locParams, server, STRING);
 		}
 		else if (locationEncountered)
@@ -146,7 +142,7 @@ void	Config::createServer(std::string &config_string, ServerBlock &server)
 		}
 		else if (errorPage(parameters[0][i]))
 		{
-			ft_checkErrorPage(parameters[0][i], parameters[1][i], server);
+			ft_checkErrorPage(parameters[0][i], parameters[1][i]);
 			server.setErrorPage(parameters[1][i]);
 		}
 		else
