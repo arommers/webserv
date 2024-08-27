@@ -75,7 +75,7 @@ void	Server::createPollLoop()
 		}
 		else if (pollSize == 0)
 			continue ;
-		// possibly use an alternative way to recognize distinction between the different FDs
+
 		for (size_t i = 0; i < _pollFds.size(); ++i)
 		{
 			// checkClientActivity();
@@ -260,15 +260,6 @@ void	Server::handleClientData(size_t index)
 			client.addToBuffer(std::string(buffer, bytesRead));
 			if (client.requestComplete())
 			{
-				// Extract the host header
-				std::string hostHeader = client.getRequestMap()["Host"];
-
-				// Get the appropriate ServerBlock based on the host
-				ServerBlock& serverBlock = getServerBlockForHost(hostHeader);
-
-				// Set the server block for this client
-				client.setServerBlock(&serverBlock);
-
 				client.parseBuffer();
 				if (client.getState() != ERROR)
 					client.setState(START);
