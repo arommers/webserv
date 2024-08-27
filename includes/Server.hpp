@@ -8,6 +8,7 @@ using TimePoint = std::chrono::time_point<std::chrono::steady_clock>;
 
 class Cgi;
 class Location;
+class ServerBlock;
 
 class Server
 {

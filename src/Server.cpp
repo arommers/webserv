@@ -73,7 +73,6 @@ void	Server::createPollLoop()
 			shutdownServer();
 			exit(EXIT_FAILURE);
 		}
-
 		else if (pollSize == 0)
 			continue ;
 		// possibly use an alternative way to recognize distinction between the different FDs
