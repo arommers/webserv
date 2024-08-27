@@ -474,7 +474,8 @@ void	Server::handleClientData(size_t index)
 	else if (client.getState() == ERROR)
 	{
 		addFileToPoll(client, "./config/error_page/" + std::to_string(client.getStatusCode()) + ".html");
-		client.setState(READING);
+		if (client.getState() != RESPONSE)
+			client.setState(READING);
 	}
 }
 
@@ -501,8 +502,10 @@ void	Server::addFileToPoll( Client& client, std::string file )
 	fileFd = open(file.c_str(), O_RDONLY);
 	if (fileFd == -1)
 	{
-		perror("file open");
-		exit (1);
+		client.setFileBuffer("<html><head><title>500 Internal Server Error</title></head><body><h1>500 Internal Server Error</h1><p>Something went wrong on the server.</p></body></html>");
+		client.setStatusCode(500);
+		client.setState(RESPONSE);
+		return ;
 	}
 	client.setReadWriteFd(fileFd);
 	addPollFd(fileFd, POLLIN);

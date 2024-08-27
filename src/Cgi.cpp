@@ -9,6 +9,7 @@ Cgi::~Cgi() {}
 bool	Cgi::checkIfCGI( Client &client )
 {
 	if (client.getRequestMap().at("Path").find("/cgi-bin/") != std::string::npos){
+		if (client.getRequestMap().at("Path").back() != '/')
 		return (true);
 	}
 	return (false);
@@ -22,6 +23,8 @@ void	Cgi::runCGI( Server& server, Client& client)
 	{
 		if (client.getRequestMap().at("Method") == "POST"){    
 			createPipe(server, client, client.getRequestPipe());
+			if (client.getState() == ERROR)
+				return ;
 			client.setWriteBuffer(client.getRequestMap().at("Body"));
 			client.setReadWriteFd(client.getRequestPipe()[1]);
 			server.addPollFd(client.getRequestPipe()[1], POLLOUT);
@@ -30,28 +33,22 @@ void	Cgi::runCGI( Server& server, Client& client)
 		else
 			client.setState(READY);
 		createPipe(server, client, client.getResponsePipe());
-		createPipe(server, client, client.getErrorPipe());
+		if (client.getState() == ERROR)
+				return ;
 		createFork(server, client);
-
 	}
 	else if (client.getState() == READY){
 		int result = waitpid(_pid, &status, WNOHANG);
 		if (result == 0){
 			usleep(100000); // Sleep for 100ms
 		}
-		if (WIFEXITED(status)) {
+		else if (WIFEXITED(status)) {
 			int exit_status = WEXITSTATUS(status);
-			if (exit_status != 0){
-				std::cout << "Joer\n";
-				client.setStatusCode(404);
-				return ;
-			}
-			if (!isPipeEmpty(client.getErrorPipe()[0])){
+			if (exit_status != EXIT_SUCCESS){
 				client.setStatusCode(500);
 				closeAllPipes(client);
 				return ;
 			}
-			close(client.getErrorPipe()[0]);
 			client.setReadWriteFd(client.getResponsePipe()[0]);
 			close(client.getResponsePipe()[1]);
 			if (client.getRequestMap().at("Method") == "POST")
@@ -59,9 +56,7 @@ void	Cgi::runCGI( Server& server, Client& client)
 			if(client.getState() != ERROR){
 				server.addPollFd(client.getResponsePipe()[0], POLLIN);
 				client.setState(READING);
-		}
-		// else
-		// 	close(client.getResponsePipe()[0]);
+			}
 		}
 	}
 }
@@ -88,17 +83,23 @@ char**	Cgi::createEnv(Server& server, Client& client)
 void	Cgi::createPipe(Server& server, Client& client, int* fdPipe)
 {
 	if (pipe(fdPipe) == -1){
-		perror("pipe");
-		exit(1);
+		client.setStatusCode(500);
 	}
 }
 
 void	Cgi::createFork(Server& server, Client& client)
 {
+	_path = findPath(server, client);
+	std::cout << "Path: " << _path << std::endl;
+	if (_path.empty())
+	{
+		client.setStatusCode(404);
+		closeAllPipes(client);
+		return ;
+	}
 	_pid = fork();
 	if (_pid == -1){
-		perror("fork");
-		exit (1);
+		client.setStatusCode(500);
 	}
 	else if (_pid == 0) // Entering child process
 	{
@@ -111,32 +112,27 @@ void	Cgi::redirectToPipes(Server& server, Client& client)
 	if (client.getRequestMap().at("Method") == "POST"){
 		close(client.getRequestPipe()[1]);
 		if (dup2(client.getRequestPipe()[0], STDIN_FILENO) == -1){
-			perror("dup2");
-			exit(1);
+			client.setStatusCode(500);
+			return ;
 		}
 		close(client.getRequestPipe()[0]);
 
 	}
 	close(client.getResponsePipe()[0]);
 	if (dup2(client.getResponsePipe()[1], STDOUT_FILENO) == -1){
-		perror("dup2");
-		exit(1);
+		client.setStatusCode(500);
+		return ;
 	}
 	close(client.getResponsePipe()[1]);
-	close(client.getErrorPipe()[0]);
-	if (dup2(client.getErrorPipe()[1], STDERR_FILENO) == -1){
-		perror("dup2");
-		exit(1);
-	}
-	close(client.getErrorPipe()[1]);
 }
 
 void	Cgi::launchScript(Server& server, Client& client)
 {
-	std::string path = findPath(server, client);
-	char * pathArray[] = {const_cast<char *>(path.c_str()), nullptr};
+	char * pathArray[] = {const_cast<char *>(_path.c_str()), nullptr};
 	char** env = createEnv(server, client);
 	redirectToPipes(server, client);
+	if (client.getState() == ERROR)
+		exit(EXIT_FAILURE);
 	execve(pathArray[0], pathArray, env);
 	exit(EXIT_FAILURE);
 }
@@ -178,6 +174,9 @@ std::string	Cgi::findPath(Server& server, Client& client)
 		locationFound = true;
 		break;
 	}
+	std::ifstream file(path);
+	if (!file)
+		return ("");
 	return (path);
 }
 
@@ -197,8 +196,6 @@ bool Cgi::isPipeEmpty(int fd) {
 
 void Cgi::closeAllPipes(Client& client)
 {
-	close(client.getErrorPipe()[0]);
-	close(client.getErrorPipe()[1]);
 	close(client.getResponsePipe()[1]);
 	close(client.getResponsePipe()[0]);
 	if (client.getRequestMap().at("Method") == "POST"){

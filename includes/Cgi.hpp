@@ -15,6 +15,7 @@ class Cgi
 {
 	private:
 		pid_t		_pid;
+		std::string	_path;
 	public:
 		Cgi();
 		~Cgi();
