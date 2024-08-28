@@ -8,6 +8,7 @@ const std::map<int, std::string> Client::_ReasonPhraseMap = {
 	{302, "Found"},
     {400, "Bad Formatting"},
     {401, "Unauthorized"},
+    {403, "Unautorized"},
     {404, "Not Found"},
     {405, "Method Not Allowed"},
     {500, "Internal Server Error"},

@@ -47,6 +47,7 @@ class Server
 		void 							checkClientActivity();
 		bool							handleDirectoryRequest(std::string& file, const Location& location, Client& client);
 		bool							checkAllowedMethod(const Location& location, const std::string& method);
+		bool                    		checkFileExists(const std::string& path);
 		bool							checkFileAccessRights(const std::string& path);
 		Client&							getClient(int fd);
 		std::string						generateFolderContent(std::string path);
