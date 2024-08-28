@@ -3,7 +3,7 @@
 #include "Config.hpp"
 
 // --- Constructor ---
-ServerBlock::ServerBlock() : _port(0), _serverFd(-1), _maxClient(0), _host(""), _root(""), _index(""), _serverName("") {}
+ServerBlock::ServerBlock() : _port(0), _serverFd(-1), _maxClient(0), _host(""), _root(""), _index(""), _serverName(""), _locations(0), _errorPage(0) {}
 
 // --- Setter ---
 void	ServerBlock::setHost(const std::string &newHost)

@@ -175,7 +175,46 @@ bool	Server::checkFileAccessRights(const std::string& path)
 {
 	return (access(path.c_str(), R_OK) == 0) ? true : false;
 }
+std::string	Server::generateFolderContent(std::string path)
+{
+	std::ostringstream	html;
+	struct dirent		*entry = nullptr;
+	DIR					*folder = nullptr;
+	
+	html << "<!DOCTYPE html>";  // Include the DOCTYPE declaration
+	html << "<html><head>";
+	html << "<meta charset=\"UTF-8\">";  // Define the character set
+	html << "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">";  // Responsive design
+	html << "<title>Index of " << path << "</title>";  // Set the title
+	html << "</head><body>";
+	html << "<h1>Index of " << path << "</h1>";
+	html << "<ul>";
 
+	if (folder == opendir(path.c_str()))
+	{
+		while (entry == readdir(folder))
+		{
+			std::string name = entry->d_name;
+			
+			if (name == "." || name == "..")
+				continue;
+
+			std::string fullPath = path + (path.back() == '/' ? "" : "/") + name;
+
+			if (entry->d_type == DT_DIR)
+				name += "/";
+			
+			html << "<li><a href=\"" << name << "\">" << name << "</a></li>";
+		}
+		closedir(folder);
+	}
+	else
+		html << "<li>Unable to open directory</li>";
+	
+	html << "<ul>";
+	html << "</body></hmtl>";
+
+	return ht
 bool	sortLocations(const Location& a, const Location& b)
 {
 	return (a.getPath().length()> b.getPath().length());

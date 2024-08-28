@@ -270,11 +270,6 @@ void	Config::ft_checkServerVariables(ServerBlock &server)
 		server.setServerName("W3bMasters");
 	if (server.getMaxClient() == 0)
 		server.setMaxClient(5000000);
-	// if (server.getLocations().empty())
-	// {
-	// 	Location defaultLocation = ft_setLocationDefault(server);
-	// 	server.setLocationsDefault(defaultLocation);
-	// }
 
 	// -- Error page --
 	// Define the default error pages

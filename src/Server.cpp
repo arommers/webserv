@@ -65,7 +65,6 @@ void	Server::createPollLoop()
 			break;
 		}
 		checkClientActivity();
-
 		int pollSize = poll(_pollFds.data(), _pollFds.size(), TIMEOUT);
 		if (pollSize == -1)
 		{
@@ -134,15 +133,10 @@ void	Server::sendClientData(size_t index)
 	std::string writeBuffer = client.getWriteBuffer();
 
 	int bytesSent = send(_pollFds[index].fd, writeBuffer.c_str(), writeBuffer.size(), 0);
-	if (bytesSent == 0)
+	if (bytesSent < 0)
 	{
-		std::cerr << RED << "Error: send() returned 0, no data sent." << RESET << std::endl;
-		closeConnection(index); 
-	}
-	else if (bytesSent < 0)
-	{
-		std::cerr << RED << "Error sending data to client" << RESET << std::endl;
-		closeConnection(index);
+		std::cerr << RED << "Error sending data to client: " << strerror(errno) << RESET << std::endl;
+		closeConnection(_pollFds[index].fd);
 	}
 	else
 	{
@@ -151,7 +145,6 @@ void	Server::sendClientData(size_t index)
 		{
 			std::cout << GREEN << "Response sent to client: " << _pollFds[index].fd << RESET << std::endl;
 			client.resetClientData();
-			// closeConnection(index);
 			_pollFds[index].events = POLLIN;
 		}
 	}
@@ -247,12 +240,11 @@ void	Server::handleClientData(size_t index)
 		if (bytesRead < 0)
 		{
 			std::cerr << RED << "Error reading from client socket: " << strerror(errno) << RESET << std::endl;
-			closeConnection(index);
 		}
 		else if(bytesRead == 0)
 		{
-			// std::cout << YELLOW << "Client disconnected, socket fd is: " << RESET << std::endl;
-			closeConnection(index);
+			std::cout << YELLOW << "Client disconnected, socket fd is: " << RESET << std::endl;
+			closeConnection(_pollFds[index].fd);
 		}
 		else
 		{
@@ -332,13 +324,6 @@ void	Server::handleDeleteRequest(Client& client)
 {
 	std::string toDelete = client.getRequestMap().at("Path");
 	toDelete.erase(0, 1);
-
-	if (!checkFileAccessRights(toDelete))
-	{
-		client.setStatusCode(403);
-		return ;
-	}
-
 	if (remove(toDelete.c_str()) < 0)
 	{
 		client.setStatusCode(404);
@@ -346,6 +331,7 @@ void	Server::handleDeleteRequest(Client& client)
 		return ;
 	}
 	client.setState(RESPONSE);
+
 }
 
 // --------------------------------------------------------------------
