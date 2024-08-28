@@ -167,11 +167,8 @@ void	Server::shutdownServer()
 void	Server::closeConnection(size_t fd)
 {
 	close(fd);
-	std::cout << "H!\n";
 	removePollFd(fd);
-	// _pollFds.erase(_pollFds.begin() + index);
 	_clients.erase(fd);
-	// removeClient(fd);
 	_clientActivity.erase(fd);
 }
 
@@ -243,7 +240,7 @@ void	Server::handleClientData(size_t index)
 		}
 		else if(bytesRead == 0)
 		{
-			std::cout << YELLOW << "Client disconnected, socket fd is: " << RESET << std::endl;
+			std::cout << YELLOW << "Client disconnected, socket fd is: " << _pollFds[index].fd << RESET << std::endl;
 			closeConnection(_pollFds[index].fd);
 		}
 		else
