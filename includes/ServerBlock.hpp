@@ -30,7 +30,7 @@ class ServerBlock
 
 
 	public:
-		int				_codeTest;		// Is need to check the redirCode
+		int	_codeTest;					// Is need to check the redirCode
 		ServerBlock();					// Constructor
 		~ServerBlock() {}				// Destructor
 

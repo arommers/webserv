@@ -180,17 +180,16 @@ std::string	Cgi::findPath(Client& client)
 }
 
 bool Cgi::isPipeEmpty(int fd) {
-    int bytesAvailable = 0;
+	int bytesAvailable = 0;
 
-	// fflush(stderr);
+	if (ioctl(fd, FIONREAD, &bytesAvailable) == -1)
+	{
+		// Handle error
+		std::cerr << "ioctl failed: " << strerror(errno) << std::endl;
+		return true;  // or handle error accordingly
+	}
 
-    if (ioctl(fd, FIONREAD, &bytesAvailable) == -1) {
-        // Handle error
-        std::cerr << "ioctl failed: " << strerror(errno) << std::endl;
-        return true;  // or handle error accordingly
-    }
-
-    return bytesAvailable == 0;
+	return bytesAvailable == 0;
 }
 
 void Cgi::closeAllPipes(Client& client)

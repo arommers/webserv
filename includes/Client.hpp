@@ -84,7 +84,6 @@ class Client
 		void									setFileBuffer(std::string buffer);
 		void									setWriteBuffer( std::string buffer );
 		void									setStatusCode( const int statusCode );
-		// void									setServerBlock(ServerBlock* serverBlock);
 		void									updateTime();
 		void									resetClientData( void );    
 		void									readNextChunk();

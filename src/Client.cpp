@@ -40,7 +40,6 @@ void	Client::resetClientData( void )
 	_requestMap.clear();
 	_responseMap.clear();
 	_statusCode = 0;
-	// _fd = -1;
 	_state = PARSE;
 	_readWriteFd = -1;
 	_time = std::time(nullptr);
@@ -349,8 +348,3 @@ void	Client::setStatusCode( const int statusCode )
 		setState(ERROR);
 }
 
-// void Client::setServerBlock(ServerBlock* serverBlock)
-// {
-// 	if (serverBlock)
-// 		_ServerBlock = *serverBlock;  // Set the client's ServerBlock to the provided server block.
-// }
