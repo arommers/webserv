@@ -44,7 +44,6 @@ class ServerBlock
 		void						setServerName(const std::string &newServerName);
 		void						setLocations(std::vector<std::vector<std::string>> &newLocation, ServerBlock &server, std::string STRING);
 		void						setErrorPage(const std::string &newErrorPage);
-		void						setLocationsDefault(const Location &defaultLocation);
 
 		// Getter
 		int							getPort() const;

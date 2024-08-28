@@ -47,7 +47,6 @@ class	Config
 		std::vector<ServerBlock>				getServerBlocks() const;	// Used for creating the sockets (aka. Server.cpp)
 
 		// Checkers
-		Location								ft_setLocationDefault(ServerBlock &server);
 		std::string								ft_checkRoot(const std::string &newRoot, ServerBlock &server);
 		std::string								ft_checkHost(const std::string &newHost, ServerBlock &server);
 		void									ft_checkPort(const std::string &newPort, ServerBlock &server);

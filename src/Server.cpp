@@ -122,7 +122,6 @@ void	Server::acceptConnection(int serverSocket)
 		addPollFd(newSocket, POLLIN);
 		addClient(newSocket, getServerBlockByFd(serverSocket));
 		_clientActivity[newSocket] = std::chrono::steady_clock::now();
-
 	}
 }
 

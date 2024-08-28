@@ -58,13 +58,6 @@ void ServerBlock::setErrorPage(const std::string &newErrorPage)
 		throw  Exception_ServerBlock("Error_page is duplicated");
 }
 
-void	ServerBlock::setLocationsDefault(const Location &defaultLocation)
-{
-	// Check if locations are empty before setting default
-	if (_locations.empty())
-		_locations.push_back(defaultLocation);
-}
-
 // --- Getter ---
 std::string	ServerBlock::getHost() const
 {
