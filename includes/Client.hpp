@@ -30,7 +30,8 @@ enum    clientState
     WRITING = 3, // Writing to file or pipe
     ERROR = 4, // Some error occured
     READY = 5, // Reading/Writing is finished and the process can continue
-    RESPONSE = 6 // Everything has been done and the reponse can be build
+    RESPONSE = 6, // Everything has been done and the reponse can be build
+	SENDING = 7
 };
 
 

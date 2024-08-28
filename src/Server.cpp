@@ -65,6 +65,7 @@ void	Server::createPollLoop()
 			break;
 		}
 		checkClientActivity();
+		// std::cout << "Poll size: " << _pollFds.size() << std::endl;
 		int pollSize = poll(_pollFds.data(), _pollFds.size(), TIMEOUT);
 		if (pollSize == -1)
 		{
@@ -122,6 +123,7 @@ void	Server::acceptConnection(int serverSocket)
 		addClient(newSocket, getServerBlockByFd(serverSocket));
 		_clientActivity[newSocket] = std::chrono::steady_clock::now();
 	}
+	usleep(100);
 }
 
 void	Server::sendClientData(size_t index)
@@ -167,7 +169,6 @@ void	Server::shutdownServer()
 void	Server::closeConnection(size_t fd)
 {
 	close(fd);
-	std::cout << "H!\n";
 	removePollFd(fd);
 	// _pollFds.erase(_pollFds.begin() + index);
 	_clients.erase(fd);
@@ -239,13 +240,14 @@ void	Server::handleClientData(size_t index)
 		int     bytesRead = read(_pollFds[index].fd, buffer, BUFFER_SIZE);
 		if (bytesRead < 0)
 		{
-			std::cerr << RED << "Error reading from client socket: " << strerror(errno) << RESET << std::endl;
+			std::cerr << RED << "Error reading from client socket: " << strerror(errno) << " fd: " << _pollFds[index].fd << RESET << std::endl;
 		}
 		else if(bytesRead == 0)
 		{
-			std::cout << YELLOW << "Client disconnected, socket fd is: " << RESET << std::endl;
+			std::cout << YELLOW << "Client disconnected, socket fd is: " << _pollFds[index].fd << RESET << std::endl;
 			closeConnection(_pollFds[index].fd);
 		}
+	
 		else
 		{
 			client.addToBuffer(std::string(buffer, bytesRead));
@@ -257,7 +259,6 @@ void	Server::handleClientData(size_t index)
 				_pollFds[index].events = POLLOUT;
 			}
 		}
-
 	}
 	else if (client.getState() == START || client.getState() == READY)
 	{
@@ -460,7 +461,8 @@ void Server::checkClientActivity()
 	for (auto it = _clientActivity.begin(); it != _clientActivity.end();)
 	{
 		auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - it->second);
-		if (elapsed.count() >= TIMEOUT / 100){
+		// std::cout << "Elapsed" << elapsed.count() << std::endl;
+		if (elapsed.count() >= 2){
 			std::cout << RED << "Deleting client after timout: " << it->first << RESET << std::endl;
 			close(it->first);
 			removePollFd(it->first);

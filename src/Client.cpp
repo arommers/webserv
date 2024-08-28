@@ -132,6 +132,7 @@ void	Client::createResponse()
 			responseMessage += "\r\n";
 	}
 	_writeBuffer = responseMessage;
+	setState(SENDING);
 }
 
 void	Client::readNextChunk()
@@ -147,7 +148,7 @@ void	Client::readNextChunk()
 	}
 	else if (bytesRead == 0)
 	{
-		close(_readWriteFd);
+		// close(_readWriteFd);
 		setState(READY);
 	}
 	else
