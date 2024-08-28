@@ -58,6 +58,8 @@ class Server
         bool                    handleDirectoryRequest(std::string& file, const Location& location, Client& client);
         void                    openRequestedFile(const std::string& file, Client& client);
         bool                    checkAllowedMethod(const Location& location, const std::string& method);
+        bool                    checkFileExists(const std::string& path);
+
         bool                    checkFileAccessRights(const std::string& path);
 
 };

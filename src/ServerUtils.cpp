@@ -7,32 +7,42 @@ void Server::openFile(Client &client)
     std::string file = client.getRequestMap().at("Path");
     std::string method = client.getRequestMap().at("Method");
     ServerBlock& serverBlock = client.getServerBlock();
+    std::string resolvedFile;
 
     std::vector<Location> matchingLocations = findMatchingLocations(file, serverBlock);
     if (matchingLocations.empty())
     {
-        client.setStatusCode(404); 
-        return;
+        resolvedFile = serverBlock.getRoot() + serverBlock.getIndex();
+        // client.setStatusCode(404); 
+        // return;
     }
-
-    const Location& location = matchingLocations[0];
-    
-    if (!checkAllowedMethod(location, method))
+    else
     {
-        client.setStatusCode(405);
-        return;
+        const Location& location = matchingLocations[0];
+        
+        if (!checkAllowedMethod(location, method))
+        {
+            client.setStatusCode(405);
+            return;
+        }
+
+        resolvedFile = resolveFilePath(file, location, serverBlock);
+
+        if (!checkFileExists(resolvedFile))
+        {
+            client.setStatusCode(404);
+            return;
+        }
+
+        if (!checkFileAccessRights(resolvedFile))
+        {
+            client.setStatusCode(403);
+            return;
+        }
+
+        if (handleDirectoryRequest(resolvedFile, location, client))
+            return;
     }
-
-    std::string resolvedFile = resolveFilePath(file, location, serverBlock);
-
-    if (!checkFileAccessRights(resolvedFile))
-    {
-        client.setStatusCode(403);
-        return;
-    }
-
-    if (handleDirectoryRequest(resolvedFile, location, client))
-        return;
 
     openRequestedFile(resolvedFile, client);
 }
@@ -73,7 +83,6 @@ std::string Server::resolveFilePath(const std::string& file, const Location& loc
 
     std::string resolvedFile = locationRoot + "/" + fileName;
 
-    // Normalize path: Replace multiple slashes with a single slash
     resolvedFile = std::regex_replace(resolvedFile, std::regex("//+"), "/");
     return resolvedFile;
 }
@@ -81,11 +90,27 @@ std::string Server::resolveFilePath(const std::string& file, const Location& loc
 bool Server::handleDirectoryRequest(std::string& file, const Location& location, Client& client)
 {
     struct stat fileStat;
+    
+    // Check if the requested path is a directory
     if (stat(file.c_str(), &fileStat) == 0 && S_ISDIR(fileStat.st_mode))
     {
+        // If an index is specified in the location block
+        if (!location.getIndex().empty())
+        {
+            // Append the index file to the directory path
+            std::string indexPath = file + "/" + location.getIndex();
+
+            // Check if the index file exists and is a regular file
+            if (stat(indexPath.c_str(), &fileStat) == 0 && S_ISREG(fileStat.st_mode))
+            {
+                file = indexPath; // Update file path to the index file
+                return false; // Continue with the request, which will serve the index file
+            }
+        }
+
+        // If autoindex is on and no index file was found
         if (location.getAutoindex())
         {
-            
             if (file.back() != '/')
                 file += "/";
 
@@ -93,8 +118,6 @@ bool Server::handleDirectoryRequest(std::string& file, const Location& location,
             client.setState(RESPONSE);
             return true;
         }
-        else if (!location.getIndex().empty())
-            file += "/" + location.getIndex();
         else
         {
             client.setStatusCode(403);
@@ -103,6 +126,33 @@ bool Server::handleDirectoryRequest(std::string& file, const Location& location,
     }
     return false;
 }
+
+// bool Server::handleDirectoryRequest(std::string& file, const Location& location, Client& client)
+// {
+//     struct stat fileStat;
+//     if (stat(file.c_str(), &fileStat) == 0 && S_ISDIR(fileStat.st_mode))
+//     {
+//         if (!location.getIndex().empty())
+//             file += "/" + location.getIndex();
+        
+//         else if (location.getAutoindex())
+//         {
+            
+//             if (file.back() != '/')
+//                 file += "/";
+
+//             client.setFileBuffer(generateFolderContent(file));
+//             client.setState(RESPONSE);
+//             return true;
+//         }
+//         else
+//         {
+//             client.setStatusCode(403);
+//             return true;
+//         }
+//     }
+//     return false;
+// }
 
 void Server::openRequestedFile(const std::string& file, Client& client)
 {
@@ -213,6 +263,11 @@ std::string Server::generateFolderContent(std::string path)
 //         }
 //     }
 // }
+
+bool Server::checkFileExists(const std::string& path)
+{
+    return (access(path.c_str(), F_OK) == 0) ? true : false;
+}
 
 bool Server::checkFileAccessRights(const std::string& path)
 {
