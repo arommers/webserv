@@ -45,6 +45,7 @@ std::string	Config::readConfigFile(std::string name)
 	{
 		throw Exception_Config("Config format is empty");
 	}
+	std::cout << "Closing 4\n";
 	file.close();
 	return file_content;
 }

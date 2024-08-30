@@ -159,6 +159,7 @@ void	Server::shutdownServer()
 	for (auto& ServerBlock : _servers)
 	{
 		if (ServerBlock.getServerFd() != -1)
+		std::cout << "Closing 5\n";
 			close(ServerBlock.getServerFd());
 	}
 	
@@ -168,6 +169,7 @@ void	Server::shutdownServer()
 
 void	Server::closeConnection(size_t fd)
 {
+		std::cout << "Closing 6\n";
 	close(fd);
 	removePollFd(fd);
 	// _pollFds.erase(_pollFds.begin() + index);
@@ -381,6 +383,7 @@ void	Server::removePollFd( int fd )
 	{
 		if (value.fd == fd)
 		{
+		std::cout << "Closing 7\n";
 			close(fd);
 			_pollFds.erase(_pollFds.begin() + i);
 			return ;

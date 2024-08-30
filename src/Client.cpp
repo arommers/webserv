@@ -142,13 +142,15 @@ void	Client::readNextChunk()
 	if (bytesRead < 0)
 	{
 		std::cerr << "Failed to read file: " << strerror(errno) << std::endl;
+		std::cout << "Closing 1\n";
 		close(_readWriteFd);
 		setStatusCode(500);
 		_fd = -1;
 	}
 	else if (bytesRead == 0)
 	{
-		// close(_readWriteFd);
+		std::cout << "Closing 10\n";
+		close(_readWriteFd);
 		setState(READY);
 	}
 	else
@@ -165,6 +167,7 @@ void	Client::writeNextChunk()
 	if (bytesWritten < 0)
 	{
 		std::cerr << "Failed to write to fd: " << strerror(errno) << std::endl;
+		std::cout << "Closing 2\n";
 		close(_readWriteFd);
 		setState(500);
 		_fd = -1;
@@ -173,6 +176,7 @@ void	Client::writeNextChunk()
 	if (bytesWritten == 0)
 	{
 		std::cerr << "Warning: write() returned 0, no data was written. Possibly a closed connection." << std::endl;
+		std::cout << "Closing 3\n";
 		close(_readWriteFd);
 		setState(500);
 		_fd = -1;
