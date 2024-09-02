@@ -14,7 +14,7 @@
 int	main(int argc, char **argv)
 {
 	std::string		configFile = "config/config_file.conf";  // Default configFile
-
+	// std::string		configFile;
 	// Check for the correct number of arguments
 	if (argc <= 2)
 	{

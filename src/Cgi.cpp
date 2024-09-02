@@ -6,14 +6,7 @@ Cgi::Cgi() {}
 Cgi::~Cgi() {}
 
 // --- CGI Functions ---
-bool	Cgi::checkIfCGI( Client &client )
-{
-	if (client.getRequestMap().at("Path").find("/cgi-bin/") != std::string::npos){
-		if (client.getRequestMap().at("Path").back() != '/')
-		return (true);
-	}
-	return (false);
-}
+
 
 void	Cgi::runCGI( Server& server, Client& client)
 {
@@ -40,6 +33,13 @@ void	Cgi::runCGI( Server& server, Client& client)
 	else if (client.getState() == READY){
 		int result = waitpid(_pid, &status, WNOHANG);
 		if (result == 0){
+			auto now = std::chrono::steady_clock::now();
+			auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - _lastActivity);
+			if (elapsed.count() >= 5){
+				std::cout << "Longer then 15s script\n";
+				kill(_pid, SIGKILL);
+				client.setStatusCode(504);
+			}
 			usleep(100000); // Sleep for 100ms
 		}
 		else if (WIFEXITED(status)) {
@@ -104,6 +104,8 @@ void	Cgi::createFork(Client& client)
 	{
 		launchScript(client);
 	}
+	else
+		_lastActivity = std::chrono::steady_clock::now();
 }
 
 void	Cgi::redirectToPipes(Client& client)

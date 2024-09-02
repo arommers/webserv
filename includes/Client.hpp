@@ -21,6 +21,10 @@
 #include <regex>
 #include <dirent.h>       // Provides functions for using DIR directory stream like opendir(), readdir()
 #include "ServerBlock.hpp"
+#include "../includes/Cgi.hpp" 
+
+
+class Cgi;
 
 enum    clientState
 {
@@ -43,7 +47,7 @@ enum    clientState
 // Pending config parsing these are set
 #define PORT 4040
 #define MAX_CLIENTS 100
-#define TIMEOUT 1000 //Miliseconds
+#define TIMEOUT 2000 //Miliseconds
 #define BUFFER_SIZE 1024
 
 class Client
@@ -59,12 +63,13 @@ class Client
 		std::string								_readBuffer;
 		std::string								_writeBuffer;
 		std::string								_fileBuffer;
-		std::time_t								_time = std::time(nullptr);
-		std::vector<int>						_statusCheck = {400, 401, 404, 405, 500, 503};
+		std::vector<int>						_statusCheck = {400, 401, 404, 405, 500, 503, 504};
 		std::map<std::string, std::string>		_requestMap;
 		std::map<std::string, std::string>		_responseMap;
 		static const std::map<int, std::string>	_ReasonPhraseMap;
 		ServerBlock								_ServerBlock;
+		Cgi										_cgi;
+
 
 		void									isValidMethod( std::string method );
 		void									isValidPath( std::string path );
@@ -79,6 +84,7 @@ class Client
 		void									parseBuffer ( void );
 		void									printRequestMap( void );
 		void									createResponse ( void );
+		bool									checkIfCGI();
 		void									setFd( int fd );
 		void									setState ( const int state );
 		void									setWritePos( size_t pos );
@@ -86,7 +92,6 @@ class Client
 		void									setWriteBuffer( std::string buffer );
 		void									setStatusCode( const int statusCode );
 		// void									setServerBlock(ServerBlock* serverBlock);
-		void									updateTime();
 		void									resetClientData( void );    
 		void									readNextChunk();
 		void									writeNextChunk();
@@ -101,7 +106,6 @@ class Client
 		int*									getRequestPipe();
 		size_t									getWritePos();
 		std::string								getReadBuffer();
-		std::time_t								getTime();
 		ServerBlock&							getServerBlock();
 		std::string								getWriteBuffer();
 		std::map<std::string, std::string>		getRequestMap( void );

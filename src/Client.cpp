@@ -13,6 +13,7 @@ const std::map<int, std::string> Client::_ReasonPhraseMap = {
     {405, "Method Not Allowed"},
     {500, "Internal Server Error"},
     {503, "Service Unavailable"},
+	{504, "Gateway Timeout"},
 };
 
 // --- Constructors/ Deconstructor ---
@@ -20,14 +21,12 @@ Client::Client() {}
 
 Client::~Client()
 {
-	_time = std::time(nullptr);
 }
 
 Client::Client(int fd, ServerBlock& ServerBlock)
 {
 	_fd = fd;
 	_ServerBlock = ServerBlock;
-	_time = std::time(nullptr);
 }
 
 // --- Client Functions ---
@@ -43,7 +42,6 @@ void	Client::resetClientData( void )
 	// _fd = -1;
 	_state = PARSE;
 	_readWriteFd = -1;
-	_time = std::time(nullptr);
 }
 
 bool	Client::requestComplete()
@@ -149,7 +147,7 @@ void	Client::readNextChunk()
 	}
 	else if (bytesRead == 0)
 	{
-		std::cout << "Closing 10\n";
+		std::cout << "Closing 10, fd:" << _readWriteFd << std::endl;
 		close(_readWriteFd);
 		setState(READY);
 	}
@@ -193,11 +191,6 @@ bool	Client::detectError()
 	if (std::find(_statusCheck.begin(), _statusCheck.end(), _statusCode) != _statusCheck.end())
 		return (true);
 	return (false);
-}
-
-void	Client::updateTime()
-{
-	_time = std::time(nullptr);
 }
 
 void	Client::addToBuffer( std::string bufferNew )
@@ -269,11 +262,6 @@ int*	Client::getRequestPipe()
 int*	Client::getResponsePipe()
 {
 	return (_responsePipe);
-}
-
-std::time_t	Client::getTime()
-{
-	return _time;
 }
 
 std::map<std::string, std::string>	Client::getRequestMap( void )
@@ -359,3 +347,12 @@ void	Client::setStatusCode( const int statusCode )
 // 	if (serverBlock)
 // 		_ServerBlock = *serverBlock;  // Set the client's ServerBlock to the provided server block.
 // }
+
+bool	Client::checkIfCGI()
+{
+	if (getRequestMap().at("Path").find("/cgi-bin/") != std::string::npos){
+		if (getRequestMap().at("Path").back() != '/')
+		return (true);
+	}
+	return (false);
+}

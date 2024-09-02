@@ -65,7 +65,6 @@ void	Server::createPollLoop()
 			break;
 		}
 		checkClientActivity();
-		// std::cout << "Poll size: " << _pollFds.size() << std::endl;
 		int pollSize = poll(_pollFds.data(), _pollFds.size(), TIMEOUT);
 		if (pollSize == -1)
 		{
@@ -75,11 +74,8 @@ void	Server::createPollLoop()
 		}
 		else if (pollSize == 0)
 			continue ;
-
 		for (size_t i = 0; i < _pollFds.size(); ++i)
 		{
-			// checkClientActivity();
-
 			if (_pollFds[i].revents & POLLIN)
 			{
 				if (i < _servers.size())					// Server socket
@@ -123,7 +119,6 @@ void	Server::acceptConnection(int serverSocket)
 		addClient(newSocket, getServerBlockByFd(serverSocket));
 		_clientActivity[newSocket] = std::chrono::steady_clock::now();
 	}
-	usleep(100);
 }
 
 void	Server::sendClientData(size_t index)
@@ -243,6 +238,7 @@ void	Server::handleClientData(size_t index)
 		if (bytesRead < 0)
 		{
 			std::cerr << RED << "Error reading from client socket: " << strerror(errno) << " fd: " << _pollFds[index].fd << RESET << std::endl;
+			exit(1);
 		}
 		else if(bytesRead == 0)
 		{
@@ -307,12 +303,14 @@ void	Server::handleClientData(size_t index)
 					}
 				}
 				// Handle CGI or file requests
-				if (_cgi.checkIfCGI(client) == true)
-					_cgi.runCGI(*this, client);
+				if (client.checkIfCGI() == true)
+					client._cgi.runCGI(*this, client);
 				else if(client.getRequestMap().at("Method") == "GET")
 					openFile(client);
 				else if(client.getRequestMap().at("Method") == "DELETE")
 					handleDeleteRequest(client);
+				else
+					client.setStatusCode(405);
 			}
 	}
 	else if (client.getState() == ERROR)
@@ -383,7 +381,7 @@ void	Server::removePollFd( int fd )
 	{
 		if (value.fd == fd)
 		{
-		std::cout << "Closing 7\n";
+			std::cout << "Closing 7, fd: " << fd << std::endl;
 			close(fd);
 			_pollFds.erase(_pollFds.begin() + i);
 			return ;
@@ -464,8 +462,7 @@ void Server::checkClientActivity()
 	for (auto it = _clientActivity.begin(); it != _clientActivity.end();)
 	{
 		auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - it->second);
-		// std::cout << "Elapsed" << elapsed.count() << std::endl;
-		if (elapsed.count() >= 2){
+		if (elapsed.count() >= TIMEOUT){
 			std::cout << RED << "Deleting client after timout: " << it->first << RESET << std::endl;
 			close(it->first);
 			removePollFd(it->first);

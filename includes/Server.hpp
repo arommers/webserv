@@ -6,7 +6,6 @@
 
 using TimePoint = std::chrono::time_point<std::chrono::steady_clock>;
 
-class Cgi;
 class Location;
 class ServerBlock;
 
@@ -17,7 +16,6 @@ class Server
 		std::vector<struct pollfd>			_pollFds;
 		std::unordered_map<int, Client>		_clients;
 		std::unordered_map<int, TimePoint>	_clientActivity;
-		Cgi									_cgi;
 
 	public:
 		Server();

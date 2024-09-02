@@ -11,16 +11,18 @@
 
 class Server;
 
+using TimePoint = std::chrono::time_point<std::chrono::steady_clock>;
+
 class Cgi
 {
 	private:
 		pid_t		_pid;
 		std::string	_path;
+		TimePoint	_lastActivity;
 	public:
 		Cgi();
 		~Cgi();
 		
-		bool		checkIfCGI( Client& client );
 		void		runCGI( Server& server, Client& client);
 		char**		createEnv(Client& client );
 		void		createPipe(Client& client, int* fdPipe);
