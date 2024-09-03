@@ -17,13 +17,11 @@ const std::map<int, std::string> Client::_ReasonPhraseMap = {
 };
 
 // --- Constructors/ Deconstructor ---
-Client::Client() {}
+Client::Client() : Cgi() {}
 
-Client::~Client()
-{
-}
+Client::~Client() {}
 
-Client::Client(int fd, ServerBlock& ServerBlock)
+Client::Client(int fd, ServerBlock& ServerBlock) : Cgi()
 {
 	_fd = fd;
 	_ServerBlock = ServerBlock;
@@ -39,7 +37,6 @@ void	Client::resetClientData( void )
 	_requestMap.clear();
 	_responseMap.clear();
 	_statusCode = 0;
-	// _fd = -1;
 	_state = PARSE;
 	_readWriteFd = -1;
 }
@@ -107,7 +104,6 @@ void	Client::createResponse()
 
 	if (_statusCode == 0)
 		setStatusCode(200);
-
 	// Handle redirect responses
 	if (_statusCode == 301 || _statusCode == 302)
 	{
@@ -125,6 +121,10 @@ void	Client::createResponse()
 		{
 			responseMessage += "Content-Length: " + std::to_string(_fileBuffer.size()) + "\r\n\r\n";
 			responseMessage += _fileBuffer;
+		}
+		else if (_requestMap.at("Method") == "GET")
+		{
+			responseMessage += "Content-Length: 0\r\n\r\n";
 		}
 		else
 			responseMessage += "\r\n";
@@ -356,3 +356,4 @@ bool	Client::checkIfCGI()
 	}
 	return (false);
 }
+

@@ -20,10 +20,11 @@
 #include <ctime>
 #include <regex>
 #include <dirent.h>       // Provides functions for using DIR directory stream like opendir(), readdir()
-#include "ServerBlock.hpp"
-#include "../includes/Cgi.hpp" 
+#include "../includes/ServerBlock.hpp"
+#include "../includes/Cgi.hpp"
 
 
+class Server;
 class Cgi;
 
 enum    clientState
@@ -47,10 +48,10 @@ enum    clientState
 // Pending config parsing these are set
 #define PORT 4040
 #define MAX_CLIENTS 100
-#define TIMEOUT 2000 //Miliseconds
+#define TIMEOUT 5000 //Miliseconds
 #define BUFFER_SIZE 1024
 
-class Client
+class Client : public Cgi
 {
 	private:
 		size_t									_writePos = 0;
@@ -68,7 +69,6 @@ class Client
 		std::map<std::string, std::string>		_responseMap;
 		static const std::map<int, std::string>	_ReasonPhraseMap;
 		ServerBlock								_ServerBlock;
-		Cgi										_cgi;
 
 
 		void									isValidMethod( std::string method );

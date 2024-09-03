@@ -35,9 +35,10 @@ void	Cgi::runCGI( Server& server, Client& client)
 		if (result == 0){
 			auto now = std::chrono::steady_clock::now();
 			auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - _lastActivity);
+			std::cout << "Elapsed: " << elapsed.count() << std::endl;
 			if (elapsed.count() >= 5){
 				std::cout << "Longer then 15s script\n";
-				kill(_pid, SIGKILL);
+				// kill(_pid, SIGKILL);
 				client.setStatusCode(504);
 			}
 			usleep(100000); // Sleep for 100ms

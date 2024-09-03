@@ -3,8 +3,8 @@
 import cgi
 import cgitb
 import datetime
-import time
-time.sleep(10)
+# import time
+# time.sleep(10)
 print("<html>")
 print("<body>")
 print("<p>The current time is: {}</p>".format(datetime.datetime.now()))

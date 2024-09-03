@@ -238,7 +238,7 @@ void	Server::handleClientData(size_t index)
 		if (bytesRead < 0)
 		{
 			std::cerr << RED << "Error reading from client socket: " << strerror(errno) << " fd: " << _pollFds[index].fd << RESET << std::endl;
-			exit(1);
+			closeConnection(_pollFds[index].fd);
 		}
 		else if(bytesRead == 0)
 		{
@@ -304,7 +304,7 @@ void	Server::handleClientData(size_t index)
 				}
 				// Handle CGI or file requests
 				if (client.checkIfCGI() == true)
-					client._cgi.runCGI(*this, client);
+					client.runCGI(*this, client);
 				else if(client.getRequestMap().at("Method") == "GET")
 					openFile(client);
 				else if(client.getRequestMap().at("Method") == "DELETE")
@@ -462,7 +462,7 @@ void Server::checkClientActivity()
 	for (auto it = _clientActivity.begin(); it != _clientActivity.end();)
 	{
 		auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - it->second);
-		if (elapsed.count() >= TIMEOUT){
+		if (elapsed.count() >= (TIMEOUT / 1000)){
 			std::cout << RED << "Deleting client after timout: " << it->first << RESET << std::endl;
 			close(it->first);
 			removePollFd(it->first);

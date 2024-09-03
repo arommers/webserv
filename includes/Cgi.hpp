@@ -1,15 +1,19 @@
 #pragma once
 
-#include <iostream>
-#include <cstring>
-#include <vector>
-#include <map>
-#include <sys/wait.h>
-#include <fcntl.h>
-#include <sys/ioctl.h>
+# include <iostream>
+# include <cstring>
+# include <vector>
+# include <map>
+# include <sys/wait.h>
+# include <fcntl.h>
+# include <sys/ioctl.h>
+# include <chrono>
+
 #include "../includes/Client.hpp"
 
+
 class Server;
+class Client;
 
 using TimePoint = std::chrono::time_point<std::chrono::steady_clock>;
 

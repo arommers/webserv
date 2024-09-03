@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../includes/Client.hpp"
-#include "../includes/Cgi.hpp" 
 #include "../includes/ServerBlock.hpp"
 
 using TimePoint = std::chrono::time_point<std::chrono::steady_clock>;
