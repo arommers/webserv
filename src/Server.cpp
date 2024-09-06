@@ -154,7 +154,6 @@ void	Server::shutdownServer()
 	for (auto& ServerBlock : _servers)
 	{
 		if (ServerBlock.getServerFd() != -1)
-		std::cout << "Closing 5\n";
 			close(ServerBlock.getServerFd());
 	}
 	
@@ -164,7 +163,6 @@ void	Server::shutdownServer()
 
 void	Server::closeConnection(size_t fd)
 {
-		std::cout << "Closing 6\n";
 	close(fd);
 	removePollFd(fd);
 	// _pollFds.erase(_pollFds.begin() + index);
@@ -255,12 +253,12 @@ void	Server::handleClientData(size_t index)
 				if (client.getState() != ERROR)
 					client.setState(START);
 				_pollFds[index].events = POLLOUT;
+				std::cout << GREEN << "Request Received from socket " << _pollFds[index].fd << ", method: [" << client.getRequestMap()["Method"] << "]" << ", version: [" << client.getRequestMap()["Version"] << "], URI: "<< client.getRequestMap()["Path"] <<  RESET << std::endl;
 			}
 		}
 	}
 	else if (client.getState() == START || client.getState() == READY)
 	{
-			std::cout << GREEN << "Request Received from socket " << _pollFds[index].fd << ", method: [" << client.getRequestMap()["Method"] << "]" << ", version: [" << client.getRequestMap()["Version"] << "], URI: "<< client.getRequestMap()["Path"] <<  RESET << std::endl;
 
 			// Check for redirect
 			std::string redirectUrl;
@@ -303,7 +301,7 @@ void	Server::handleClientData(size_t index)
 					}
 				}
 				// Handle CGI or file requests
-				if (client.checkIfCGI() == true)
+				if (client.checkIfCGI(client.getRequestMap().at("Path")) == true)
 					client.runCGI(*this, client);
 				else if(client.getRequestMap().at("Method") == "GET")
 					openFile(client);
@@ -381,7 +379,6 @@ void	Server::removePollFd( int fd )
 	{
 		if (value.fd == fd)
 		{
-			std::cout << "Closing 7, fd: " << fd << std::endl;
 			close(fd);
 			_pollFds.erase(_pollFds.begin() + i);
 			return ;

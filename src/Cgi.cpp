@@ -1,6 +1,7 @@
 #include "../includes/Cgi.hpp"
 #include "../includes/Server.hpp"
 
+
 // --- Constructors/ Deconstructor ---
 Cgi::Cgi() {}
 Cgi::~Cgi() {}
@@ -10,7 +11,7 @@ Cgi::~Cgi() {}
 
 void	Cgi::runCGI( Server& server, Client& client)
 {
-	int status;
+	int status = 0;
 
 	if (client.getState() == START)
 	{
@@ -35,10 +36,9 @@ void	Cgi::runCGI( Server& server, Client& client)
 		if (result == 0){
 			auto now = std::chrono::steady_clock::now();
 			auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - _lastActivity);
-			std::cout << "Elapsed: " << elapsed.count() << std::endl;
-			if (elapsed.count() >= 5){
-				std::cout << "Longer then 15s script\n";
-				// kill(_pid, SIGKILL);
+			if (elapsed.count() >= 10){
+				std::cout << RED << "Timeout of CGI script\n" << RESET;
+				kill(_pid, SIGKILL);
 				client.setStatusCode(504);
 			}
 			usleep(100000); // Sleep for 100ms
@@ -205,3 +205,24 @@ void Cgi::closeAllPipes(Client& client)
 		close(client.getRequestPipe()[1]);
 	}					
 }
+
+int*	Cgi::getRequestPipe()
+{
+	return (_requestPipe);
+}
+
+int*	Cgi::getResponsePipe()
+{
+	return (_responsePipe);
+}
+
+
+bool	Cgi::checkIfCGI(std::string path)
+{
+	if (path.find("/cgi-bin/") != std::string::npos){
+		if (path.back() != '/')
+		return (true);
+	}
+	return (false);
+}
+

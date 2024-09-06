@@ -8,6 +8,7 @@ DIR_DUP = mkdir -p $(@D)
 SRC := \
 	src/main.cpp \
 	src/Client.cpp \
+	src/ClientUtils.cpp \
 	src/Server.cpp \
 	src/ServerUtils.cpp \
 	src/Config.cpp \
@@ -17,6 +18,8 @@ SRC := \
 	src/ServerBlockUtils.cpp \
 	src/Location.cpp \
 	src/Cgi.cpp \
+	src/Parsing.cpp \
+	src/Error.cpp \
 
 SRC := $(SRC:%=$(SRC_DIR)/%)
 OBJ := $(SRC:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)

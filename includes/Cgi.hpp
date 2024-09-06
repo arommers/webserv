@@ -9,9 +9,6 @@
 # include <sys/ioctl.h>
 # include <chrono>
 
-#include "../includes/Client.hpp"
-
-
 class Server;
 class Client;
 
@@ -23,10 +20,13 @@ class Cgi
 		pid_t		_pid;
 		std::string	_path;
 		TimePoint	_lastActivity;
+		int			_responsePipe[2];
+		int			_requestPipe[2];
 	public:
 		Cgi();
 		~Cgi();
 		
+		bool		checkIfCGI(std::string path);
 		void		runCGI( Server& server, Client& client);
 		char**		createEnv(Client& client );
 		void		createPipe(Client& client, int* fdPipe);
@@ -34,6 +34,8 @@ class Cgi
 		void		launchScript(Client& client);
 		void		redirectToPipes(Client& client);
 		std::string	findPath(Client& client);
-		bool 		isPipeEmpty(int fd);
+		bool 		isPipeEmpty(int fd); // Remove?
 		void		closeAllPipes(Client& client);
+		int*		getResponsePipe();
+		int*		getRequestPipe();
 };

@@ -1,41 +1,23 @@
 #include "../includes/Client.hpp"
+#include "../includes/Cgi.hpp"
 
-const std::map<int, std::string> Client::_ReasonPhraseMap = {
-    {200, "OK"},
-    {201, "Created"},
-    {204, "No Content"},
-	{301, "Moved Permanently"},
-	{302, "Found"},
-    {400, "Bad Formatting"},
-    {401, "Unauthorized"},
-    {403, "Unautorized"},
-    {404, "Not Found"},
-    {405, "Method Not Allowed"},
-    {500, "Internal Server Error"},
-    {503, "Service Unavailable"},
-	{504, "Gateway Timeout"},
-};
-
-// --- Constructors/ Deconstructor ---
-Client::Client() : Cgi() {}
+Client::Client(int fd, ServerBlock& ServerBlock) : _ServerBlock(ServerBlock)
+{
+	_fd = fd;
+}
 
 Client::~Client() {}
 
-Client::Client(int fd, ServerBlock& ServerBlock) : Cgi()
-{
-	_fd = fd;
-	_ServerBlock = ServerBlock;
-}
+// Utils
 
-// --- Client Functions ---
 void	Client::resetClientData( void )
 {
-	_readBuffer.clear();
-	_writeBuffer.clear();
-	_fileBuffer.clear();
-	_writePos = 0;
-	_requestMap.clear();
-	_responseMap.clear();
+	getReadBuffer().clear();
+	getWriteBuffer().clear();
+	getFileBuffer().clear();
+	setWritePos(0);
+	getRequestMap().clear();
+	getResponseMap().clear();
 	_statusCode = 0;
 	_state = PARSE;
 	_readWriteFd = -1;
@@ -43,12 +25,12 @@ void	Client::resetClientData( void )
 
 bool	Client::requestComplete()
 {
-	size_t pos = _readBuffer.find("\r\n\r\n");
+	size_t pos = getReadBuffer().find("\r\n\r\n");
 
 	if (pos == std::string::npos)
 		return false;
 	
-	std::string headers = _readBuffer.substr(0, pos + 4);
+	std::string headers = getReadBuffer().substr(0, pos + 4);
 	size_t posContent = headers.find("Content-Length:");
 
 	if (posContent == std::string::npos)
@@ -61,7 +43,7 @@ bool	Client::requestComplete()
 	size_t bodyBegin = pos + 4;
 	size_t bodyLength = bodyBegin + contentLength;
 
-	return _readBuffer.size() >= bodyLength;
+	return getReadBuffer().size() >= bodyLength;
 }
 
 void	Client::parseBuffer ( void )
@@ -70,11 +52,11 @@ void	Client::parseBuffer ( void )
 	bool startBody = false;
 
 	// Storing the (first) request line with the method (GET/POST etc..), path and version in headerMap
-	std::istringstream stream(_readBuffer);
+	std::istringstream stream(getReadBuffer());
 	if (std::getline(stream, line))
 	{
 		std::istringstream lineStream(line);
-		lineStream >> _requestMap["Method"] >> _requestMap["Path"] >> _requestMap["Version"]; // Error Management missing if wrong request line format!
+		lineStream >> getRequestMap()["Method"] >> getRequestMap()["Path"] >> getRequestMap()["Version"]; // Error Management missing if wrong request line format!
 	}
 	// Storing the rest of the incoming header in headerMap
 	while (std::getline(stream, line, '\n'))
@@ -83,19 +65,19 @@ void	Client::parseBuffer ( void )
 		if (startBody == false && line == "\r")
 			startBody = true;
 		if (startBody == true)
-			_requestMap["Body"] += line + '\n';
+			getRequestMap()["Body"] += line + '\n';
 		else if (std::getline(lineStream, key, ':'))
 		{
 			if (std::getline(lineStream, value))
 			{            
 				value = trimWhiteSpace(value);
-				_requestMap[key] = value;
+				getRequestMap()[key] = value;
 			}
 		}
 	}
-	isValidMethod(_requestMap["Method"]);
-	isValidPath(_requestMap["Path"]);
-	isValidVersion(_requestMap["Version"]); 
+	isValidMethod(getRequestMap()["Method"]);
+	isValidPath(getRequestMap()["Path"]);
+	isValidVersion(getRequestMap()["Version"]); 
 }
 
 void	Client::createResponse()
@@ -107,29 +89,29 @@ void	Client::createResponse()
 	// Handle redirect responses
 	if (_statusCode == 301 || _statusCode == 302)
 	{
-		responseMessage = _requestMap.at("Version") + " " + std::to_string(_statusCode) + " " + _ReasonPhraseMap.at(_statusCode) + "\r\n";
-		responseMessage += "Location: " + _responseMap["Location"] + "\r\n";
+		responseMessage = getRequestMap().at("Version") + " " + std::to_string(_statusCode) + " " + getStatusMessage(_statusCode) + "\r\n";
+		responseMessage += "Location: " + getResponseMap()["Location"] + "\r\n";
 		responseMessage += "Content-Length: 0\r\n\r\n";  // Usually no body for redirects
 	}
 	else
 	{
 		// Handle regular responses
-		_responseMap["Content-Type"] = "text/html";
-		responseMessage = _requestMap.at("Version") + " " + std::to_string(_statusCode) + " " + _ReasonPhraseMap.at(_statusCode) + "\r\n";
-		responseMessage += "Content-Type: " + _responseMap["Content-Type"] + "\r\n";
-		if (!_fileBuffer.empty())
+		getResponseMap()["Content-Type"] = "text/html";
+		responseMessage = getRequestMap().at("Version") + " " + std::to_string(_statusCode) + " " + getStatusMessage(_statusCode) + "\r\n";
+		responseMessage += "Content-Type: " + getResponseMap()["Content-Type"] + "\r\n";
+		if (!getFileBuffer().empty())
 		{
-			responseMessage += "Content-Length: " + std::to_string(_fileBuffer.size()) + "\r\n\r\n";
-			responseMessage += _fileBuffer;
+			responseMessage += "Content-Length: " + std::to_string(getFileBuffer().size()) + "\r\n\r\n";
+			responseMessage += getFileBuffer();
 		}
-		else if (_requestMap.at("Method") == "GET")
+		else if (getRequestMap().at("Method") == "GET")
 		{
 			responseMessage += "Content-Length: 0\r\n\r\n";
 		}
 		else
 			responseMessage += "\r\n";
 	}
-	_writeBuffer = responseMessage;
+	setWriteBuffer(responseMessage);
 	setState(SENDING);
 }
 
@@ -140,19 +122,17 @@ void	Client::readNextChunk()
 	if (bytesRead < 0)
 	{
 		std::cerr << "Failed to read file: " << strerror(errno) << std::endl;
-		std::cout << "Closing 1\n";
 		close(_readWriteFd);
 		setStatusCode(500);
 		_fd = -1;
 	}
 	else if (bytesRead == 0)
 	{
-		std::cout << "Closing 10, fd:" << _readWriteFd << std::endl;
 		close(_readWriteFd);
 		setState(READY);
 	}
 	else
-		_fileBuffer.append(buffer, bytesRead);
+		getFileBuffer().append(buffer, bytesRead);
 }
 
 void	Client::writeNextChunk()
@@ -165,7 +145,6 @@ void	Client::writeNextChunk()
 	if (bytesWritten < 0)
 	{
 		std::cerr << "Failed to write to fd: " << strerror(errno) << std::endl;
-		std::cout << "Closing 2\n";
 		close(_readWriteFd);
 		setState(500);
 		_fd = -1;
@@ -174,65 +153,20 @@ void	Client::writeNextChunk()
 	if (bytesWritten == 0)
 	{
 		std::cerr << "Warning: write() returned 0, no data was written. Possibly a closed connection." << std::endl;
-		std::cout << "Closing 3\n";
 		close(_readWriteFd);
 		setState(500);
 		_fd = -1;
 		return;
 	}
-	_writeBuffer.erase(0, bytesWritten);
+	getWriteBuffer().erase(0, bytesWritten);
 	if (getWriteBuffer().empty())
 		setState(READY);
 }
 
-// --- Utils ---
-bool	Client::detectError()
-{
-	if (std::find(_statusCheck.begin(), _statusCheck.end(), _statusCode) != _statusCheck.end())
-		return (true);
-	return (false);
-}
 
 void	Client::addToBuffer( std::string bufferNew )
 {
-	_readBuffer += bufferNew;
-}
-
-void	Client::printRequestMap( void )
-{
-	// Printing header map
-	std::cout << "------- Content of header map -------\n";
-	for (const auto& pair : _requestMap)
-	{
-		std::cout << pair.first << ":" << pair.second << std::endl;
-	}
-	std::cout << "\n------- Content of header map -------\n";
-}
-
-void	Client::isValidMethod( std::string method )
-{
-	std::vector<std::string> validMethods = {"POST", "GET", "DELETE"};
-
-	if (method.empty())
-		setStatusCode(400);
-	else if (std::find(validMethods.begin(), validMethods.end(), method) == validMethods.end())
-		setStatusCode(405);
-}
-
-void	Client::isValidPath( std::string path )
-{
-	if (path.empty())
-		setStatusCode(400);
-}
-
-void	Client::isValidVersion( std::string version )
-{
-	std::regex versionRegex(R"(HTTP\/\d\.\d)");
-
-	if (version.empty())
-		setStatusCode(400);
-	else if (!std::regex_match(version, versionRegex))
-		setStatusCode(505);
+	getReadBuffer() += bufferNew;
 }
 
 std::string	trimWhiteSpace(std::string& string)
@@ -243,7 +177,7 @@ std::string	trimWhiteSpace(std::string& string)
 	return string.substr(start, end - start + 1);
 }
 
-// --- Getter ---
+// --- Getters ---
 int	Client::getStatusCode()
 {
 	return (_statusCode);
@@ -254,29 +188,9 @@ int	Client::getReadWriteFd()
 	return _readWriteFd;
 }
 
-int*	Client::getRequestPipe()
-{
-	return (_requestPipe);
-}
-
-int*	Client::getResponsePipe()
-{
-	return (_responsePipe);
-}
-
-std::map<std::string, std::string>	Client::getRequestMap( void )
-{
-	return (_requestMap);
-}
-
 ServerBlock&	Client::getServerBlock()
 {
 	return _ServerBlock;
-}
-
-std::string	Client::getReadBuffer( void )
-{
-	return (_readBuffer);
 }
 
 int	Client::getFd()
@@ -284,27 +198,12 @@ int	Client::getFd()
 	return (_fd);
 }
 
-size_t	Client::getWritePos()
-{
-	return (_writePos);
-}
-
-std::string	Client::getWriteBuffer()
-{
-	return (_writeBuffer);
-}
-
 int	Client::getState()
 {
 	return (_state);
 }
 
-std::map<std::string, std::string>&	Client::getResponseMap()
-{
-	return (_responseMap);
-}
-
-// --- Setter --- 
+// --- Setters --- 
 void	Client::setReadWriteFd(int fd)
 {
 	_readWriteFd = fd;
@@ -315,21 +214,6 @@ void	Client::setFd ( int fd )
 	_fd = fd;
 }
 
-void	Client::setWritePos( size_t pos )
-{
-	_writePos = pos;
-}
-
-void	Client::setWriteBuffer( std::string buffer )
-{
-	_writeBuffer = buffer;
-}
-
-void	Client::setFileBuffer(std::string buffer)
-{
-	_fileBuffer = buffer;
-}
-
 void	Client::setState (const int state)
 {
 	_state = state;
@@ -338,22 +222,6 @@ void	Client::setState (const int state)
 void	Client::setStatusCode( const int statusCode )
 {
 	_statusCode = statusCode;
-	if (detectError())
+	if (detectError(statusCode))
 		setState(ERROR);
 }
-
-// void Client::setServerBlock(ServerBlock* serverBlock)
-// {
-// 	if (serverBlock)
-// 		_ServerBlock = *serverBlock;  // Set the client's ServerBlock to the provided server block.
-// }
-
-bool	Client::checkIfCGI()
-{
-	if (getRequestMap().at("Path").find("/cgi-bin/") != std::string::npos){
-		if (getRequestMap().at("Path").back() != '/')
-		return (true);
-	}
-	return (false);
-}
-

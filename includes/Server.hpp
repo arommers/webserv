@@ -7,6 +7,7 @@ using TimePoint = std::chrono::time_point<std::chrono::steady_clock>;
 
 class Location;
 class ServerBlock;
+class Client;
 
 class Server
 {
