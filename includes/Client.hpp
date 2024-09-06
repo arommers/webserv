@@ -54,7 +54,6 @@ class Client : public Cgi , public Parsing , public Error
 		void									isValidVersion( std::string version );
 
 	public:
-		// Client();
 		Client(int fd, ServerBlock& ServerBlock);
 		~Client();
 
