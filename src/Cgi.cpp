@@ -90,7 +90,7 @@ void	Cgi::createPipe(Client& client, int* fdPipe)
 
 void	Cgi::createFork(Client& client)
 {
-	_path = findPath(client);
+	_path = findPath(client, client.getRequestMap().at("Path"));
 	if (_path.empty())
 	{
 		client.setStatusCode(404);
@@ -139,14 +139,11 @@ void	Cgi::launchScript(Client& client)
 	exit(EXIT_FAILURE);
 }
 
-std::string	Cgi::findPath(Client& client)
+std::string	Cgi::findPath(Client& client, std::string path)
 {
-	std::string             path;
 	ServerBlock&            serverBlock = client.getServerBlock();
 	std::vector<Location>   matchingLocations;
 	bool                    locationFound = false;
-
-	path = client.getRequestMap().at("Path");
 
 	for (const Location& location : serverBlock.getLocations())
 	{

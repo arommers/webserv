@@ -126,7 +126,7 @@ void	Server::sendClientData(size_t index)
 	Client& client = getClient(_pollFds[index].fd);
 
 	updateClientActivity(_pollFds[index].fd);
-	client.createResponse();
+	client.createResponse(client);
 	std::string writeBuffer = client.getWriteBuffer();
 
 	int bytesSent = send(_pollFds[index].fd, writeBuffer.c_str(), writeBuffer.size(), 0);
@@ -250,6 +250,7 @@ void	Server::handleClientData(size_t index)
 			if (client.requestComplete())
 			{
 				client.parseBuffer();
+				client.detectParsingError(client);
 				if (client.getState() != ERROR)
 					client.setState(START);
 				_pollFds[index].events = POLLOUT;
@@ -313,7 +314,8 @@ void	Server::handleClientData(size_t index)
 	}
 	else if (client.getState() == ERROR)
 	{
-		addFileToPoll(client, "./config/error_page/" + std::to_string(client.getStatusCode()) + ".html");
+		std::string file = client.findPath(client, "./config/error_page/" + std::to_string(client.getStatusCode()) + ".html");
+		addFileToPoll(client, file);
 		if (client.getState() != RESPONSE)
 			client.setState(READING);
 	}

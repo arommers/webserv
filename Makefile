@@ -19,6 +19,7 @@ SRC := \
 	src/Location.cpp \
 	src/Cgi.cpp \
 	src/Parsing.cpp \
+	src/ParsingUtils.cpp \
 	src/Error.cpp \
 
 SRC := $(SRC:%=$(SRC_DIR)/%)
