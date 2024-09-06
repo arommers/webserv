@@ -33,7 +33,7 @@ class Cgi
 		void		createFork(Client& client);
 		void		launchScript(Client& client);
 		void		redirectToPipes(Client& client);
-		std::string	findPath(Client& client);
+		std::string	findPath(Client& client, std::string path);
 		bool 		isPipeEmpty(int fd); // Remove?
 		void		closeAllPipes(Client& client);
 		int*		getResponsePipe();
