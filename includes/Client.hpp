@@ -12,7 +12,7 @@
 #include "../includes/ServerBlock.hpp"
 #include "../includes/Cgi.hpp"
 #include "../includes/Parsing.hpp"
-#include "../includes/Error.hpp"
+#include "../includes/Status.hpp"
 
 enum    clientState
 {

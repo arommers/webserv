@@ -20,7 +20,7 @@ SRC := \
 	src/Cgi.cpp \
 	src/Parsing.cpp \
 	src/ParsingUtils.cpp \
-	src/Error.cpp \
+	src/Status.cpp \
 
 SRC := $(SRC:%=$(SRC_DIR)/%)
 OBJ := $(SRC:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)

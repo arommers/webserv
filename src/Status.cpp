@@ -1,4 +1,4 @@
-#include "../includes/Error.hpp"
+#include "../includes/Status.hpp"
 
 const std::unordered_map<int, std::string> Error::_ReasonPhraseMap = {
     {200, "OK"},

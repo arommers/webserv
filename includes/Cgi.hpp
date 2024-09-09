@@ -26,6 +26,7 @@ class Cgi
 		Cgi();
 		~Cgi();
 		
+		// Utils
 		bool		checkIfCGI(std::string path);
 		void		runCGI( Server& server, Client& client);
 		char**		createEnv(Client& client );
@@ -36,6 +37,8 @@ class Cgi
 		std::string	findPath(Client& client, std::string path);
 		bool 		isPipeEmpty(int fd); // Remove?
 		void		closeAllPipes(Client& client);
+
+		// Getters
 		int*		getResponsePipe();
 		int*		getRequestPipe();
 };
