@@ -34,7 +34,7 @@ enum    clientState
 #define TIMEOUT 30000 //Miliseconds
 #define BUFFER_SIZE 1024
 
-class Client : public Cgi , public Parsing , public Error
+class Client : public Cgi , public Parsing , public Status
 {
 	private:
 		int										_fd;

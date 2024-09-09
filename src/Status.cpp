@@ -1,6 +1,6 @@
 #include "../includes/Status.hpp"
 
-const std::unordered_map<int, std::string> Error::_ReasonPhraseMap = {
+const std::unordered_map<int, std::string> Status::_ReasonPhraseMap = {
     {200, "OK"},
     {201, "Created"},
     {204, "No Content"},
@@ -16,18 +16,18 @@ const std::unordered_map<int, std::string> Error::_ReasonPhraseMap = {
 	{504, "Gateway Timeout"},
 };
 
-Error::Error(){};
+Status::Status(){};
 
-Error::~Error(){};
+Status::~Status(){};
 
-bool	Error::detectError(int statusCode)
+bool	Status::detectError(int statusCode)
 {
 	if (std::find(_statusCheck.begin(), _statusCheck.end(), statusCode) != _statusCheck.end())
 		return (true);
 	return (false);
 }
 
-std::string Error::getStatusMessage( int statusCode )
+std::string Status::getStatusMessage( int statusCode )
 {
     return (_ReasonPhraseMap.at(statusCode));
 }

@@ -6,14 +6,14 @@
 #include <algorithm>
 
 
-class Error
+class Status
 {
     private:
 		std::vector<int>						                      _statusCheck = {400, 401, 404, 405, 500, 503, 504};
 		static const std::unordered_map<int, std::string>	_ReasonPhraseMap;
     public:
-        Error();
-        ~Error();
+        Status();
+        ~Status();
         
 		    bool        detectError(int statusCode);
         std::string getStatusMessage( int statusCode );

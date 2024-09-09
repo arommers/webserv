@@ -11,14 +11,14 @@ void	Parsing::parseBuffer ( void )
 	std::string line, key, value;
 	bool startBody = false;
 
-	// Storing the (first) request line with the method (GET/POST etc..), path and version in headerMap
+	// Storing the (first) request line with the method (GET/POST etc..), path and version in requestMap
 	std::istringstream stream(getReadBuffer());
 	if (std::getline(stream, line))
 	{
 		std::istringstream lineStream(line);
 		lineStream >> getRequestMap()["Method"] >> getRequestMap()["Path"] >> getRequestMap()["Version"]; // Error Management missing if wrong request line format!
 	}
-	// Storing the rest of the incoming header in headerMap
+	// Storing the rest of the incoming header in requestMap
 	while (std::getline(stream, line, '\n'))
 	{
 		std::istringstream lineStream(line);
