@@ -208,3 +208,89 @@ bool    sortLocations(const Location& a, const Location& b)
 {
     return (a.getPath().length()> b.getPath().length());
 }
+
+void    Server::parseClientData( Client& client, int index )
+{
+    char    buffer[BUFFER_SIZE];
+    int     bytesRead = read(_pollFds[index].fd, buffer, BUFFER_SIZE);
+    if (bytesRead < 0)
+    {
+        std::cerr << RED << "Error reading from client socket: " << strerror(errno) << " fd: " << _pollFds[index].fd << RESET << std::endl;
+        closeConnection(_pollFds[index].fd);
+    }
+    else if(bytesRead == 0)
+    {
+        std::cout << YELLOW << "Client disconnected, socket fd is: " << _pollFds[index].fd << RESET << std::endl;
+        closeConnection(_pollFds[index].fd);
+    }
+
+    else
+    {
+        client.addToBuffer(std::string(buffer, bytesRead));
+        if (client.requestComplete())
+        {
+            client.parseBuffer();
+            client.detectParsingError(client);
+            if (client.getState() != ERROR)
+                client.setState(START);
+            _pollFds[index].events = POLLOUT;
+            std::cout << GREEN << "Request Received from socket " << _pollFds[index].fd << ", method: [" << client.getRequestMap()["Method"] << "]" << \
+            ", version: [" << client.getRequestMap()["Version"] << "], URI: "<< client.getRequestMap()["Path"] <<  RESET << std::endl;
+        }
+    }
+}
+
+bool    Server::checkForRedirect( Client& client )
+{
+    std::string redirectUrl;
+    int redirectStatusCode = 0;
+    Location loco;
+    for (const Location &location : client.getServerBlock().getLocations())
+    {
+        redirectUrl = location.getRedir();
+        loco = location;
+        break;
+    }
+
+    if (!redirectUrl.empty())
+    {
+        if (client.getRequestMap()["Path"].find(loco.getPath()) == 0) // Match location path
+        {
+            redirectUrl = loco.getRedir();
+            redirectStatusCode = loco.getRedirStatusCode();
+        }
+        client.setStatusCode(redirectStatusCode);
+        client.getResponseMap()["Location"] = redirectUrl;
+        client.setState(RESPONSE);
+        return (true);
+    }
+    return (false);
+}
+
+void    Server::handleClientRequest( Client& client )
+{
+    std::string filePath = client.getRequestMap().at("Path");
+    std::vector<Location> matchingLocations = findMatchingLocations(filePath, client.getServerBlock());
+
+    if (!matchingLocations.empty())
+    {
+        const Location& location = matchingLocations[0];
+        std::string method = client.getRequestMap().at("Method");
+
+        if (!checkAllowedMethod(location, method))
+        {
+            client.setStatusCode(405);
+            client.setState(ERROR);
+            return;
+        }
+    }
+    // Handle CGI or file requests
+    if (client.checkIfCGI(client.getRequestMap().at("Path")) == true)
+        client.runCGI(*this, client);
+    else if(client.getRequestMap().at("Method") == "GET")
+        openFile(client);
+    else if(client.getRequestMap().at("Method") == "DELETE")
+        handleDeleteRequest(client);
+    else
+        client.setStatusCode(405);
+}
