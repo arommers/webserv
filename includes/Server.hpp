@@ -27,6 +27,9 @@ class Server
 		void							acceptConnection(int serverSocket);
 		void							handleClientData(size_t index);
 		void							openFile(Client& client);
+		void    						parseClientData(Client& client, int index);
+		bool    						checkForRedirect(Client& client);
+		void    						handleClientRequest(Client& client);
 		void							handleFileRead(size_t index);
 		void							sendClientData(size_t index);
 		void							shutdownServer();
