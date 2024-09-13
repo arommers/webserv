@@ -227,7 +227,8 @@ void    Server::parseClientData( Client& client, int index )
     else
     {
         client.addToBuffer(std::string(buffer, bytesRead));
-        if (client.requestComplete())
+        
+        if (client.requestComplete(client))
         {
             client.parseBuffer();
             client.detectParsingError(client);

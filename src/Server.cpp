@@ -238,8 +238,8 @@ void	Server::handleClientData(size_t index)
 	}
 	else if (client.getState() == ERROR)
 	{
-		std::string file = client.findPath(client, "./config/error_page/" + std::to_string(client.getStatusCode()) + ".html");
-		addFileToPoll(client, file);
+		std::string errorPageFile = "." + client.getServerBlock().getMapErrorPage()[client.getStatusCode()];
+		addFileToPoll(client, errorPageFile);
 		if (client.getState() != RESPONSE)
 			client.setState(READING);
 	}

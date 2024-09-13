@@ -8,12 +8,9 @@
 # include <limits.h>
 # include <algorithm>
 # include <limits.h>
+# include <map> 
 # include "Location.hpp"
 # include <chrono>
-
-// Redirects URL (301 and 302)
-# define REDIR301 "https://en.wikipedia.org/wiki/42_(number)"
-# define REDIR302 "https://en.wikipedia.org/wiki/12_(number)"
 
 class ServerBlock
 {
@@ -27,6 +24,8 @@ class ServerBlock
 		std::string					_serverName;	// The server name.
 		std::vector<Location> 		_locations;		// Inforamtion of the location blocks
 		std::vector<std::string>	_errorPage;		// Error Pages
+		std::map<int, std::string>  _mapErrorPage;  // Same as _ErrorPage, but has a int with the string
+
 
 
 	public:
@@ -55,6 +54,7 @@ class ServerBlock
 		std::string					getServerName() const;
 		std::vector<Location>		getLocations() const;
 		std::vector<std::string>	getErrorPage() const;
+		std::map<int, std::string>	getMapErrorPage() const;
 
 
 		// Checker

@@ -27,7 +27,7 @@ class Parsing{
 		void									        parseBuffer ( void );
         void									        detectParsingError( Client& client );
         void	                                        addToBuffer( std::string bufferNew );
-        bool	                                        requestComplete( void );
+        bool	                                        requestComplete( Client& client );
 		void									        createResponse (Client& client);
         void	                                        buildResponse(Client& client);
         void                                            buildRedirectReponse(Client& client);
