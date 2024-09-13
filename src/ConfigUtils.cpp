@@ -281,7 +281,9 @@ void	Config::ft_checkServerVariables(ServerBlock &server)
 		{"406", "/config/error_page/406.html"},
 		{"409", "/config/error_page/409.html"},
 		{"410", "/config/error_page/410.html"},
+		{"413", "/config/error_page/413.html"},
 		{"500", "/config/error_page/500.html"},
+		{"504", "/config/error_page/504.html"},
 		{"505", "/config/error_page/505.html"},
 	};
 
@@ -330,7 +332,9 @@ bool Config::errorPage(std::string string)
 		"error_page 406",
 		"error_page 409",
 		"error_page 410",
+		"error_page 413",
 		"error_page 500",
+		"error_page 504",
 		"error_page 505"
 	};
 

@@ -7,14 +7,16 @@ const std::unordered_map<int, std::string> Status::_ReasonPhraseMap = {
 	{301, "Moved Permanently"},
 	{302, "Found"},
     {400, "Bad Formatting"},
-    {401, "Unauthorized"},
     {403, "Unautorized"},
     {404, "Not Found"},
     {405, "Method Not Allowed"},
+    {406, "Not Acceptable"},
+    {409, "Conflict"},
+    {410, "Gone"},
     {413, "Request Entity Too Large"},
     {500, "Internal Server Error"},
-    {503, "Service Unavailable"},
 	{504, "Gateway Timeout"},
+    {505, "HTTP Version Not Supported"},
 };
 
 Status::Status(){};
