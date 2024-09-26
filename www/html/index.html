@@ -12,6 +12,20 @@
     />
     <!-- <link rel="stylesheet" href="style.css" /> -->
     <style>
+      /* :root {
+    --color-primary: #5ec576;
+    --color-secondary: #ffcb03;
+    --color-tertiary: #ff585f;
+    --color-primary-darker: #4bbb7d;
+    --color-secondary-darker: #ffbb00;
+    --color-tertiary-darker: #fd424b;
+    --color-primary-opacity: #5ec5763a;
+    --color-secondary-opacity: #ffcd0331;
+    --color-tertiary-opacity: #ff58602d;
+    --gradient-primary: linear-gradient(to top left, #39b385, #9be15d);
+    --gradient-secondary: linear-gradient(to top left, #ffb003, #ffcb03);
+  } */
+
       :root {
         --color-primary: #a2c4d9; /* Pastel light blue */
         --color-secondary: #cbe8ff; /* Pastel light blue (lighter shade) */
@@ -739,60 +753,50 @@
             <a class="nav__link" href="#section--4">About us</a>
           </li>
           <li class="nav__item">
-            <a class="nav__link nav__link--btn" href="#" onclick="uploadFile()"
-              >Upload File</a
-            >
+            <a class="nav__link nav__link--btn" href="#" onclick="uploadFile()">Upload File</a>
+        </li>
+          <li class="nav__item">
+            <a class="nav__link nav__link--btn" href="#" onclick="showTime()">Show Time</a>
           </li>
           <li class="nav__item">
-            <a class="nav__link nav__link--btn" href="#" onclick="showTime()"
-              >Show Time</a
-            >
-          </li>
-          <li class="nav__item">
-            <a
-              class="nav__link nav__link--btn"
-              href="javascript:void(0);"
-              onclick="loadFormData()"
-              >Show form</a
-            >
-          </li>
+            <a class="nav__link nav__link--btn" href="javascript:void(0);" onclick="loadFormData()">Show form</a>
+        </li>
           <li class="nav__item">
             <a class="nav__link nav__link--btn btn--show-modal" href="#"
-              >Submit to form</a
-            >
+              >Submit to form</a>
           </li>
         </ul>
       </nav>
-      
 
       <script>
         function uploadFile() {
-          // Open a new window with specific width, height, and other features
-          window.open("upload.html", "Upload File", "width=600,height=300");
+            // Open a new window with specific width, height, and other features
+            window.open('upload.html', 'Upload File', 'width=600,height=300');
         }
-      </script>
+        </script>
+        
 
       <script>
         function showTime() {
           // Open a small pop-up window and load the time.cgi script
-          window.open("/cgi-bin/time.cgi", "Time", "width=600,height=300");
+          window.open('/cgi-bin/time.cgi', 'Time', 'width=600,height=300');
         }
-      </script>
-
+        </script>
+        
       <script>
         function loadFormData() {
-          // Fetch the CGI script
-          fetch("/cgi-bin/display-form.cgi")
-            .then((response) => response.text()) // Get the HTML text response
-            .then((html) => {
-              // Create a new window or tab to display the fetched HTML
-              const newWindow = window.open(); // Open a new browser window or tab
-              newWindow.document.write(html); // Write the fetched HTML content into the new window
-              newWindow.document.close(); // Close the document to finish loading the page
-            })
-            .catch((error) => console.error("Error:", error));
+            // Fetch the CGI script
+            fetch('/cgi-bin/display-form.cgi')
+                .then(response => response.text()) // Get the HTML text response
+                .then(html => {
+                    // Create a new window or tab to display the fetched HTML
+                    const newWindow = window.open(); // Open a new browser window or tab
+                    newWindow.document.write(html);  // Write the fetched HTML content into the new window
+                    newWindow.document.close(); // Close the document to finish loading the page
+                })
+                .catch(error => console.error('Error:', error));
         }
-      </script>
+        </script>
 
       <div class="header__title">
         <h1>
@@ -1127,49 +1131,47 @@
       </p>
     </footer>
 
-    <div class="modal hidden">
-      <button class="btn--close-modal">&times;</button>
-      <h2 class="modal__header">
-        <span class="highlight">Start Serving!</span>
-        <br />
-        <span class="highlight">Now!</span>
-      </h2>
-      <form class="modal__form" action="/cgi-bin/post-form.cgi" method="post">
-        <label>First Name</label>
-        <input type="text" name="first_name" />
-        <label>Last Name</label>
-        <input type="text" name="last_name" />
-        <label>Email Address</label>
-        <input type="email" name="email" />
-        <button type="submit" class="btn">Post &rarr;</button>
-      </form>
+     <div class="modal hidden">
+        <button class="btn--close-modal">&times;</button>
+        <h2 class="modal__header">
+            <span class="highlight">Start Serving!</span>
+            <br />
+            <span class="highlight">Now!</span>
+        </h2>
+        <form class="modal__form" action="/cgi-bin/post-form.cgi" method="post">
+            <label>First Name</label>
+            <input type="text" name="first_name" />
+            <label>Last Name</label>
+            <input type="text" name="last_name" />
+            <label>Email Address</label>
+            <input type="email" name="email" />
+            <button type="submit" class="btn">Post &rarr;</button>
+        </form>
     </div>
     <div class="overlay hidden"></div>
     <script>
-      document
-        .querySelector(".modal__form")
-        .addEventListener("submit", function (event) {
+      document.querySelector('.modal__form').addEventListener('submit', function(event) {
           event.preventDefault(); // Prevent the default form submission
-
+    
           const formData = new FormData(this); // Create a FormData object from the form
-
-          fetch("/cgi-bin/post-form.cgi", {
-            method: "POST",
-            body: formData,
+    
+          fetch('/cgi-bin/post-form.cgi', {
+              method: 'POST',
+              body: formData
           })
-            .then((response) => response.text())
-            .then((result) => {
+          .then(response => response.text())
+          .then(result => {
               // Handle the response from the server
-              console.log("Success:", result);
-
+              console.log('Success:', result);
+              
               // Hide the modal and overlay
-              document.querySelector(".modal").classList.add("hidden");
-              document.querySelector(".overlay").classList.add("hidden");
-            })
-            .catch((error) => {
-              console.error("Error:", error);
-            });
-        });
+              document.querySelector('.modal').classList.add('hidden');
+              document.querySelector('.overlay').classList.add('hidden');
+          })
+          .catch(error => {
+              console.error('Error:', error);
+          });
+      });
     </script>
 
     <!-- <script src="script.js"></script> -->

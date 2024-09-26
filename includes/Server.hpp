@@ -1,14 +1,13 @@
 #pragma once
 
 #include "../includes/Client.hpp"
-#include "../includes/Cgi.hpp" 
 #include "../includes/ServerBlock.hpp"
 
 using TimePoint = std::chrono::time_point<std::chrono::steady_clock>;
 
-class Cgi;
 class Location;
 class ServerBlock;
+class Client;
 
 class Server
 {
@@ -17,7 +16,6 @@ class Server
 		std::vector<struct pollfd>			_pollFds;
 		std::unordered_map<int, Client>		_clients;
 		std::unordered_map<int, TimePoint>	_clientActivity;
-		Cgi									_cgi;
 
 	public:
 		Server();
@@ -29,6 +27,9 @@ class Server
 		void							acceptConnection(int serverSocket);
 		void							handleClientData(size_t index);
 		void							openFile(Client& client);
+		void    						parseClientData(Client& client, int index);
+		bool    						checkForRedirect(Client& client);
+		void    						handleClientRequest(Client& client);
 		void							handleFileRead(size_t index);
 		void							sendClientData(size_t index);
 		void							shutdownServer();

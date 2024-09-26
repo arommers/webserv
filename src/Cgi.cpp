@@ -1,23 +1,17 @@
 #include "../includes/Cgi.hpp"
 #include "../includes/Server.hpp"
 
+
 // --- Constructors/ Deconstructor ---
 Cgi::Cgi() {}
 Cgi::~Cgi() {}
 
 // --- CGI Functions ---
-bool	Cgi::checkIfCGI( Client &client )
-{
-	if (client.getRequestMap().at("Path").find("/cgi-bin/") != std::string::npos){
-		if (client.getRequestMap().at("Path").back() != '/')
-		return (true);
-	}
-	return (false);
-}
+
 
 void	Cgi::runCGI( Server& server, Client& client)
 {
-	int status;
+	int status = 0;
 
 	if (client.getState() == START)
 	{
@@ -40,6 +34,13 @@ void	Cgi::runCGI( Server& server, Client& client)
 	else if (client.getState() == READY){
 		int result = waitpid(_pid, &status, WNOHANG);
 		if (result == 0){
+			auto now = std::chrono::steady_clock::now();
+			auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - _lastActivity);
+			if (elapsed.count() >= 10){
+				std::cout << RED << "Timeout of CGI script\n" << RESET;
+				kill(_pid, SIGKILL);
+				client.setStatusCode(504);
+			}
 			usleep(100000); // Sleep for 100ms
 		}
 		else if (WIFEXITED(status)) {
@@ -89,7 +90,7 @@ void	Cgi::createPipe(Client& client, int* fdPipe)
 
 void	Cgi::createFork(Client& client)
 {
-	_path = findPath(client);
+	_path = findPath(client, client.getRequestMap().at("Path"));
 	if (_path.empty())
 	{
 		client.setStatusCode(404);
@@ -104,6 +105,8 @@ void	Cgi::createFork(Client& client)
 	{
 		launchScript(client);
 	}
+	else
+		_lastActivity = std::chrono::steady_clock::now();
 }
 
 void	Cgi::redirectToPipes(Client& client)
@@ -136,14 +139,11 @@ void	Cgi::launchScript(Client& client)
 	exit(EXIT_FAILURE);
 }
 
-std::string	Cgi::findPath(Client& client)
+std::string	Cgi::findPath(Client& client, std::string path)
 {
-	std::string             path;
 	ServerBlock&            serverBlock = client.getServerBlock();
 	std::vector<Location>   matchingLocations;
 	bool                    locationFound = false;
-
-	path = client.getRequestMap().at("Path");
 
 	for (const Location& location : serverBlock.getLocations())
 	{
@@ -201,3 +201,24 @@ void Cgi::closeAllPipes(Client& client)
 		close(client.getRequestPipe()[1]);
 	}					
 }
+
+int*	Cgi::getRequestPipe()
+{
+	return (_requestPipe);
+}
+
+int*	Cgi::getResponsePipe()
+{
+	return (_responsePipe);
+}
+
+
+bool	Cgi::checkIfCGI(std::string path)
+{
+	if (path.find("/cgi-bin/") != std::string::npos){
+		if (path.back() != '/')
+		return (true);
+	}
+	return (false);
+}
+

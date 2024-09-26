@@ -74,11 +74,8 @@ void	Server::createPollLoop()
 		}
 		else if (pollSize == 0)
 			continue ;
-
 		for (size_t i = 0; i < _pollFds.size(); ++i)
 		{
-			// checkClientActivity();
-
 			if (_pollFds[i].revents & POLLIN)
 			{
 				if (i < _servers.size())					// Server socket
@@ -129,7 +126,7 @@ void	Server::sendClientData(size_t index)
 	Client& client = getClient(_pollFds[index].fd);
 
 	updateClientActivity(_pollFds[index].fd);
-	client.createResponse();
+	client.createResponse(client);
 	std::string writeBuffer = client.getWriteBuffer();
 
 	int bytesSent = send(_pollFds[index].fd, writeBuffer.c_str(), writeBuffer.size(), 0);
@@ -230,88 +227,19 @@ void	Server::handleClientData(size_t index)
 	Client &client = getClient(_pollFds[index].fd);
 
 	updateClientActivity(_pollFds[index].fd);
-	if (client.getState() == PARSE)
-	{
-		char    buffer[BUFFER_SIZE];
-		int     bytesRead = read(_pollFds[index].fd, buffer, BUFFER_SIZE);
-		if (bytesRead < 0)
-		{
-			std::cerr << RED << "Error reading from client socket: " << strerror(errno) << RESET << std::endl;
-		}
-		else if(bytesRead == 0)
-		{
-			std::cout << YELLOW << "Client disconnected, socket fd is: " << _pollFds[index].fd << RESET << std::endl;
-			closeConnection(_pollFds[index].fd);
-		}
-		else
-		{
-			client.addToBuffer(std::string(buffer, bytesRead));
-			if (client.requestComplete())
-			{
-				client.parseBuffer();
-				if (client.getState() != ERROR)
-					client.setState(START);
-				_pollFds[index].events = POLLOUT;
-			}
-		}
-
+	if (client.getState() == PARSE){
+		parseClientData(client, index);
 	}
 	else if (client.getState() == START || client.getState() == READY)
 	{
-			std::cout << GREEN << "Request Received from socket " << _pollFds[index].fd << ", method: [" << client.getRequestMap()["Method"] << "]" << ", version: [" << client.getRequestMap()["Version"] << "], URI: "<< client.getRequestMap()["Path"] <<  RESET << std::endl;
-
-			// Check for redirect
-			std::string redirectUrl;
-			int redirectStatusCode = 0;
-			Location loco;
-			for (const Location &location : client.getServerBlock().getLocations())
-			{
-				redirectUrl = location.getRedir();
-				loco = location;
-				break;
-			}
-
-			if (!redirectUrl.empty())
-			{
-				if (client.getRequestMap()["Path"].find(loco.getPath()) == 0) // Match location path
-				{
-					redirectUrl = loco.getRedir();
-					redirectStatusCode = loco.getRedirStatusCode();
-				}
-				client.setStatusCode(redirectStatusCode);
-				client.getResponseMap()["Location"] = redirectUrl;
-				client.setState(RESPONSE);
-			}
-			else
-			{
-				ServerBlock& serverBlock = client.getServerBlock();
-				std::string filePath = client.getRequestMap().at("Path");
-				std::vector<Location> matchingLocations = findMatchingLocations(filePath, serverBlock);
-
-				if (!matchingLocations.empty())
-				{
-					const Location& location = matchingLocations[0];
-					std::string method = client.getRequestMap().at("Method");
-
-					if (!checkAllowedMethod(location, method))
-					{
-						client.setStatusCode(405);
-						client.setState(ERROR);
-						return;
-					}
-				}
-				// Handle CGI or file requests
-				if (_cgi.checkIfCGI(client) == true)
-					_cgi.runCGI(*this, client);
-				else if(client.getRequestMap().at("Method") == "GET")
-					openFile(client);
-				else if(client.getRequestMap().at("Method") == "DELETE")
-					handleDeleteRequest(client);
-			}
+		if (checkForRedirect(client) == false){
+			handleClientRequest(client);
+		}
 	}
 	else if (client.getState() == ERROR)
 	{
-		addFileToPoll(client, "./config/error_page/" + std::to_string(client.getStatusCode()) + ".html");
+		std::string file = client.findPath(client, "./config/error_page/" + std::to_string(client.getStatusCode()) + ".html");
+		addFileToPoll(client, file);
 		if (client.getState() != RESPONSE)
 			client.setState(READING);
 	}
@@ -457,7 +385,7 @@ void Server::checkClientActivity()
 	for (auto it = _clientActivity.begin(); it != _clientActivity.end();)
 	{
 		auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - it->second);
-		if (elapsed.count() >= TIMEOUT / 100){
+		if (elapsed.count() >= (TIMEOUT / 1000)){
 			std::cout << RED << "Deleting client after timout: " << it->first << RESET << std::endl;
 			close(it->first);
 			removePollFd(it->first);
