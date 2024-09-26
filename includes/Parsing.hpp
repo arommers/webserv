@@ -13,7 +13,6 @@ class Client;
 
 class Parsing{
     private:
-    	size_t									            _writePos = 0;
 		std::unordered_map<std::string, std::string>		_requestMap;
 		std::unordered_map<std::string, std::string>		_responseMap;
         std::string								            _readBuffer;
@@ -45,13 +44,11 @@ class Parsing{
         std::string&						            getReadBuffer();
 		std::string&						            getWriteBuffer();
         std::string&                                    getFileBuffer();
-        size_t								            getWritePos();
         bool                                            getChunked();
 
         // Setters
         void								            setFileBuffer(std::string buffer);
 		void								            setWriteBuffer( std::string buffer );
-		void								            setWritePos( size_t pos );
         void                                            setChunked( bool status );
 
 

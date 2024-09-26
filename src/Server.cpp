@@ -244,6 +244,7 @@ void	Server::handleClientData(size_t index)
 	else if (client.getState() == ERROR)
 	{
 		std::string errorPageFile = "." + client.getServerBlock().getMapErrorPage()[client.getStatusCode()];
+		client.getResponseMap()["Content-Type"] = "text/html";
 		addFileToPoll(client, errorPageFile);
 		if (client.getState() != RESPONSE)
 			client.setState(READING);
@@ -252,19 +253,20 @@ void	Server::handleClientData(size_t index)
 
 void	Server::handleDeleteRequest(Client& client)
 {
-	// std::string toDelete = client.getRequestMap().at("Path");
 	std::string toDelete = findPath(client, client.getRequestMap().at("Path"));
-	std::cout << "To deletE: " << toDelete << std::endl;
 
-	toDelete.erase(0, 1);
+	if (access(toDelete.c_str(), W_OK) != 0){
+		client.setStatusCode(403);
+		return ;
+	}
 	if (remove(toDelete.c_str()) < 0)
 	{
 		client.setStatusCode(404);
 		std::cout << "Error removing file: " << client.getRequestMap().at("Path").c_str() << std::endl;
 		return ;
 	}
+	client.setStatusCode(204);
 	client.setState(RESPONSE);
-
 }
 
 // --------------------------------------------------------------------

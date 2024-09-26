@@ -90,6 +90,7 @@ void	Parsing::createResponse(Client &client)
 		buildRedirectReponse(client);
 	else // Handle regular responses
 		buildResponse(client);
+	std::cout << getWriteBuffer() << std::endl;
 	client.setState(SENDING);
 }
 
@@ -97,11 +98,12 @@ void	Parsing::buildResponse( Client& client )
 {
 	std::string responseMessage;
 
-	getResponseMap()["Content-Type"] = "text/html";
-	if (!getRequestMap().count("Version"))
-		getRequestMap()["Version"] = "HTTP/1.1";
+	getRequestMap()["Version"] = "HTTP/1.1";
 	responseMessage = getRequestMap().at("Version") + " " + std::to_string(client.getStatusCode()) + " " + client.getStatusMessage(client.getStatusCode()) + "\r\n";
-	responseMessage += "Content-Type: " + getResponseMap()["Content-Type"] + "\r\n";
+	if(getResponseMap().count("Content-Type"))
+		responseMessage += "Content-Type: " + getResponseMap()["Content-Type"] + "\r\n";
+	else
+		responseMessage += "\r\n";
 
 	if (!getFileBuffer().empty())
 	{
@@ -182,11 +184,6 @@ std::string& Parsing::getFileBuffer()
     return (_fileBuffer);
 }
 
-size_t	Parsing::getWritePos()
-{
-	return (_writePos);
-}
-
 bool	Parsing::getChunked()
 {
 	return (_chunked);
@@ -202,11 +199,6 @@ void	Parsing::setWriteBuffer( std::string buffer )
 void	Parsing::setFileBuffer(std::string buffer)
 {
 	_fileBuffer = buffer;
-}
-
-void	Parsing::setWritePos( size_t pos )
-{
-	_writePos = pos;
 }
 
 void	Parsing::setChunked( bool status )

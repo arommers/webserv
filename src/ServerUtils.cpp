@@ -11,11 +11,7 @@ void Server::openFile(Client &client)
 
     std::vector<Location> matchingLocations = findMatchingLocations(file, serverBlock);
     if (matchingLocations.empty())
-    {
         resolvedFile = serverBlock.getRoot() + serverBlock.getIndex();
-        // client.setStatusCode(404); 
-        // return;
-    }
     else
     {
         const Location& location = matchingLocations[0];
@@ -115,6 +111,7 @@ bool Server::handleDirectoryRequest(std::string& file, const Location& location,
                 file += "/";
 
             client.setFileBuffer(generateFolderContent(file, client.getRequestMap().at("Path")));
+            client.getResponseMap()["Content-Type"] = "text/html";
             client.setState(RESPONSE);
             return true;
         }
@@ -138,6 +135,12 @@ void Server::openRequestedFile(const std::string& file, Client& client)
     }
     else
     {
+        int dotPos = file.rfind('.');
+        std::string extension = file.substr(dotPos);
+        if (client.getContentTypes().count(extension))
+            client.getResponseMap()["Content-Type"] = client.getContentTypes().at(extension);
+        else
+            client.getResponseMap()["Content-Type"] = "text/html";
         client.setReadWriteFd(fileFd); 
         struct pollfd filePollFd;
         filePollFd.fd = fileFd;

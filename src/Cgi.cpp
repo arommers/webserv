@@ -55,6 +55,9 @@ void	Cgi::runCGI( Server& server, Client& client)
 			if (client.getRequestMap().at("Method") == "POST")
 				close(client.getRequestPipe()[0]);
 			if(client.getState() != ERROR){
+				if (client.getRequestMap().at("Method") == "POST")
+					client.setStatusCode(201);
+				client.getResponseMap()["Content-Type"] = "text/html";	
 				server.addPollFd(client.getResponsePipe()[0], POLLIN);
 				client.setState(READING);
 			}
