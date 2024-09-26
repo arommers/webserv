@@ -87,7 +87,8 @@ void	Server::createPollLoop()
 			}
 			else if (_pollFds[i].revents & POLLOUT){
 			if (_clients.count(_pollFds[i].fd)){
-					if (getClient(_pollFds[i].fd).getState() == RESPONSE)
+					if (getClient(_pollFds[i].fd).getState() == RESPONSE ||\
+						getClient(_pollFds[i].fd).getState() == SENDING)
 						sendClientData(i);
 					else
 						handleClientData(i);
@@ -126,10 +127,11 @@ void	Server::sendClientData(size_t index)
 	Client& client = getClient(_pollFds[index].fd);
 
 	updateClientActivity(_pollFds[index].fd);
-	client.createResponse(client);
+	if (client.getState() == RESPONSE)
+		client.createResponse(client);
 	std::string writeBuffer = client.getWriteBuffer();
 
-	int bytesSent = send(_pollFds[index].fd, writeBuffer.c_str(), writeBuffer.size(), 0);
+	size_t bytesSent = send(_pollFds[index].fd, writeBuffer.c_str(), BUFFER_SIZE, MSG_NOSIGNAL);
 	if (bytesSent < 0)
 	{
 		std::cerr << RED << "Error sending data to client: " << strerror(errno) << RESET << std::endl;
@@ -137,8 +139,10 @@ void	Server::sendClientData(size_t index)
 	}
 	else
 	{
-		client.setWriteBuffer(writeBuffer.substr(bytesSent));
-		if (client.getWriteBuffer().empty())
+		if (bytesSent < client.getWriteBuffer().size()){
+			client.setWriteBuffer(writeBuffer.substr(bytesSent));
+		}
+		else
 		{
 			std::cout << GREEN << "Response sent to client: " << _pollFds[index].fd << RESET << std::endl;
 			client.resetClientData();
@@ -232,9 +236,10 @@ void	Server::handleClientData(size_t index)
 	}
 	else if (client.getState() == START || client.getState() == READY)
 	{
-		if (checkForRedirect(client) == false){
+		if (checkForRedirect(client) == false)
 			handleClientRequest(client);
-		}
+		else
+			return ;
 	}
 	else if (client.getState() == ERROR)
 	{
@@ -247,7 +252,10 @@ void	Server::handleClientData(size_t index)
 
 void	Server::handleDeleteRequest(Client& client)
 {
-	std::string toDelete = client.getRequestMap().at("Path");
+	// std::string toDelete = client.getRequestMap().at("Path");
+	std::string toDelete = findPath(client, client.getRequestMap().at("Path"));
+	std::cout << "To deletE: " << toDelete << std::endl;
+
 	toDelete.erase(0, 1);
 	if (remove(toDelete.c_str()) < 0)
 	{

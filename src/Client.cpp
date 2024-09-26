@@ -65,6 +65,7 @@ void	Client::resetClientData( void )
 	setWritePos(0);
 	getRequestMap().clear();
 	getResponseMap().clear();
+	setChunked(false);
 	_statusCode = 0;
 	_state = PARSE;
 	_readWriteFd = -1;

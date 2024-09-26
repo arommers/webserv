@@ -22,10 +22,20 @@ void	Parsing::parseBuffer ( void )
 	while (std::getline(stream, line, '\n'))
 	{
 		std::istringstream lineStream(line);
-		if (startBody == false && line == "\r")
+		if (startBody == false && line == "\r"){
 			startBody = true;
+			checkIfChunked();
+		}
 		if (startBody == true)
+		{
+			if (getChunked() == true)
+			{
+				std::regex chunkedPattern("[0-9]+[\\r\\n]");
+				if (std::regex_match(line, chunkedPattern))
+					continue;
+			}
 			getRequestMap()["Body"] += line + '\n';
+		}
 		else if (std::getline(lineStream, key, ':'))
 		{
 			if (std::getline(lineStream, value))
@@ -51,7 +61,6 @@ bool	Parsing::requestComplete( Client& client )
 	
 	std::string headers = getReadBuffer().substr(0, pos + 4);
 	size_t posContent = headers.find("Content-Length:");
-
 	if (posContent == std::string::npos)
 		return true;
 	
@@ -74,7 +83,7 @@ void	Parsing::createResponse(Client &client)
 {
 	std::string responseMessage;
 	int			statusCode = client.getStatusCode();
-
+	
 	if (statusCode == 0)
 		client.setStatusCode(200);
 	if (statusCode == 301 || statusCode == 302) // Handle redirect responses
@@ -137,6 +146,15 @@ void	Parsing::printRequestMap( void )
 	std::cout << "\n------- Content of header map -------\n";
 }
 
+void	Parsing::checkIfChunked( void )
+{
+	size_t chunked = getReadBuffer().find("Transfer-Encoding: chunked");
+	if (chunked != std::string::npos){
+		setChunked(true);
+	}
+}
+
+
 // Getters
 
 std::unordered_map<std::string, std::string>&	Parsing::getResponseMap()
@@ -169,6 +187,11 @@ size_t	Parsing::getWritePos()
 	return (_writePos);
 }
 
+bool	Parsing::getChunked()
+{
+	return (_chunked);
+}
+
 // Setters
 
 void	Parsing::setWriteBuffer( std::string buffer )
@@ -184,4 +207,9 @@ void	Parsing::setFileBuffer(std::string buffer)
 void	Parsing::setWritePos( size_t pos )
 {
 	_writePos = pos;
+}
+
+void	Parsing::setChunked( bool status )
+{
+	_chunked = status;
 }
