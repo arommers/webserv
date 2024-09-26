@@ -51,7 +51,7 @@ class Server
 		bool                    		checkFileExists(const std::string& path);
 		bool							checkFileAccessRights(const std::string& path);
 		Client&							getClient(int fd);
-		std::string						generateFolderContent(std::string path);
+		std::string						generateFolderContent(std::string path, std::string subfolder);
 		std::string						resolveFilePath(const std::string& file, const Location& location, ServerBlock& serverBlock);
 		ServerBlock&					getServerBlockByFd(int fd);
 		std::vector<struct pollfd>		getPollFds();

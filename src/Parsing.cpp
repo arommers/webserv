@@ -11,14 +11,14 @@ void	Parsing::parseBuffer ( void )
 	std::string line, key, value;
 	bool startBody = false;
 
-	// Storing the (first) request line with the method (GET/POST etc..), path and version in headerMap
+	// Storing the (first) request line with the method (GET/POST etc..), path and version in requestMap
 	std::istringstream stream(getReadBuffer());
 	if (std::getline(stream, line))
 	{
 		std::istringstream lineStream(line);
 		lineStream >> getRequestMap()["Method"] >> getRequestMap()["Path"] >> getRequestMap()["Version"]; // Error Management missing if wrong request line format!
 	}
-	// Storing the rest of the incoming header in headerMap
+	// Storing the rest of the incoming header in requestMap
 	while (std::getline(stream, line, '\n'))
 	{
 		std::istringstream lineStream(line);
@@ -42,7 +42,7 @@ void	Parsing::addToBuffer( std::string bufferNew )
 	_readBuffer += bufferNew;
 }
 
-bool	Parsing::requestComplete( void )
+bool	Parsing::requestComplete( Client& client )
 {
 	size_t pos = getReadBuffer().find("\r\n\r\n");
 
@@ -62,7 +62,12 @@ bool	Parsing::requestComplete( void )
 	size_t bodyBegin = pos + 4;
 	size_t bodyLength = bodyBegin + contentLength;
 
-	return getReadBuffer().size() >= bodyLength;
+	if (getReadBuffer().size() >= bodyLength){
+		if (bodyLength > (size_t)client.getServerBlock().getMaxClient()) // check if body exceeds max_client_size in config file
+			client.setStatusCode(413);
+		return true;
+	}
+	return false;
 }
 
 void	Parsing::createResponse(Client &client)
@@ -84,8 +89,11 @@ void	Parsing::buildResponse( Client& client )
 	std::string responseMessage;
 
 	getResponseMap()["Content-Type"] = "text/html";
+	if (!getRequestMap().count("Version"))
+		getRequestMap()["Version"] = "HTTP/1.1";
 	responseMessage = getRequestMap().at("Version") + " " + std::to_string(client.getStatusCode()) + " " + client.getStatusMessage(client.getStatusCode()) + "\r\n";
 	responseMessage += "Content-Type: " + getResponseMap()["Content-Type"] + "\r\n";
+
 	if (!getFileBuffer().empty())
 	{
 		responseMessage += "Content-Length: " + std::to_string(getFileBuffer().size()) + "\r\n\r\n";

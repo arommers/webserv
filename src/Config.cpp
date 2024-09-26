@@ -8,11 +8,20 @@ Config::Config(std::string file_name) : _server_i(0), _info(0), _serverBlocks(0)
 	file_content = readConfigFile(file_name);	// read config file
 	splitServers(file_content);					// Split the Servers (to have each server block)
 
+	std::set<int> ports; // Set to track the ports
+
 	// Create the servers -> parse the info into each ServerBlock class
 	for (int i = 0; i < _server_i; i++)
 	{
 		ServerBlock server;
 		createServer(_info[i], server);		// We create server
+
+		// Check if the servers have different ports
+		int port = server.getPort();
+		if (ports.find(port) != ports.end())
+    		throw Exception_Config("Servers should not have the same port");
+		ports.insert(port); // Add the port to the set
+		
 		_serverBlocks.push_back(server);	// We push ServerBlock into _serverBlocks, so we can excess it later
 	}
 	// ft_printConfigFile();	// for testing -> do we have everything

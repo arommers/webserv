@@ -56,6 +56,15 @@ void ServerBlock::setErrorPage(const std::string &newErrorPage)
 		_errorPage.push_back(newErrorPage);
 	else
 		throw  Exception_ServerBlock("Error_page is duplicated");
+
+	// Fill _mapErrorPage -> map<std::string, int>
+	std::string errorCodeStr = newErrorPage.substr(newErrorPage.length() - 8, 3); // Extract the last 3 characters before ".html"
+
+	// Convert the substring to an integer (error code)
+	int errorCode = std::stoi(errorCodeStr);
+
+    // Insert the string and the corresponding error code into the map
+	_mapErrorPage[errorCode] = newErrorPage;
 }
 
 // --- Getter ---
@@ -102,6 +111,11 @@ std::vector<Location> ServerBlock::getLocations() const
 std::vector<std::string> ServerBlock::getErrorPage() const
 {
 	return _errorPage;
+}
+
+std::map<int, std::string> ServerBlock::getMapErrorPage() const
+{
+	return (_mapErrorPage);
 }
 
 // --- Utils ---

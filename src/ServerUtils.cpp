@@ -87,16 +87,16 @@ std::string	Server::resolveFilePath(const std::string& file, const Location& loc
 
 bool	Server::handleDirectoryRequest(std::string& file, const Location& location, Client& client)
 {
-	struct stat fileStat;
-	
-	// Check if the requested path is a directory
-	if (stat(file.c_str(), &fileStat) == 0 && S_ISDIR(fileStat.st_mode))
-	{
-		// If an index is specified in the location block
-		if (!location.getIndex().empty())
-		{
-			// Append the index file to the directory path
-			std::string indexPath = file + "/" + location.getIndex();
+    struct stat fileStat;
+
+    // Check if the requested path is a directory
+    if (stat(file.c_str(), &fileStat) == 0 && S_ISDIR(fileStat.st_mode))
+    {
+        // If an index is specified in the location block
+        if (!location.getAutoindex() && !location.getIndex().empty())
+        {
+            // Append the index file to the directory path
+            std::string indexPath = file + "/" + location.getIndex();
 
 			// Check if the index file exists and is a regular file
 			if (stat(indexPath.c_str(), &fileStat) == 0 && S_ISREG(fileStat.st_mode))
@@ -112,17 +112,17 @@ bool	Server::handleDirectoryRequest(std::string& file, const Location& location,
 			if (file.back() != '/')
 				file += "/";
 
-			client.setFileBuffer(generateFolderContent(file));
-			client.setState(RESPONSE);
-			return true;
-		}
-		else
-		{
-			client.setStatusCode(403);
-			return true;
-		}
-	}
-	return false;
+            client.setFileBuffer(generateFolderContent(file, client.getRequestMap().at("Path")));
+            client.setState(RESPONSE);
+            return true;
+        }
+        else
+        {
+            client.setStatusCode(403);
+            return true;
+        }
+    }
+    return false;
 }
 
 
@@ -145,7 +145,7 @@ void	Server::openRequestedFile(const std::string& file, Client& client)
 	}
 }
 
-std::string	Server::generateFolderContent(std::string path)
+std::string Server::generateFolderContent(std::string path, std::string subfolder)
 {
 	std::ostringstream  html;
 	struct dirent       *entry;
@@ -171,18 +171,19 @@ std::string	Server::generateFolderContent(std::string path)
 	{
 		std::string name = entry->d_name;
 
-		std::cout << "Processing entry: " << name << std::endl;  // Debugging statement
-
-		if (name == "." || name == "..")
-			continue;
+        if (name == "." || name == "..")
+            continue;
 
 		std::string fullPath = path + name;
 
-		if (entry->d_type == DT_DIR)
-			name += "/";
-
-		html << "<li><a href=\"" << name << "\">" << name << "</a></li>";
-	}
+        if (entry->d_type == DT_DIR)
+            name += "/";
+ 
+        if (subfolder.back() != '/')
+            subfolder += "/";
+        
+        html << "<li><a href=\"" << subfolder+name << "\">" << name << "</a></li>";
+    }
 
 	closedir(folder);
 	
@@ -225,7 +226,8 @@ void    Server::parseClientData( Client& client, int index )
     else
     {
         client.addToBuffer(std::string(buffer, bytesRead));
-        if (client.requestComplete())
+        
+        if (client.requestComplete(client))
         {
             client.parseBuffer();
             client.detectParsingError(client);

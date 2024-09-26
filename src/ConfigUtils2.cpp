@@ -244,7 +244,7 @@ void	Config::ft_checkErrorPage(const std::string &key, const std::string &value)
 	if (remaining.size() != 8)
 		throw  Exception_Config("Invalid Error_page (1)");
 	std::vector<std::string> validErrorPages = {
-		"400.html", "403.html", "404.html", "405.html", "406.html", "409.html", "410.html", "500.html", "505.html"
+		"400.html", "403.html", "404.html", "405.html", "406.html", "409.html", "410.html", "413.html", "500.html", "504.html", "505.html"
 	};
 	if (std::find(validErrorPages.begin(), validErrorPages.end(), remaining) == validErrorPages.end())
 		throw  Exception_Config("Invalid Error_page (2)");

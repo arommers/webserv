@@ -10,6 +10,7 @@
 # include <algorithm>
 # include <sys/stat.h>
 # include <unistd.h>
+# include <set>
 # include "ServerBlock.hpp"
 # include "Location.hpp"
 
