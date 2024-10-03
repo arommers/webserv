@@ -11,13 +11,13 @@
 class Location
 {
 	private:
-		std::string					_path; // This relates to the part of the url thats being requested >> location "/" {}
-		std::string					_root; // Local pathing to what directory should be served
-		std::string					_index; // what specific file should be served
+		std::string					_path; 				// This relates to the part of the url thats being requested >> location "/" {}
+		std::string					_root; 				// Local pathing to what directory should be served
+		std::string					_index;				// what specific file should be served
 		std::vector<std::string>	_allowedMethods;
 		bool						_autoindex;
-		std::string					_redir; // Redirect
-		int							_redirStatusCode;  // Status code for the redirect
+		std::string					_redir; 			// Redirect
+		int							_redirStatusCode;	// Status code for the redirect
 
 	public:
 		Location();		// Constructor
