@@ -22,10 +22,20 @@ void	Parsing::parseBuffer ( void )
 	while (std::getline(stream, line, '\n'))
 	{
 		std::istringstream lineStream(line);
-		if (startBody == false && line == "\r")
+		if (startBody == false && line == "\r"){
 			startBody = true;
+			checkIfChunked();
+		}
 		if (startBody == true)
+		{
+			if (getChunked() == true)
+			{
+				std::regex chunkedPattern("[0-9]+[\\r\\n]");
+				if (std::regex_match(line, chunkedPattern))
+					continue;
+			}
 			getRequestMap()["Body"] += line + '\n';
+		}
 		else if (std::getline(lineStream, key, ':'))
 		{
 			if (std::getline(lineStream, value))
@@ -51,7 +61,6 @@ bool	Parsing::requestComplete( Client& client )
 	
 	std::string headers = getReadBuffer().substr(0, pos + 4);
 	size_t posContent = headers.find("Content-Length:");
-
 	if (posContent == std::string::npos)
 		return true;
 	
@@ -74,13 +83,14 @@ void	Parsing::createResponse(Client &client)
 {
 	std::string responseMessage;
 	int			statusCode = client.getStatusCode();
-
+	
 	if (statusCode == 0)
 		client.setStatusCode(200);
 	if (statusCode == 301 || statusCode == 302) // Handle redirect responses
 		buildRedirectReponse(client);
 	else // Handle regular responses
 		buildResponse(client);
+	// std::cout << getWriteBuffer() << std::endl;
 	client.setState(SENDING);
 }
 
@@ -88,11 +98,12 @@ void	Parsing::buildResponse( Client& client )
 {
 	std::string responseMessage;
 
-	getResponseMap()["Content-Type"] = "text/html";
-	if (!getRequestMap().count("Version"))
-		getRequestMap()["Version"] = "HTTP/1.1";
+	getRequestMap()["Version"] = "HTTP/1.1";
 	responseMessage = getRequestMap().at("Version") + " " + std::to_string(client.getStatusCode()) + " " + client.getStatusMessage(client.getStatusCode()) + "\r\n";
-	responseMessage += "Content-Type: " + getResponseMap()["Content-Type"] + "\r\n";
+	if(getResponseMap().count("Content-Type"))
+		responseMessage += "Content-Type: " + getResponseMap()["Content-Type"] + "\r\n";
+	else
+		responseMessage += "\r\n";
 
 	if (!getFileBuffer().empty())
 	{
@@ -137,6 +148,15 @@ void	Parsing::printRequestMap( void )
 	std::cout << "\n------- Content of header map -------\n";
 }
 
+void	Parsing::checkIfChunked( void )
+{
+	size_t chunked = getReadBuffer().find("Transfer-Encoding: chunked");
+	if (chunked != std::string::npos){
+		setChunked(true);
+	}
+}
+
+
 // Getters
 
 std::unordered_map<std::string, std::string>&	Parsing::getResponseMap()
@@ -164,9 +184,9 @@ std::string& Parsing::getFileBuffer()
     return (_fileBuffer);
 }
 
-size_t	Parsing::getWritePos()
+bool	Parsing::getChunked()
 {
-	return (_writePos);
+	return (_chunked);
 }
 
 // Setters
@@ -181,7 +201,7 @@ void	Parsing::setFileBuffer(std::string buffer)
 	_fileBuffer = buffer;
 }
 
-void	Parsing::setWritePos( size_t pos )
+void	Parsing::setChunked( bool status )
 {
-	_writePos = pos;
+	_chunked = status;
 }

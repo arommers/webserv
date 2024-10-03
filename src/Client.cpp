@@ -62,9 +62,9 @@ void	Client::resetClientData( void )
 	getReadBuffer().clear();
 	getWriteBuffer().clear();
 	getFileBuffer().clear();
-	setWritePos(0);
 	getRequestMap().clear();
 	getResponseMap().clear();
+	setChunked(false);
 	_statusCode = 0;
 	_state = PARSE;
 	_readWriteFd = -1;

@@ -9,20 +9,18 @@ void	Server::openFile(Client &client)
 	ServerBlock& serverBlock = client.getServerBlock();
 	std::string resolvedFile;
 
-	std::vector<Location> matchingLocations = findMatchingLocations(file, serverBlock);
-	if (matchingLocations.empty())
-	{
-		resolvedFile = serverBlock.getRoot() + serverBlock.getIndex();
-	}
-	else
-	{
-		const Location& location = matchingLocations[0];
-		
-		if (!checkAllowedMethod(location, method))
-		{
-			client.setStatusCode(405);
-			return;
-		}
+    std::vector<Location> matchingLocations = findMatchingLocations(file, serverBlock);
+    if (matchingLocations.empty())
+        resolvedFile = serverBlock.getRoot() + serverBlock.getIndex();
+    else
+    {
+        const Location& location = matchingLocations[0];
+        
+        if (!checkAllowedMethod(location, method))
+        {
+            client.setStatusCode(405);
+            return;
+        }
 
 		resolvedFile = resolveFilePath(file, location, serverBlock);
 
@@ -113,6 +111,7 @@ bool	Server::handleDirectoryRequest(std::string& file, const Location& location,
 				file += "/";
 
             client.setFileBuffer(generateFolderContent(file, client.getRequestMap().at("Path")));
+            client.getResponseMap()["Content-Type"] = "text/html";
             client.setState(RESPONSE);
             return true;
         }
@@ -128,21 +127,27 @@ bool	Server::handleDirectoryRequest(std::string& file, const Location& location,
 
 void	Server::openRequestedFile(const std::string& file, Client& client)
 {
-	int fileFd = open(file.c_str(), O_RDONLY);
-	if (fileFd < 0)
-	{
-		client.setStatusCode(404);
-		return;
-	}
-	else
-	{
-		client.setReadWriteFd(fileFd); 
-		struct pollfd filePollFd;
-		filePollFd.fd = fileFd;
-		filePollFd.events = POLLIN;
-		_pollFds.push_back(filePollFd);
-		client.setState(READING);
-	}
+    int fileFd = open(file.c_str(), O_RDONLY);
+    if (fileFd < 0)
+    {
+        client.setStatusCode(404);
+        return;
+    }
+    else
+    {
+        int dotPos = file.rfind('.');
+        std::string extension = file.substr(dotPos);
+        if (client.getContentTypes().count(extension))
+            client.getResponseMap()["Content-Type"] = client.getContentTypes().at(extension);
+        else
+            client.getResponseMap()["Content-Type"] = "text/html";
+        client.setReadWriteFd(fileFd); 
+        struct pollfd filePollFd;
+        filePollFd.fd = fileFd;
+        filePollFd.events = POLLIN;
+        _pollFds.push_back(filePollFd);
+        client.setState(READING);
+    }
 }
 
 std::string Server::generateFolderContent(std::string path, std::string subfolder)
@@ -247,12 +252,12 @@ bool    Server::checkForRedirect( Client& client )
     Location loco;
     for (const Location &location : client.getServerBlock().getLocations())
     {
-        redirectUrl = location.getRedir();
+        if (client.getRequestMap().at("Path") == location.getPath())
+            redirectUrl = location.getRedir();
         loco = location;
-        break;
     }
 
-    if (!redirectUrl.empty())
+    if (!redirectUrl.empty() )
     {
         if (client.getRequestMap()["Path"].find(loco.getPath()) == 0) // Match location path
         {
@@ -262,9 +267,9 @@ bool    Server::checkForRedirect( Client& client )
         client.setStatusCode(redirectStatusCode);
         client.getResponseMap()["Location"] = redirectUrl;
         client.setState(RESPONSE);
-        return (true);
+        return true;
     }
-    return (false);
+    return false;
 }
 
 void    Server::handleClientRequest( Client& client )
@@ -293,4 +298,44 @@ void    Server::handleClientRequest( Client& client )
         handleDeleteRequest(client);
     else
         client.setStatusCode(405);
+}
+
+std::string	Server::findPath(Client& client, std::string path)
+{
+	ServerBlock&            serverBlock = client.getServerBlock();
+	std::vector<Location>   matchingLocations;
+	bool                    locationFound = false;
+
+	for (const Location& location : serverBlock.getLocations())
+	{
+		if (path.find(location.getPath()) == 0)
+			matchingLocations.push_back(location);
+	}
+
+	std::sort(matchingLocations.begin(), matchingLocations.end(), sortLocations);
+
+	for (const Location& location : matchingLocations)
+	{
+		std::string locationRoot = location.getRoot();
+		std::string locationPath = location.getPath();
+
+		if (locationRoot.empty())
+			locationRoot = serverBlock.getRoot();
+		
+		if (!locationRoot.empty() && locationRoot.back() == '/')
+			locationRoot.pop_back();
+
+		std::string fileName = path.substr(locationPath.length());
+		if (!fileName.empty() && fileName.front() == '/')
+			fileName.erase(fileName.begin());
+
+		path = locationRoot + "/" + fileName;
+
+		locationFound = true;
+		break;
+	}
+	std::ifstream file(path);
+	if (!file)
+		return ("");
+	return (path);
 }

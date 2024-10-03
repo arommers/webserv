@@ -58,6 +58,8 @@ class Server
 		std::vector<Location>			findMatchingLocations(const std::string& file, ServerBlock& serverBlock);
 		ServerBlock&					getServerBlockForHost(const std::string& hostHeader);
 		Location						getLocationForRequest(const std::string &uri, ServerBlock &serverBlock);
+		std::string						findPath(Client& client, std::string path);
+
 };
 
 bool	sortLocations(const Location& a, const Location& b);

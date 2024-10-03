@@ -1,17 +1,5 @@
 [
     {
-        "id": "81bb8d44-7a60-4047-a0cd-fa5f9548c9b6",
-        "first_name": "Sven",
-        "last_name": "van Hasselt",
-        "email": "svenvanhasselt@gmail.com"
-    },
-    {
-        "id": "ebfd3a4b-e0aa-4857-a813-59087a9420e7",
-        "first_name": "Sven",
-        "last_name": "van Hasselt",
-        "email": "svenvanhasselt@gmail.com"
-    },
-    {
         "id": "9aa59133-2f3f-4d31-8f08-2dc9443539f5",
         "first_name": "Adri",
         "last_name": "Rommers",
@@ -21,6 +9,12 @@
         "id": "d44cac8a-a49c-4f3c-85d9-125b8057fc72",
         "first_name": "Sven",
         "last_name": "van Hasselt",
+        "email": "svenvanhasselt@gmail.com"
+    },
+    {
+        "id": "619f69b4-33db-4f77-81dc-738b94a597f1",
+        "first_name": "Sven",
+        "last_name": "Hasselt",
         "email": "svenvanhasselt@gmail.com"
     }
 ]
