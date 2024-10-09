@@ -304,7 +304,6 @@ std::string	Server::findPath(Client& client, std::string path)
 {
 	ServerBlock&            serverBlock = client.getServerBlock();
 	std::vector<Location>   matchingLocations;
-	bool                    locationFound = false;
 
 	for (const Location& location : serverBlock.getLocations())
 	{
@@ -331,7 +330,6 @@ std::string	Server::findPath(Client& client, std::string path)
 
 		path = locationRoot + "/" + fileName;
 
-		locationFound = true;
 		break;
 	}
 	std::ifstream file(path);

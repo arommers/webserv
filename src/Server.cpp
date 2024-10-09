@@ -131,7 +131,7 @@ void	Server::sendClientData(size_t index)
 		client.createResponse(client);
 	std::string writeBuffer = client.getWriteBuffer();
 
-	size_t bytesSent = send(_pollFds[index].fd, writeBuffer.c_str(), BUFFER_SIZE, MSG_NOSIGNAL);
+	int bytesSent = send(_pollFds[index].fd, writeBuffer.c_str(), BUFFER_SIZE, MSG_NOSIGNAL);
 	if (bytesSent < 0)
 	{
 		std::cerr << RED << "Error sending data to client: " << strerror(errno) << RESET << std::endl;
@@ -139,7 +139,7 @@ void	Server::sendClientData(size_t index)
 	}
 	else
 	{
-		if (bytesSent < client.getWriteBuffer().size()){
+		if ((size_t)bytesSent < client.getWriteBuffer().size()){
 			client.setWriteBuffer(writeBuffer.substr(bytesSent));
 		}
 		else

@@ -90,7 +90,6 @@ void	Parsing::createResponse(Client &client)
 		buildRedirectReponse(client);
 	else // Handle regular responses
 		buildResponse(client);
-	std::cout << getWriteBuffer() << std::endl;
 	client.setState(SENDING);
 }
 
